@@ -1,0 +1,12 @@
+# File sistem
+*.log
+*.env
+/config/database.php
+
+# Folder cache
+/cache/
+/temp/
+
+# File OS
+.DS_Store
+Thumbs.db
