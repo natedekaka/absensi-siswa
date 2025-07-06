@@ -8,11 +8,8 @@ $result = $koneksi->query("SELECT * FROM siswa WHERE kelas_id = $kelas_id");
 
 if ($result->num_rows > 0) {
     echo '<table class="table table-bordered">';
-    // Tambahkan kolom "No." di sini ↓
-    echo '<thead><tr><th>No.</th><th>Nama Siswa</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Status Sebelumnya</th></tr></thead>';
+    echo '<thead><tr><th>Nama Siswa</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Status Sebelumnya</th></tr></thead>';
     echo '<tbody>';
-
-    $no = 1; // Inisialisasi nomor urut
     
     while($row = $result->fetch_assoc()) {
         $status_sebelumnya = '';
@@ -29,9 +26,6 @@ if ($result->num_rows > 0) {
         }
         
         echo '<tr>';
-        // Tambahkan kolom No. di sini ↓
-        echo '<td>' . $no++ . '</td>'; 
-
         echo '<td>' . $row['nama'] . '<input type="hidden" name="siswa_id[]" value="' . $row['id'] . '"></td>';
         
         // Status Hadir di-checked secara default jika tidak ada status sebelumnya

@@ -49,7 +49,6 @@ if (isset($_GET['add_success'])) {
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>No</th> <!-- Kolom baru untuk nomor urut -->
             <th>NIS</th>
             <th>NISN</th>
             <th>Nama</th>
@@ -88,13 +87,9 @@ if (isset($_GET['add_success'])) {
         $query .= " LIMIT $limit OFFSET $offset";
         $result = $koneksi->query($query);
 
-        // Inisialisasi nomor urut
-        $no = $offset + 1;
-
         while ($row = $result->fetch_assoc()):
         ?>
         <tr>
-            <td><?= $no++ ?></td> <!-- Nomor urut otomatis -->
             <td><?= htmlspecialchars($row['nis']) ?></td>
             <td><?= htmlspecialchars($row['nisn']) ?></td>
             <td><?= htmlspecialchars($row['nama']) ?></td>
