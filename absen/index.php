@@ -21,7 +21,7 @@ require_once '../includes/header.php';
             <label>Kelas</label>
             <select id="kelas" class="form-select" required>
                 <option value="">Pilih Kelas</option>
-                <option value="all">Semua Kelas</option> <!-- Tambahkan opsi semua kelas -->
+                <option value="all">Semua Kelas</option>
                 <?php
                 $kelas = $koneksi->query("SELECT * FROM kelas");
                 while($row = $kelas->fetch_assoc()):
@@ -31,9 +31,13 @@ require_once '../includes/header.php';
             </select>
         </div>
     </div>
-    
+
+    <!-- Tombol Simpan di Atas -->
+    <button type="submit" class="btn btn-primary mb-3">Simpan Absensi</button>
+
     <div id="siswa-container"></div>
     
+    <!-- Tombol Simpan di Bawah -->
     <button type="submit" class="btn btn-primary mt-3">Simpan Absensi</button>
 </form>
 
