@@ -153,15 +153,8 @@ if ($type == 'siswa') {
     $bulan = $_GET['bulan'] ?? date('n');
     $tahun = $_GET['tahun'] ?? date('Y');
     
-    // Ambil data kelas termasuk nama wali kelas
     $kelas = $koneksi->query("SELECT * FROM kelas WHERE id = $kelas_id")->fetch_assoc();
-    
-    if (!$kelas) {
-        die("Kelas dengan ID $kelas_id tidak ditemukan.");
-    }
-
     echo "<h3>Rekap Kelas: {$kelas['nama_kelas']}</h3>";
-    echo "<p>Wali Kelas: " . (!empty($kelas['wali_kelas']) ? $kelas['wali_kelas'] : '-') . "</p>";
     echo "<p>Periode: " . date('F Y', mktime(0,0,0,$bulan,1,$tahun)) . "</p>";
     
     $siswa = $koneksi->query("SELECT * FROM siswa WHERE kelas_id = $kelas_id");
