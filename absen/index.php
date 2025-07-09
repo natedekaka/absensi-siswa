@@ -21,6 +21,7 @@ require_once '../includes/header.php';
             <label>Kelas</label>
             <select id="kelas" class="form-select" required>
                 <option value="">Pilih Kelas</option>
+                <option value="all">Semua Kelas</option> <!-- Tambahkan opsi semua kelas -->
                 <?php
                 $kelas = $koneksi->query("SELECT * FROM kelas");
                 while($row = $kelas->fetch_assoc()):
