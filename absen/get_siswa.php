@@ -6,16 +6,23 @@ $tanggal = $_GET['tanggal'] ?? date('Y-m-d');
 
 // Modifikasi query untuk menangani semua kelas
 if ($kelas_id === 'all') {
-    $query = "SELECT * FROM siswa ORDER BY kelas_id, nama";
+    $query = "SELECT s.*, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id ORDER BY k.nama_kelas, s.nama";
     $result = $koneksi->query($query);
 } else {
-    $query = "SELECT * FROM siswa WHERE kelas_id = $kelas_id ORDER BY nama";
+    $query = "SELECT s.*, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id WHERE s.kelas_id = $kelas_id ORDER BY s.nama";
     $result = $koneksi->query($query);
 }
 
 if ($result->num_rows > 0) {
     echo '<table class="table table-bordered">';
-    echo '<thead><tr><th>No.</th><th>Kelas</th><th>Nama Siswa</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Status Sebelumnya</th></tr></thead>';
+    
+    // Header tabel - bedakan antara semua kelas dan per kelas
+    if ($kelas_id === 'all') {
+        echo '<thead><tr><th>No.</th><th>Kelas</th><th>Nama Siswa</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Status Sebelumnya</th></tr></thead>';
+    } else {
+        echo '<thead><tr><th>No.</th><th>Nama Siswa</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Status Sebelumnya</th></tr></thead>';
+    }
+    
     echo '<tbody>';
 
     $no = 1;
@@ -34,20 +41,12 @@ if ($result->num_rows > 0) {
             $check->fetch();
         }
         
-        // Ambil nama kelas jika menampilkan semua kelas
-        $nama_kelas = '';
-        if ($kelas_id === 'all') {
-            $kelas_query = $koneksi->query("SELECT nama_kelas FROM kelas WHERE id = ".$row['kelas_id']);
-            $kelas_data = $kelas_query->fetch_assoc();
-            $nama_kelas = $kelas_data['nama_kelas'];
-        }
-        
         echo '<tr>';
         echo '<td>' . $no++ . '</td>';
         
-        // Tampilkan kolom kelas jika menampilkan semua kelas
+        // Tampilkan kolom kelas hanya untuk semua kelas
         if ($kelas_id === 'all') {
-            echo '<td>' . $nama_kelas . '</td>';
+            echo '<td>' . $row['nama_kelas'] . '</td>';
         }
         
         echo '<td>' . $row['nama'] . '<input type="hidden" name="siswa_id[]" value="' . $row['id'] . '"></td>';
