@@ -85,6 +85,7 @@ if (isset($_GET['kelas_id'])) {
     echo "<table class='table table-bordered mt-3'>";
     echo "<thead>
             <tr>
+                <th>No</th>
                 <th>Nama Siswa</th>
                 <th>Jenis Kelamin</th>
                 <th>Hadir</th>
@@ -102,6 +103,8 @@ if (isset($_GET['kelas_id'])) {
     $stmt_siswa->bind_param("i", $kelas_id);
     $stmt_siswa->execute();
     $result_siswa = $stmt_siswa->get_result();
+
+    $no = 1; // Mulai penomoran dari 1
 
     while($row = $result_siswa->fetch_assoc()) {
         $siswa_id = $row['id'];
@@ -127,6 +130,7 @@ if (isset($_GET['kelas_id'])) {
         }
 
         echo "<tr>";
+        echo "<td>{$no}</td>"; // Kolom nomor
         echo "<td>" . htmlspecialchars($row['nama']) . "</td>";
         echo "<td>" . htmlspecialchars($row['jenis_kelamin']) . "</td>";
         echo "<td>{$rekap['Hadir']}</td>";
@@ -137,12 +141,15 @@ if (isset($_GET['kelas_id'])) {
         echo "<td>" . array_sum($rekap) . "</td>";
         echo "</tr>";
 
+        $no++; // Tambah nomor setiap baris
+
         $stmt_absen->close();
     }
     $stmt_siswa->close();
 
     // Baris total per status untuk seluruh kelas
     echo "<tr class='table-primary fw-bold'>";
+    echo "<td></td>"; // Biarkan kosong
     echo "<td>Total</td>";
     echo "<td></td>"; 
     echo "<td>{$rekapKelas['Hadir']}</td>";
