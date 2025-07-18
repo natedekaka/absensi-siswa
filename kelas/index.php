@@ -27,8 +27,25 @@ if (isset($_GET['edit_success'])) {
 if (isset($_GET['add_success'])) {
     echo '<div class="alert alert-success">Data kelas berhasil ditambahkan!</div>';
 }
-?>
 
+// Sorting
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'asc';
+$order = ($sort === 'desc') ? 'DESC' : 'ASC';
+
+// Pagination
+$limit = 10; // Jumlah data per halaman
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$start = ($page - 1) * $limit;
+
+// Ambil total data
+$totalResult = $koneksi->query("SELECT COUNT(*) AS total FROM kelas");
+$totalRow = $totalResult->fetch_assoc();
+$totalData = $totalRow['total'];
+$totalPages = ceil($totalData / $limit);
+
+// Ambil data sesuai halaman dan urutan
+$result = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas $order LIMIT $start, $limit");
+?>
 
 <h2>Manajemen Kelas</h2>
 <a href="tambah.php" class="btn btn-success mb-3">Tambah Kelas</a>
@@ -38,16 +55,17 @@ if (isset($_GET['add_success'])) {
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Kelas</th>
+            <th>
+                <a href="?sort=<?= ($sort === 'asc') ? 'desc' : 'asc' ?>&page=<?= $page ?>" class="text-decoration-none text-dark">
+                    Kelas <i class="bi <?= ($sort === 'asc') ? 'bi-sort-alpha-down' : 'bi-sort-alpha-up' ?>"></i>
+                </a>
+            </th>
             <th>Wali Kelas</th>
             <th>Aksi</th>
         </tr>
     </thead>
     <tbody>
-        <?php
-        $result = $koneksi->query("SELECT * FROM kelas");
-        while($row = $result->fetch_assoc()):
-        ?>
+        <?php while($row = $result->fetch_assoc()): ?>
         <tr>
             <td><?= $row['nama_kelas'] ?></td>
             <td><?= $row['wali_kelas'] ?></td>
@@ -60,4 +78,16 @@ if (isset($_GET['add_success'])) {
         <?php endwhile; ?>
     </tbody>
 </table>
+
+<!-- Pagination -->
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+            <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sort ?>"><?= $i ?></a>
+        </li>
+        <?php endfor; ?>
+    </ul>
+</nav>
+
 <?php require_once '../includes/footer.php'; ?>

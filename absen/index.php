@@ -11,7 +11,9 @@ require_once '../config.php';
 require_once '../includes/header.php';
 ?>
 <h2>Input Absensi</h2>
-<form method="POST" action="proses.php">
+<form method="POST" action="proses.php" id="form-absensi">
+    <input type="hidden" name="kelas_id" id="kelas_id"> <!-- untuk menyimpan kelas_id -->
+
     <div class="row mb-3">
         <div class="col-md-4">
             <label>Tanggal</label>
@@ -32,32 +34,79 @@ require_once '../includes/header.php';
         </div>
     </div>
 
-    <!-- Tombol Simpan di Atas -->
-    <button type="submit" class="btn btn-primary mb-3">Simpan Absensi</button>
+    <!-- Input Pencarian Nama Siswa -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <input type="text" id="search_nama" class="form-control" placeholder="Cari nama siswa..." style="display: none;">
+        </div>
+    </div>
+
+    <!-- Tombol Simpan Atas -->
+    <div id="tombolSimpanAtas" style="display: none;" class="mb-3">
+        <button type="submit" class="btn btn-primary">Simpan Absensi</button>
+    </div>
 
     <div id="siswa-container"></div>
-    
-    <!-- Tombol Simpan di Bawah -->
-    <button type="submit" class="btn btn-primary mt-3">Simpan Absensi</button>
+
+    <!-- Tombol Simpan Bawah -->
+    <div id="tombolSimpanBawah" style="display: none;" class="mt-3">
+        <button type="submit" class="btn btn-primary">Simpan Absensi</button>
+    </div>
 </form>
 
 <script>
-document.getElementById('kelas').addEventListener('change', loadSiswa);
+// Fungsi untuk menampilkan/menyembunyikan tombol
+function toggleTombolSimpan(display) {
+    document.getElementById('tombolSimpanAtas').style.display = display;
+    document.getElementById('tombolSimpanBawah').style.display = display;
+}
+
+// Fungsi untuk menampilkan input pencarian
+function toggleSearchInput(display) {
+    document.getElementById('search_nama').style.display = display;
+}
+
+document.getElementById('kelas').addEventListener('change', function () {
+    const kelasId = this.value;
+
+    // Update nilai input hidden kelas_id
+    document.getElementById('kelas_id').value = kelasId;
+
+    if (kelasId) {
+        toggleTombolSimpan('block');   // Tampilkan tombol
+        toggleSearchInput('block');     // Tampilkan pencarian
+        loadSiswa();                    // Muat data siswa
+    } else {
+        toggleTombolSimpan('none');     // Sembunyikan tombol
+        toggleSearchInput('none');      // Sembunyikan pencarian
+        document.getElementById('siswa-container').innerHTML = ''; // Kosongkan tabel
+    }
+});
+
 document.getElementById('tanggal').addEventListener('change', loadSiswa);
+
+document.getElementById('search_nama').addEventListener('input', function () {
+    loadSiswa(); // Muat ulang data siswa dengan parameter pencarian
+});
 
 function loadSiswa() {
     const kelasId = document.getElementById('kelas').value;
     const tanggal = document.getElementById('tanggal').value;
-    
-    if(kelasId) {
-        fetch(`get_siswa.php?kelas_id=${kelasId}&tanggal=${tanggal}`)
+    const search = document.getElementById('search_nama').value;
+
+    if (kelasId) {
+        let url = `get_siswa.php?kelas_id=${kelasId}&tanggal=${tanggal}`;
+        if (search) {
+            url += `&search=${encodeURIComponent(search)}`;
+        }
+
+        fetch(url)
             .then(response => response.text())
             .then(data => {
                 document.getElementById('siswa-container').innerHTML = data;
             });
-    } else {
-        document.getElementById('siswa-container').innerHTML = '';
     }
 }
 </script>
+
 <?php require_once '../includes/footer.php'; ?>

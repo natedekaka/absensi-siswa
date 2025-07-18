@@ -3,15 +3,24 @@ require_once '../config.php';
 
 $kelas_id = $_GET['kelas_id'];
 $tanggal = $_GET['tanggal'] ?? date('Y-m-d');
+$search = isset($_GET['search']) ? $koneksi->real_escape_string($_GET['search']) : '';
 
-// Modifikasi query untuk menangani semua kelas
+// Modifikasi query untuk menangani semua kelas dan pencarian
 if ($kelas_id === 'all') {
-    $query = "SELECT s.*, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id ORDER BY k.nama_kelas, s.nama";
-    $result = $koneksi->query($query);
+    $query = "SELECT s.*, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id";
+    if (!empty($search)) {
+        $query .= " WHERE s.nama LIKE '%$search%'";
+    }
+    $query .= " ORDER BY k.nama_kelas, s.nama";
 } else {
-    $query = "SELECT s.*, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id WHERE s.kelas_id = $kelas_id ORDER BY s.nama";
-    $result = $koneksi->query($query);
+    $query = "SELECT s.*, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id WHERE s.kelas_id = $kelas_id";
+    if (!empty($search)) {
+        $query .= " AND s.nama LIKE '%$search%'";
+    }
+    $query .= " ORDER BY s.nama";
 }
+
+$result = $koneksi->query($query);
 
 if ($result->num_rows > 0) {
     echo '<table class="table table-bordered">';
@@ -44,7 +53,6 @@ if ($result->num_rows > 0) {
         echo '<tr>';
         echo '<td>' . $no++ . '</td>';
         
-        // Tampilkan kolom kelas hanya untuk semua kelas
         if ($kelas_id === 'all') {
             echo '<td>' . $row['nama_kelas'] . '</td>';
         }
