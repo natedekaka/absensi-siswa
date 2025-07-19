@@ -7,34 +7,36 @@ if (!isset($_SESSION['user'])) {
     exit;
 }
 
-// Panggil config.php pertama kali untuk koneksi database
+// Panggil config.php untuk koneksi database
 require_once '../config.php';
 
+$error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nis = $_POST['nis'];
-    $nisn = $_POST['nisn'];
-    $nama = $_POST['nama'];
-    $kelas_id = $_POST['kelas_id'];
-    $jenis_kelamin = $_POST['jenis_kelamin']; // Ambil nilai jenis kelamin dari form
+    $nis = $koneksi->real_escape_string($_POST['nis']);
+    $nisn = $koneksi->real_escape_string($_POST['nisn']);
+    $nama = $koneksi->real_escape_string($_POST['nama']);
+    $kelas_id = $koneksi->real_escape_string($_POST['kelas_id']);
+    $jenis_kelamin = $koneksi->real_escape_string($_POST['jenis_kelamin']);
 
     // Validasi jenis kelamin
     if (!in_array($jenis_kelamin, ['Laki-laki', 'Perempuan'])) {
         $error = "Jenis kelamin harus dipilih.";
     } else {
-       // Gunakan prepared statement untuk mencegah SQL injection
-$stmt = $koneksi->prepare("INSERT INTO siswa (nis, nisn, nama, kelas_id, jenis_kelamin) VALUES (?, ?, ?, ?, ?)");
-if (!$stmt) {
-    die("Prepare failed: " . $koneksi->error);
-}
+        // Gunakan prepared statement untuk mencegah SQL injection
+        $stmt = $koneksi->prepare("INSERT INTO siswa (nis, nisn, nama, kelas_id, jenis_kelamin) VALUES (?, ?, ?, ?, ?)");
+        if (!$stmt) {
+            die("Prepare failed: " . $koneksi->error);
+        }
 
-$stmt->bind_param("sssis", $nis, $nisn, $nama, $kelas_id, $jenis_kelamin);
+        $stmt->bind_param("sssis", $nis, $nisn, $nama, $kelas_id, $jenis_kelamin);
 
-if ($stmt->execute()) {
-    header("Location: index.php?add_success=1");
-    exit;
-} else {
-    $error = "Error: " . $stmt->error;
-}
+        if ($stmt->execute()) {
+            header("Location: index.php?add_success=1");
+            exit;
+        } else {
+            $error = "Error: " . $stmt->error;
+        }
+        $stmt->close();
     }
 }
 
@@ -42,46 +44,67 @@ if ($stmt->execute()) {
 require_once '../includes/header.php';
 ?>
 
-<h2>Tambah Siswa</h2>
+<!-- Container Form -->
+<div class="form-container">
+    <h2 class="mb-4 text-center">➕ Tambah Siswa</h2>
 
-<?php if (isset($error)): ?>
-    <div class="alert alert-danger"><?= $error ?></div>
-<?php endif; ?>
+    <?php if (!empty($error)): ?>
+        <div class="alert alert-danger"><?= $error ?></div>
+    <?php endif; ?>
 
-<form method="POST">
-    <div class="mb-3">
-        <label>NIS</label>
-        <input type="text" name="nis" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label>NISN</label>
-        <input type="text" name="nisn" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label>Nama Lengkap</label>
-        <input type="text" name="nama" class="form-control" required>
-    </div>
-    <div class="mb-3">
-        <label>Jenis Kelamin</label>
-        <select name="jenis_kelamin" class="form-select" required>
-            <option value="">-- Pilih Jenis Kelamin --</option>
-            <option value="Laki-laki">Laki-laki</option>
-            <option value="Perempuan">Perempuan</option>
-        </select>
-    </div>
-    <div class="mb-3">
-        <label>Kelas</label>
-        <select name="kelas_id" class="form-select" required>
-            <?php
-            $kelas = $koneksi->query("SELECT * FROM kelas");
-            while ($row = $kelas->fetch_assoc()):
-            ?>
-                <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
-            <?php endwhile; ?>
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary">Simpan</button>
-    <a href="index.php" class="btn btn-secondary">Batal</a>
-</form>
+    <form method="POST">
+        <!-- NIS -->
+        <div class="mb-3">
+            <label class="form-label">NIS</label>
+            <input type="text" name="nis" class="form-control" placeholder="Masukkan NIS" required>
+        </div>
+
+        <!-- NISN -->
+        <div class="mb-3">
+            <label class="form-label">NISN</label>
+            <input type="text" name="nisn" class="form-control" placeholder="Masukkan NISN" required>
+        </div>
+
+        <!-- Nama Lengkap -->
+        <div class="mb-3">
+            <label class="form-label">Nama Lengkap</label>
+            <input type="text" name="nama" class="form-control" placeholder="Contoh: Budi Santoso" required>
+        </div>
+
+        <!-- Jenis Kelamin -->
+        <div class="mb-3">
+            <label class="form-label">Jenis Kelamin</label>
+            <select name="jenis_kelamin" class="form-select" required>
+                <option value="">-- Pilih Jenis Kelamin --</option>
+                <option value="Laki-laki">Laki-laki</option>
+                <option value="Perempuan">Perempuan</option>
+            </select>
+        </div>
+
+        <!-- Kelas -->
+        <div class="mb-3">
+            <label class="form-label">Kelas</label>
+            <select name="kelas_id" class="form-select" required>
+                <option value="">-- Pilih Kelas --</option>
+                <?php
+                $kelas = $koneksi->query("SELECT * FROM kelas");
+                while ($row = $kelas->fetch_assoc()):
+                ?>
+                    <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <!-- Tombol Submit -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save me-1"></i> Simpan
+            </button>
+            <a href="index.php" class="btn btn-secondary">
+                <i class="fas fa-times me-1"></i> Batal
+            </a>
+        </div>
+    </form>
+</div>
 
 <?php require_once '../includes/footer.php'; ?>
