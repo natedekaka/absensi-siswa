@@ -43,81 +43,89 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="../dashboard">
-                <i class="fas fa-book-reader me-2"></i>Absensi Siswa
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarCollapse">
-                <?php if (isset($_SESSION['user'])): ?>
-                    <ul class="navbar-nav me-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="../dashboard/">
-                                <i class="fas fa-tachometer-alt me-1"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="../siswa/">
-                                <i class="fas fa-users me-1"></i>Siswa
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="../kelas/">
-                                <i class="fas fa-chalkboard me-1"></i>Kelas
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="../absen/">
-                                <i class="fas fa-clipboard-check me-1"></i>Absensi
-                            </a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="rekapDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-chart-bar me-1"></i>Rekap
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="rekapDropdown">
-                                <li><a class="dropdown-item" href="../rekap/siswa.php">Per Siswa</a></li>
-                                <li><a class="dropdown-item" href="../rekap/kelas.php">Per Kelas</a></li>
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="importDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-file-import me-1"></i>Import
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="importDropdown">
-                                <li><a class="dropdown-item" href="../siswa/import.php">Import Siswa</a></li>
-                                <li><a class="dropdown-item" href="../kelas/import.php">Import Kelas</a></li>
-                            </ul>
-                        </li>
-                    </ul>
-                <?php endif; ?>
-                
-                <div class="d-flex align-items-center">
-                    <!-- Tulisan MGMP Informatika -->
-                    <div class="brand-text d-none d-lg-block">
-                        MGMP Informatika
-                    </div>
-                    
-                    <!-- Informasi User dan Logout -->
-                    <?php if (isset($_SESSION['user'])): ?>
-                        <div class="user-info">
-                            <i class="fas fa-user-circle me-1"></i>
-                            <?= htmlspecialchars($_SESSION['user']['nama']) ?> 
-                            <span class="badge bg-light text-dark ms-1"><?= ucfirst($_SESSION['user']['role']) ?></span>
-                        </div>
-                        <a href="../logout.php" class="btn btn-outline-light ms-2">
-                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+    <div class="container">
+        <a class="navbar-brand" href="../dashboard/">
+            <i class="fas fa-book-reader me-2"></i>Absensi Siswa
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+            <?php if (isset($_SESSION['user'])): ?>
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../dashboard/">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                         </a>
-                    <?php else: ?>
-                        <a href="login.php" class="btn btn-outline-light">
-                            <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../siswa/">
+                            <i class="fas fa-users me-1"></i>Siswa
                         </a>
-                    <?php endif; ?>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../kelas/">
+                            <i class="fas fa-chalkboard me-1"></i>Kelas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../absen/">
+                            <i class="fas fa-clipboard-check me-1"></i>Absensi
+                        </a>
+                    </li>
+                    <!-- 🔹 Menu Baru: Absensi Per Siswa -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="../absen/absensi_persiswa.php">
+                            <i class="fas fa-user-check me-1"></i>Absensi Per Siswa
+                        </a>
+                    </li>
+                    <!-- Dropdown Rekap -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="rekapDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-chart-bar me-1"></i>Rekap
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="rekapDropdown">
+                            <li><a class="dropdown-item" href="../rekap/siswa.php">Per Siswa</a></li>
+                            <li><a class="dropdown-item" href="../rekap/kelas.php">Per Kelas</a></li>
+                        </ul>
+                    </li>
+                    <!-- Dropdown Import -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="importDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-file-import me-1"></i>Import
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="importDropdown">
+                            <li><a class="dropdown-item" href="../siswa/import.php">Import Siswa</a></li>
+                            <li><a class="dropdown-item" href="../kelas/import.php">Import Kelas</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            <?php endif; ?>
+
+            <div class="d-flex align-items-center">
+                <!-- MGMP Informatika -->
+                <div class="brand-text d-none d-lg-block">
+                    MGMP Informatika
                 </div>
+
+                <!-- User Info & Logout -->
+                <?php if (isset($_SESSION['user'])): ?>
+                    <div class="user-info">
+                        <i class="fas fa-user-circle me-1"></i>
+                        <?= htmlspecialchars($_SESSION['user']['nama']) ?>
+                        <span class="badge bg-light text-dark ms-1"><?= ucfirst($_SESSION['user']['role']) ?></span>
+                    </div>
+                    <a href="../logout.php" class="btn btn-outline-light ms-2">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                <?php else: ?>
+                    <a href="../login.php" class="btn btn-outline-light">
+                        <i class="fas fa-sign-in-alt me-1"></i>Login
+                    </a>
+                <?php endif; ?>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
     <div class="container mt-4">

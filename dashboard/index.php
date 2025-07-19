@@ -1,7 +1,6 @@
 <?php
 // Set zona waktu (sesuaikan dengan lokasi Anda)
 date_default_timezone_set('Asia/Jakarta');
-
 session_start();
 
 // Cek apakah user sudah login
@@ -67,10 +66,11 @@ $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas
         JOIN kelas k ON s.kelas_id = k.id
         ORDER BY a.tanggal DESC, a.id DESC
         LIMIT 10";
-
 $absensi_terbaru = $koneksi->query($sql);
 ?>
+
 <?php include '../includes/header.php'; ?>
+
 <div class="container mt-4">
     <h2>Dashboard</h2>
 
@@ -224,7 +224,11 @@ $absensi_terbaru = $koneksi->query($sql);
                         </a>
                         <a href="../rekap/kelas.php" class="btn btn-outline-secondary text-start">
                             <i class="fas fa-eye me-2"></i> Lihat Rekap
-                        </a> 
+                        </a>
+                        <!-- Tombol Baru: Absensi Per Siswa -->
+                        <a href="../absen/absensi_persiswa.php" class="btn btn-outline-primary text-start">
+                            <i class="fas fa-user-check me-2"></i> Absensi Per Siswa
+                        </a>
                     </div>
                 </div>
             </div>
@@ -254,4 +258,5 @@ $absensi_terbaru = $koneksi->query($sql);
         </div>
     </div>
 </div>
+
 <?php include '../includes/footer.php'; ?>

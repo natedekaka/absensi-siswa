@@ -1,4 +1,7 @@
 <?php
+// Set zona waktu (sesuaikan dengan lokasi Anda)
+date_default_timezone_set('Asia/Jakarta');
+
 session_start();
 
 // Cek apakah user sudah login
@@ -57,21 +60,20 @@ if ($result && $row = $result->fetch_assoc()) {
     $statistics['absen_minggu_ini'] = $row['total'];
 }
 
-// Ambil 5 absensi terbaru
+// Ambil 10 absensi terbaru
 $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas 
         FROM absensi a
         JOIN siswa s ON a.siswa_id = s.id
         JOIN kelas k ON s.kelas_id = k.id
         ORDER BY a.tanggal DESC, a.id DESC
-        LIMIT 5";
+        LIMIT 10";
+
 $absensi_terbaru = $koneksi->query($sql);
 ?>
-
 <?php include '../includes/header.php'; ?>
-
 <div class="container mt-4">
     <h2>Dashboard</h2>
-    
+
     <!-- Welcome Card -->
     <div class="card mb-4">
         <div class="card-body bg-light">
@@ -252,5 +254,4 @@ $absensi_terbaru = $koneksi->query($sql);
         </div>
     </div>
 </div>
-
 <?php include '../includes/footer.php'; ?>
