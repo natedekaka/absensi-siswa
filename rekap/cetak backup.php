@@ -153,8 +153,15 @@ if ($type == 'siswa') {
     $bulan = $_GET['bulan'] ?? date('n');
     $tahun = $_GET['tahun'] ?? date('Y');
     
+    // Ambil data kelas termasuk nama wali kelas
     $kelas = $koneksi->query("SELECT * FROM kelas WHERE id = $kelas_id")->fetch_assoc();
+    
+    if (!$kelas) {
+        die("Kelas dengan ID $kelas_id tidak ditemukan.");
+    }
+
     echo "<h3>Rekap Kelas: {$kelas['nama_kelas']}</h3>";
+    echo "<p>Wali Kelas: " . (!empty($kelas['wali_kelas']) ? $kelas['wali_kelas'] : '-') . "</p>";
     echo "<p>Periode: " . date('F Y', mktime(0,0,0,$bulan,1,$tahun)) . "</p>";
     
     $siswa = $koneksi->query("SELECT * FROM siswa WHERE kelas_id = $kelas_id");
@@ -169,9 +176,11 @@ if ($type == 'siswa') {
     ];
     
     echo "<table border='1'>";
-    echo "<thead><tr><th>Nama Siswa</th><th>Jenis Kelamin</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Total</th></tr></thead>";
+    echo "<thead><tr><th>No</th><th>Nama Siswa</th><th>Jenis Kelamin</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Total</th></tr></thead>";
     echo "<tbody>";
     
+    $no = 1; // Mulai penomoran
+
     while($row = $siswa->fetch_assoc()) {
         $absensi = $koneksi->query("SELECT status FROM absensi 
                                   WHERE siswa_id = {$row['id']} 
@@ -197,6 +206,7 @@ if ($type == 'siswa') {
         $jenis_kelamin = ($jenis_kelamin == 'Laki-laki') ? 'Laki-laki' : (($jenis_kelamin == 'Perempuan') ? 'Perempuan' : 'Perempuan');
 
         echo "<tr>";
+        echo "<td>{$no}</td>"; // Kolom penomoran
         echo "<td>{$row['nama']}</td>";
         echo "<td>$jenis_kelamin</td>";
         echo "<td>{$rekap['Hadir']}</td>";
@@ -206,11 +216,13 @@ if ($type == 'siswa') {
         echo "<td>{$rekap['Alfa']}</td>";
         echo "<td>" . array_sum($rekap) . "</td>";
         echo "</tr>";
+
+        $no++; // Tambah nomor
     }
     
     // Baris total per status untuk seluruh kelas
     echo "<tr style='background-color: #e0e0e0; font-weight: bold;'>";
-    echo "<td colspan='2'>Total</td>";
+    echo "<td colspan='3' align='center'>Total</td>";
     echo "<td>{$rekapKelas['Hadir']}</td>";
     echo "<td>{$rekapKelas['Terlambat']}</td>";
     echo "<td>{$rekapKelas['Sakit']}</td>";

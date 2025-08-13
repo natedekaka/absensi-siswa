@@ -23,64 +23,84 @@ $mode = $_GET['mode'] ?? 'bulan';
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=rekap_absensi_$type.xls");
 
+// Fungsi validasi tanggal
+function isValidDate($date) {
+    $d = DateTime::createFromFormat('Y-m-d', $date);
+    return $d && $d->format('Y-m-d') === $date;
+}
+
+// Ambil rentang tanggal jika mode rentang
+if ($mode == 'rentang') {
+    $dari = $_GET['dari'] ?? '';
+    $sampai = $_GET['sampai'] ?? '';
+
+    if (empty($dari) || empty($sampai)) {
+        die("Tanggal 'dari' dan 'sampai' harus diisi untuk mode rentang.");
+    }
+
+    if (!isValidDate($dari) || !isValidDate($sampai)) {
+        die("Format tanggal tidak valid. Gunakan format Y-m-d.");
+    }
+
+    if (strtotime($dari) > strtotime($sampai)) {
+        die("Tanggal 'dari' tidak boleh lebih besar dari 'sampai'.");
+    }
+
+    $periode = date('d M Y', strtotime($dari)) . ' - ' . date('d M Y', strtotime($sampai));
+}
+
 if ($type == 'siswa') {
     if (!isset($_GET['id'])) {
         die("Parameter id tidak valid untuk rekap siswa");
     }
     
-    $id = $_GET['id'];
+    $id = intval($_GET['id']);
     
-    // Query siswa - pastikan kolom jenis_kelamin tersedia
-    $siswa = $koneksi->query("
-        SELECT siswa.*, kelas.nama_kelas 
-        FROM siswa 
-        JOIN kelas ON siswa.kelas_id = kelas.id 
-        WHERE siswa.id = $id
-    ")->fetch_assoc();
+    // Query siswa
+    $stmt = $koneksi->prepare("SELECT siswa.*, kelas.nama_kelas FROM siswa JOIN kelas ON siswa.kelas_id = kelas.id WHERE siswa.id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $siswa = $result->fetch_assoc();
+    $stmt->close();
 
-    // Jika data siswa tidak ditemukan
     if (!$siswa) {
         die("Siswa dengan ID $id tidak ditemukan.");
     }
 
-    // Jika jenis_kelamin tidak ada di tabel
-    if (!isset($siswa['jenis_kelamin'])) {
-        die("Kolom jenis_kelamin tidak ditemukan dalam tabel siswa.");
-    }
+    // Default rekap
+    $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
 
-    // Proses berdasarkan mode
     if ($mode == 'bulan') {
-        $bulan = $_GET['bulan'] ?? date('n');
-        $tahun = $_GET['tahun'] ?? date('Y');
+        $bulan = intval($_GET['bulan'] ?? date('n'));
+        $tahun = intval($_GET['tahun'] ?? date('Y'));
         
-        $absensi = $koneksi->query("SELECT * FROM absensi 
-                                   WHERE siswa_id = $id 
-                                   AND MONTH(tanggal) = $bulan 
-                                   AND YEAR(tanggal) = $tahun");
-        
-        $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-        
-        while($absen = $absensi->fetch_assoc()) {
-            $rekap[$absen['status']]++;
+        $stmt = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?");
+        $stmt->bind_param("iii", $id, $bulan, $tahun);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($absen = $result->fetch_assoc()) {
+            if (isset($rekap[$absen['status']])) {
+                $rekap[$absen['status']]++;
+            }
         }
+        $stmt->close();
         
         $periode = date('F Y', mktime(0,0,0,$bulan,1,$tahun));
         
     } elseif ($mode == 'rentang') {
-        $dari = $_GET['dari'] ?? date('Y-m-01');
-        $sampai = $_GET['sampai'] ?? date('Y-m-t');
-        
-        $absensi = $koneksi->query("SELECT status FROM absensi 
-                                   WHERE siswa_id = $id 
-                                   AND tanggal BETWEEN '$dari' AND '$sampai'");
-        
-        $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-        
-        while($absen = $absensi->fetch_assoc()) {
-            $rekap[$absen['status']]++;
+        $stmt = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal BETWEEN ? AND ?");
+        $stmt->bind_param("iss", $id, $dari, $sampai);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($absen = $result->fetch_assoc()) {
+            if (isset($rekap[$absen['status']])) {
+                $rekap[$absen['status']]++;
+            }
         }
-        
-        $periode = date('d M Y', strtotime($dari)) . ' - ' . date('d M Y', strtotime($sampai));
+        $stmt->close();
         
     } elseif ($mode == 'semester') {
         $semester = $_GET['semester'] ?? '1';
@@ -95,22 +115,24 @@ if ($type == 'siswa') {
             $sampai = $tahun_akhir . '-06-30';
         }
         
-        $absensi = $koneksi->query("SELECT status FROM absensi 
-                                   WHERE siswa_id = $id 
-                                   AND tanggal BETWEEN '$dari' AND '$sampai'");
-        
-        $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-        
-        while($absen = $absensi->fetch_assoc()) {
-            $rekap[$absen['status']]++;
+        $stmt = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal BETWEEN ? AND ?");
+        $stmt->bind_param("iss", $id, $dari, $sampai);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        while ($absen = $result->fetch_assoc()) {
+            if (isset($rekap[$absen['status']])) {
+                $rekap[$absen['status']]++;
+            }
         }
+        $stmt->close();
         
         $periode = 'Semester ' . $semester . ' TA ' . $tahun_ajaran;
     }
 
     // Tampilkan informasi siswa
     $jenis_kelamin = isset($siswa['jenis_kelamin']) ? $siswa['jenis_kelamin'] : '-';
-    $jenis_kelamin = ($jenis_kelamin == 'Laki-laki') ? 'Laki-laki' : (($jenis_kelamin == 'Perempuan') ? 'Perempuan' : 'Perempuan');
+    $jenis_kelamin = in_array($jenis_kelamin, ['Laki-laki', 'Perempuan']) ? $jenis_kelamin : 'Tidak Diketahui';
 
     echo "<h3>Rekap Absensi: {$siswa['nama']} ({$siswa['nama_kelas']})</h3>";
     echo "<p>Jenis Kelamin: $jenis_kelamin</p>";
@@ -143,97 +165,155 @@ if ($type == 'siswa') {
         echo "</tr>";
     }
     echo "</table>";
-    
+
 } elseif ($type == 'kelas') {
     if (!isset($_GET['id'])) {
         die("Parameter id tidak valid untuk rekap kelas");
     }
     
-    $kelas_id = $_GET['id'];
-    $bulan = $_GET['bulan'] ?? date('n');
-    $tahun = $_GET['tahun'] ?? date('Y');
-    
-    // Ambil data kelas termasuk nama wali kelas
-    $kelas = $koneksi->query("SELECT * FROM kelas WHERE id = $kelas_id")->fetch_assoc();
-    
+    $kelas_id = intval($_GET['id']);
+
+    // Ambil data kelas
+    $stmt = $koneksi->prepare("SELECT * FROM kelas WHERE id = ?");
+    $stmt->bind_param("i", $kelas_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $kelas = $result->fetch_assoc();
+    $stmt->close();
+
     if (!$kelas) {
         die("Kelas dengan ID $kelas_id tidak ditemukan.");
     }
 
-    echo "<h3>Rekap Kelas: {$kelas['nama_kelas']}</h3>";
-    echo "<p>Wali Kelas: " . (!empty($kelas['wali_kelas']) ? $kelas['wali_kelas'] : '-') . "</p>";
-    echo "<p>Periode: " . date('F Y', mktime(0,0,0,$bulan,1,$tahun)) . "</p>";
-    
-    $siswa = $koneksi->query("SELECT * FROM siswa WHERE kelas_id = $kelas_id");
-    
-    // Inisialisasi rekap total untuk kelas
-    $rekapKelas = [
-        'Hadir' => 0,
-        'Terlambat' => 0,
-        'Sakit' => 0,
-        'Izin' => 0,
-        'Alfa' => 0
-    ];
-    
-    echo "<table border='1'>";
-    echo "<thead><tr><th>No</th><th>Nama Siswa</th><th>Jenis Kelamin</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Total</th></tr></thead>";
-    echo "<tbody>";
-    
-    $no = 1; // Mulai penomoran
+    // Inisialisasi rekap kelas
+    $rekapKelas = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
 
-    while($row = $siswa->fetch_assoc()) {
-        $absensi = $koneksi->query("SELECT status FROM absensi 
-                                  WHERE siswa_id = {$row['id']} 
-                                  AND MONTH(tanggal) = $bulan 
-                                  AND YEAR(tanggal) = $tahun");
+    if ($mode == 'bulan') {
+        $bulan = intval($_GET['bulan'] ?? date('n'));
+        $tahun = intval($_GET['tahun'] ?? date('Y'));
+        $periode = date('F Y', mktime(0,0,0,$bulan,1,$tahun));
+
+        $stmt = $koneksi->prepare("SELECT * FROM siswa WHERE kelas_id = ?");
+        $stmt->bind_param("i", $kelas_id);
+        $stmt->execute();
+        $siswaResult = $stmt->get_result();
+
+        echo "<h3>Rekap Kelas: {$kelas['nama_kelas']}</h3>";
+        echo "<p>Wali Kelas: " . (!empty($kelas['wali_kelas']) ? $kelas['wali_kelas'] : '-') . "</p>";
+        echo "<p>Periode: $periode</p>";
         
-        $rekap = [
-            'Hadir' => 0,
-            'Terlambat' => 0,
-            'Sakit' => 0,
-            'Izin' => 0,
-            'Alfa' => 0
-        ];
-        
-        while($absen = $absensi->fetch_assoc()) {
-            $status = $absen['status'];
-            $rekap[$status]++;
-            $rekapKelas[$status]++; // Tambahkan ke total kelas
+        echo "<table border='1'>";
+        echo "<thead><tr><th>No</th><th>Nama Siswa</th><th>Jenis Kelamin</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Total</th></tr></thead>";
+        echo "<tbody>";
+
+        $no = 1;
+        while ($row = $siswaResult->fetch_assoc()) {
+            $absensiStmt = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?");
+            $absensiStmt->bind_param("iii", $row['id'], $bulan, $tahun);
+            $absensiStmt->execute();
+            $absensiResult = $absensiStmt->get_result();
+
+            $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
+            while ($absen = $absensiResult->fetch_assoc()) {
+                if (isset($rekap[$absen['status']])) {
+                    $rekap[$absen['status']]++;
+                    $rekapKelas[$absen['status']]++;
+                }
+            }
+            $absensiStmt->close();
+
+            $jenis_kelamin = in_array($row['jenis_kelamin'], ['Laki-laki', 'Perempuan']) ? $row['jenis_kelamin'] : 'Tidak Diketahui';
+
+            echo "<tr>";
+            echo "<td>{$no}</td>";
+            echo "<td>{$row['nama']}</td>";
+            echo "<td>{$jenis_kelamin}</td>";
+            echo "<td>{$rekap['Hadir']}</td>";
+            echo "<td>{$rekap['Terlambat']}</td>";
+            echo "<td>{$rekap['Sakit']}</td>";
+            echo "<td>{$rekap['Izin']}</td>";
+            echo "<td>{$rekap['Alfa']}</td>";
+            echo "<td>" . array_sum($rekap) . "</td>";
+            echo "</tr>";
+
+            $no++;
         }
+        $stmt->close();
 
-        // Tampilkan jenis kelamin dengan aman
-        $jenis_kelamin = isset($row['jenis_kelamin']) ? $row['jenis_kelamin'] : '-';
-        $jenis_kelamin = ($jenis_kelamin == 'Laki-laki') ? 'Laki-laki' : (($jenis_kelamin == 'Perempuan') ? 'Perempuan' : 'Perempuan');
-
-        echo "<tr>";
-        echo "<td>{$no}</td>"; // Kolom penomoran
-        echo "<td>{$row['nama']}</td>";
-        echo "<td>$jenis_kelamin</td>";
-        echo "<td>{$rekap['Hadir']}</td>";
-        echo "<td>{$rekap['Terlambat']}</td>";
-        echo "<td>{$rekap['Sakit']}</td>";
-        echo "<td>{$rekap['Izin']}</td>";
-        echo "<td>{$rekap['Alfa']}</td>";
-        echo "<td>" . array_sum($rekap) . "</td>";
+        // Total kelas
+        echo "<tr style='background-color: #e0e0e0; font-weight: bold;'>";
+        echo "<td colspan='3' align='center'>Total</td>";
+        echo "<td>{$rekapKelas['Hadir']}</td>";
+        echo "<td>{$rekapKelas['Terlambat']}</td>";
+        echo "<td>{$rekapKelas['Sakit']}</td>";
+        echo "<td>{$rekapKelas['Izin']}</td>";
+        echo "<td>{$rekapKelas['Alfa']}</td>";
+        echo "<td>" . array_sum($rekapKelas) . "</td>";
         echo "</tr>";
+        echo "</tbody></table>";
 
-        $no++; // Tambah nomor
+    } elseif ($mode == 'rentang') {
+        echo "<h3>Rekap Kelas: {$kelas['nama_kelas']}</h3>";
+        echo "<p>Wali Kelas: " . (!empty($kelas['wali_kelas']) ? $kelas['wali_kelas'] : '-') . "</p>";
+        echo "<p>Periode: $periode</p>";
+
+        $stmt = $koneksi->prepare("SELECT * FROM siswa WHERE kelas_id = ?");
+        $stmt->bind_param("i", $kelas_id);
+        $stmt->execute();
+        $siswaResult = $stmt->get_result();
+
+        echo "<table border='1'>";
+        echo "<thead><tr><th>No</th><th>Nama Siswa</th><th>Jenis Kelamin</th><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Total</th></tr></thead>";
+        echo "<tbody>";
+
+        $no = 1;
+        while ($row = $siswaResult->fetch_assoc()) {
+            $absensiStmt = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal BETWEEN ? AND ?");
+            $absensiStmt->bind_param("iss", $row['id'], $dari, $sampai);
+            $absensiStmt->execute();
+            $absensiResult = $absensiStmt->get_result();
+
+            $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
+            while ($absen = $absensiResult->fetch_assoc()) {
+                if (isset($rekap[$absen['status']])) {
+                    $rekap[$absen['status']]++;
+                    $rekapKelas[$absen['status']]++;
+                }
+            }
+            $absensiStmt->close();
+
+            $jenis_kelamin = in_array($row['jenis_kelamin'], ['Laki-laki', 'Perempuan']) ? $row['jenis_kelamin'] : 'Tidak Diketahui';
+
+            echo "<tr>";
+            echo "<td>{$no}</td>";
+            echo "<td>{$row['nama']}</td>";
+            echo "<td>{$jenis_kelamin}</td>";
+            echo "<td>{$rekap['Hadir']}</td>";
+            echo "<td>{$rekap['Terlambat']}</td>";
+            echo "<td>{$rekap['Sakit']}</td>";
+            echo "<td>{$rekap['Izin']}</td>";
+            echo "<td>{$rekap['Alfa']}</td>";
+            echo "<td>" . array_sum($rekap) . "</td>";
+            echo "</tr>";
+
+            $no++;
+        }
+        $stmt->close();
+
+        // Total kelas
+        echo "<tr style='background-color: #e0e0e0; font-weight: bold;'>";
+        echo "<td colspan='3' align='center'>Total</td>";
+        echo "<td>{$rekapKelas['Hadir']}</td>";
+        echo "<td>{$rekapKelas['Terlambat']}</td>";
+        echo "<td>{$rekapKelas['Sakit']}</td>";
+        echo "<td>{$rekapKelas['Izin']}</td>";
+        echo "<td>{$rekapKelas['Alfa']}</td>";
+        echo "<td>" . array_sum($rekapKelas) . "</td>";
+        echo "</tr>";
+        echo "</tbody></table>";
     }
-    
-    // Baris total per status untuk seluruh kelas
-    echo "<tr style='background-color: #e0e0e0; font-weight: bold;'>";
-    echo "<td colspan='3' align='center'>Total</td>";
-    echo "<td>{$rekapKelas['Hadir']}</td>";
-    echo "<td>{$rekapKelas['Terlambat']}</td>";
-    echo "<td>{$rekapKelas['Sakit']}</td>";
-    echo "<td>{$rekapKelas['Izin']}</td>";
-    echo "<td>{$rekapKelas['Alfa']}</td>";
-    echo "<td>" . array_sum($rekapKelas) . "</td>";
-    echo "</tr>";
-    
-    echo "</tbody></table>";
-    
-    // Tambahkan tabel persentase untuk kelas
+
+    // Tabel persentase untuk kelas
     echo "<h4>Persentase Kehadiran Kelas</h4>";
     echo "<table border='1'>";
     echo "<tr><th>Status</th><th>Jumlah</th><th>Persentase</th></tr>";
