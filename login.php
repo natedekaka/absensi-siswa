@@ -8,11 +8,25 @@ if(isset($_SESSION['user'])) {
 include 'includes/header.php';
 ?>
 
+<style>
+    .bg-whatsapp-dark {
+        background-color: #128C7E !important;
+    }
+    .btn-whatsapp {
+        background-color: #25D366;
+        border-color: #25D366;
+    }
+    .btn-whatsapp:hover {
+        background-color: #128C7E;
+        border-color: #128C7E;
+    }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-whatsapp-dark text-white">
                     <h3 class="text-center">Login Sistem Absensi</h3>
                 </div>
                 <div class="card-body">
@@ -28,7 +42,7 @@ include 'includes/header.php';
                             <label for="password">Password</label>
                             <input type="password" class="form-control" name="password" required>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block">Login</button>
+                        <button type="submit" class="btn btn-whatsapp btn-block text-white">Login</button>
                     </form>
                 </div>
             </div>

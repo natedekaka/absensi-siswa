@@ -17,8 +17,11 @@ require_once '../includes/header.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Absensi Per Kelas</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .chart-container {
@@ -32,6 +35,7 @@ require_once '../includes/header.php';
 <div class="container-fluid mt-4">
     <h2>Rekap Absensi Per Kelas</h2>
 
+    <!-- Form Input -->
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-3">
             <label><strong>Kelas</strong></label>
@@ -137,11 +141,11 @@ require_once '../includes/header.php';
         // Ambil sort_by
         $sort_by = $_GET['sort_by'] ?? '';
         $sort_field = match($sort_by) {
-            'hadir' => 'hadir',
-            'terlambat' => 'terlambat',
-            'sakit' => 'sakit',
-            'izin' => 'izin',
-            'alfa' => 'alfa',
+            'hadir' => 'Hadir',
+            'terlambat' => 'Terlambat',
+            'sakit' => 'Sakit',
+            'izin' => 'Izin',
+            'alfa' => 'Alfa',
             default => null
         };
 
@@ -184,19 +188,11 @@ require_once '../includes/header.php';
         $stmt_siswa->close();
 
         // Urutkan data jika perlu
-        if ($sort_field) {
-            usort($data_siswa, function($a, $b) use ($sort_field) {
-                return $b[$sort_field] <=> $a[$sort_field]; // descending
+        if ($sort_field && $sort_by) {
+            usort($data_siswa, function($a, $b) use ($sort_by) {
+                return $b[$sort_by] <=> $a[$sort_by]; // descending
             });
         }
-        
-        // Tentukan indeks kolom untuk DataTables
-        $columnIndex = 0;
-        if ($sort_by == 'hadir') $columnIndex = $semua_kelas ? 4 : 3;
-        if ($sort_by == 'terlambat') $columnIndex = $semua_kelas ? 5 : 4;
-        if ($sort_by == 'sakit') $columnIndex = $semua_kelas ? 6 : 5;
-        if ($sort_by == 'izin') $columnIndex = $semua_kelas ? 7 : 6;
-        if ($sort_by == 'alfa') $columnIndex = $semua_kelas ? 8 : 7;
 
         // Tampilkan tabel
         echo "<table id='tabel-rekap' class='table table-bordered table-striped table-hover mt-3'>";
@@ -314,41 +310,24 @@ require_once '../includes/header.php';
     <?php endif; ?>
 </div>
 
+<!-- DataTables & jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
+<!-- Inisialisasi DataTables -->
 <script>
 $(document).ready(function() {
-    // Tentukan indeks kolom yang akan diurutkan berdasarkan parameter sort_by
-    const isAllKelas = <?= json_encode($semua_kelas); ?>;
-    const sort_by = '<?= $sort_by; ?>';
-    let sortColumnIndex = -1;
-    
-    // Mapping antara nilai sort_by dengan indeks kolom tabel
-    if (sort_by === 'hadir') sortColumnIndex = isAllKelas ? 4 : 3;
-    if (sort_by === 'terlambat') sortColumnIndex = isAllKelas ? 5 : 4;
-    if (sort_by === 'sakit') sortColumnIndex = isAllKelas ? 6 : 5;
-    if (sort_by === 'izin') sortColumnIndex = isAllKelas ? 7 : 6;
-    if (sort_by === 'alfa') sortColumnIndex = isAllKelas ? 8 : 7;
-
-    const datatableOptions = {
+    $('#tabel-rekap').DataTable({
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
         },
+        order: [[<?= $sort_field ? array_search($sort_by, ['hadir'=>3,'terlambat'=>4,'sakit'=>5,'izin'=>6,'alfa'=>7]) : 0 ?>, "desc"]],
         pageLength: 25,
         columnDefs: [
-            { orderable: false, targets: [0] }, // Non-sortable: Kolom No
-            { orderable: false, targets: [-1] } // Non-sortable: Kolom Total
+            { orderable: false, targets: [0, -1] } // Non-sort kolom No dan Total
         ]
-    };
-    
-    // Terapkan pengurutan awal jika sort_by dipilih
-    if (sortColumnIndex > -1) {
-        datatableOptions.order = [[sortColumnIndex, "desc"]];
-    }
-    
-    $('#tabel-rekap').DataTable(datatableOptions);
+    });
 });
 </script>
 

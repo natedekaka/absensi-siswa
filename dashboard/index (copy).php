@@ -78,45 +78,20 @@ while ($row = $result->fetch_assoc()) {
 }
 ?>
 <?php include '../includes/header.php'; ?>
-<style>
-    /* Custom CSS untuk palet warna WhatsApp */
-    :root {
-        --whatsapp-green: #25D366; /* Warna hijau utama WhatsApp */
-        --whatsapp-dark: #128C7E; /* Hijau gelap untuk header */
-        --whatsapp-light: #ECE5DD; /* Latar belakang terang ala WhatsApp */
-        --whatsapp-gray: #546E7A; /* Abu-abu untuk teks sekunder */
-        --whatsapp-white: #FFFFFF; /* Putih untuk aksen */
-    }
-    .bg-whatsapp-green { background-color: var(--whatsapp-green) !important; }
-    .text-whatsapp-green { color: var(--whatsapp-green) !important; }
-    .bg-whatsapp-dark { background-color: var(--whatsapp-dark) !important; }
-    .bg-whatsapp-light { background-color: var(--whatsapp-light) !important; }
-    .bg-whatsapp-gray { background-color: var(--whatsapp-gray) !important; }
-    .btn-outline-whatsapp {
-        color: var(--whatsapp-green);
-        border-color: var(--whatsapp-green);
-    }
-    .btn-outline-whatsapp:hover {
-        background-color: var(--whatsapp-green);
-        color: var(--whatsapp-white);
-    }
-    .card-footer-whatsapp {
-        background-color: rgba(0,0,0,.15);
-    }
-</style>
 <div class="container mt-4">
-    <h2 class="mb-4 text-whatsapp-dark">Dashboard</h2>
+    <h2 class="mb-4">Dashboard</h2>
 
+    <!-- Welcome Card -->
     <div class="card mb-4 shadow-sm rounded">
-        <div class="card-body bg-whatsapp-light">
+        <div class="card-body bg-light">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
-                    <h5 class="card-title mb-1 text-whatsapp-dark">Selamat datang, <?= htmlspecialchars($_SESSION['user']['nama']) ?>! 👋</h5>
-                    <p class="card-text mb-0 text-whatsapp-dark">
-                        Anda login sebagai <span class="badge bg-whatsapp-dark text-white"><?= ucfirst($_SESSION['user']['role']) ?></span>
+                    <h5 class="card-title mb-1">Selamat datang, <?= htmlspecialchars($_SESSION['user']['nama']) ?>!</h5>
+                    <p class="card-text mb-0">
+                        Anda login sebagai <span class="badge bg-primary"><?= ucfirst($_SESSION['user']['role']) ?></span>
                     </p>
                 </div>
-                <div class="text-end text-whatsapp-dark">
+                <div class="text-end">
                     <p class="mb-0"><?= date('l, d F Y') ?></p>
                     <small>Sistem Absensi Siswa</small>
                 </div>
@@ -124,9 +99,10 @@ while ($row = $result->fetch_assoc()) {
         </div>
     </div>
 
+    <!-- Statistik -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card text-white bg-whatsapp-green shadow-sm h-100 rounded-3">
+            <div class="card text-white bg-primary shadow-sm h-100 rounded-3">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Siswa</h6>
@@ -134,13 +110,13 @@ while ($row = $result->fetch_assoc()) {
                     </div>
                     <i class="fas fa-users fa-2x opacity-75"></i>
                 </div>
-                <div class="card-footer card-footer-whatsapp border-0">
+                <div class="card-footer bg-transparent border-0">
                     <a href="../siswa/" class="text-white small text-decoration-none">Lihat semua siswa</a>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-whatsapp-dark shadow-sm h-100 rounded-3">
+            <div class="card text-white bg-success shadow-sm h-100 rounded-3">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Kelas</h6>
@@ -148,13 +124,13 @@ while ($row = $result->fetch_assoc()) {
                     </div>
                     <i class="fas fa-chalkboard fa-2x opacity-75"></i>
                 </div>
-                <div class="card-footer card-footer-whatsapp border-0">
+                <div class="card-footer bg-transparent border-0">
                     <a href="../kelas/" class="text-white small text-decoration-none">Lihat semua kelas</a>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-whatsapp-green shadow-sm h-100 rounded-3">
+            <div class="card text-white bg-info shadow-sm h-100 rounded-3">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Absen Hari Ini</h6>
@@ -162,13 +138,13 @@ while ($row = $result->fetch_assoc()) {
                     </div>
                     <i class="fas fa-clipboard-check fa-2x opacity-75"></i>
                 </div>
-                <div class="card-footer card-footer-whatsapp border-0">
+                <div class="card-footer bg-transparent border-0">
                     <a href="../absen/" class="text-white small text-decoration-none">Input absen hari ini</a>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-white bg-whatsapp-dark shadow-sm h-100 rounded-3">
+            <div class="card text-white bg-warning shadow-sm h-100 rounded-3">
                 <div class="card-body d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title">Absen Minggu Ini</h6>
@@ -176,17 +152,18 @@ while ($row = $result->fetch_assoc()) {
                     </div>
                     <i class="fas fa-calendar-week fa-2x opacity-75"></i>
                 </div>
-                <div class="card-footer card-footer-whatsapp border-0">
+                <div class="card-footer bg-transparent border-0">
                     <a href="../rekap/kelas.php" class="text-white small text-decoration-none">Lihat rekap</a>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Grafik Absensi Minggu Ini -->
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card shadow-sm rounded-3">
-                <div class="card-header bg-whatsapp-dark text-white">
+                <div class="card-header">
                     <i class="fas fa-chart-line me-2"></i>Statistik Absensi Minggu Ini
                 </div>
                 <div class="card-body">
@@ -195,48 +172,50 @@ while ($row = $result->fetch_assoc()) {
             </div>
         </div>
 
+        <!-- Quick Actions -->
         <div class="col-md-4">
             <div class="card mb-4 shadow-sm rounded-3">
-                <div class="card-header bg-whatsapp-dark text-white">
+                <div class="card-header">
                     <i class="fas fa-bolt me-2"></i>Quick Actions
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="../siswa/tambah.php" class="btn btn-outline-whatsapp text-start">
+                        <a href="../siswa/tambah.php" class="btn btn-outline-primary text-start">
                             <i class="fas fa-user-plus me-2"></i> Tambah Siswa
                         </a>
-                        <a href="../kelas/tambah.php" class="btn btn-outline-whatsapp text-start">
+                        <a href="../kelas/tambah.php" class="btn btn-outline-success text-start">
                             <i class="fas fa-plus-circle me-2"></i> Tambah Kelas
                         </a>
-                        <a href="../absen/" class="btn btn-outline-whatsapp text-start">
+                        <a href="../absen/" class="btn btn-outline-info text-start">
                             <i class="fas fa-clipboard-list me-2"></i> Input Absen
                         </a>
-                        <a href="../siswa/import.php" class="btn btn-outline-whatsapp text-start">
+                        <a href="../siswa/import.php" class="btn btn-outline-warning text-start">
                             <i class="fas fa-file-import me-2"></i> Import Siswa
                         </a>
-                        <a href="../rekap/kelas.php" class="btn btn-outline-whatsapp text-start">
+                        <a href="../rekap/kelas.php" class="btn btn-outline-secondary text-start">
                             <i class="fas fa-eye me-2"></i> Lihat Rekap
                         </a>
-                        <a href="../absen/absensi_persiswa.php" class="btn btn-outline-whatsapp text-start">
+                        <a href="../absen/absensi_persiswa.php" class="btn btn-outline-primary text-start">
                             <i class="fas fa-user-check me-2"></i> Absensi Per Siswa
                         </a>
                     </div>
                 </div>
             </div>
 
+            <!-- System Status -->
             <div class="card shadow-sm rounded-3">
-                <div class="card-header bg-whatsapp-dark text-white">
+                <div class="card-header">
                     <i class="fas fa-server me-2"></i>Sistem Status
                 </div>
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Database
-                            <span class="badge bg-whatsapp-green text-white">Online</span>
+                            <span class="badge bg-success">Online</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             Versi Aplikasi
-                            <span class="badge bg-whatsapp-green text-white">v1.0.0</span>
+                            <span class="badge bg-info">v1.0.0</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center">
                             IP Address
@@ -248,12 +227,13 @@ while ($row = $result->fetch_assoc()) {
         </div>
     </div>
 
+    <!-- Daftar Absensi Terbaru -->
     <div class="row">
         <div class="col-md-12">
             <div class="card shadow-sm rounded-3">
-                <div class="card-header d-flex justify-content-between align-items-center bg-whatsapp-dark text-white">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-clipboard-list me-2"></i>Absensi Terbaru</span>
-                    <a href="../absen/" class="btn btn-sm bg-whatsapp-green text-white">Lihat Semua</a>
+                    <a href="../absen/" class="btn btn-sm btn-primary">Lihat Semua</a>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -275,11 +255,11 @@ while ($row = $result->fetch_assoc()) {
                                             <td><?= htmlspecialchars($row['nama_kelas']) ?></td>
                                             <td>
                                                 <span class="badge rounded-pill
-                                                    <?= $row['status'] === 'Hadir' ? 'bg-whatsapp-green text-white' : '' ?>
-                                                    <?= $row['status'] === 'Sakit' ? 'bg-whatsapp-light text-dark' : '' ?>
-                                                    <?= $row['status'] === 'Izin' ? 'bg-info text-white' : '' ?>
-                                                    <?= $row['status'] === 'Alfa' ? 'bg-danger text-white' : '' ?>
-                                                    <?= $row['status'] === 'Terlambat' ? 'bg-whatsapp-gray text-white' : '' ?>">
+                                                    <?= $row['status'] === 'Hadir' ? 'bg-success' : '' ?>
+                                                    <?= $row['status'] === 'Sakit' ? 'bg-warning text-dark' : '' ?>
+                                                    <?= $row['status'] === 'Izin' ? 'bg-info' : '' ?>
+                                                    <?= $row['status'] === 'Alfa' ? 'bg-danger' : '' ?>
+                                                    <?= $row['status'] === 'Terlambat' ? 'bg-secondary' : '' ?>">
                                                     <?= $row['status'] ?>
                                                 </span>
                                             </td>
@@ -299,7 +279,8 @@ while ($row = $result->fetch_assoc()) {
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js "></script>
 <script>
     const ctx = document.getElementById('absensiChart').getContext('2d');
     const labels = <?= json_encode(array_column($absensi_harian, 'tanggal')) ?>;
@@ -312,8 +293,8 @@ while ($row = $result->fetch_assoc()) {
             datasets: [{
                 label: 'Jumlah Absensi',
                 data: data,
-                borderColor: 'var(--whatsapp-green)', // Mengubah warna garis grafik menjadi hijau WhatsApp
-                backgroundColor: 'rgba(37, 211, 102, 0.2)', // Latar belakang grafik hijau transparan
+                borderColor: '#198754',
+                backgroundColor: 'rgba(25, 135, 84, 0.1)',
                 tension: 0.4,
                 pointRadius: 4,
                 pointHoverRadius: 6

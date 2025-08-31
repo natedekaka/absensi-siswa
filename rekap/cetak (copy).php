@@ -53,96 +53,29 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Rekap Absensi</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* CSS untuk tampilan cetak */
         @media print {
             .no-print { display: none; }
-            body { 
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important;
-                font-family: 'Times New Roman', Times, serif;
-                margin: 0;
-            }
-            @page { 
-                size: A4;
-                margin: 2cm 2cm 2cm 2cm;
-            }
-            .header, .footer {
-                position: fixed;
-                left: 0;
-                width: 100%;
-                text-align: center;
-            }
-            .header {
-                top: 0;
-            }
-            .footer {
-                bottom: 0;
-            }
-            .content {
-                margin-top: 2cm;
-                margin-bottom: 2cm;
-            }
-            .table th, .table td { 
-                padding: 0.5rem !important; 
-                font-size: 11px; 
-            }
-            .table { 
-                font-size: 11px;
-                border: 1px solid #000;
-            }
-            .table-bordered th, .table-bordered td {
-                border: 1px solid #000 !important;
-            }
-            .table thead th {
-                background-color: #d1d1d1 !important;
-                color: #000 !important;
-            }
-            .info-section {
-                border: 1px solid #000;
-                padding: 10px;
-                margin-bottom: 20px;
-                background-color: #f7f7f7;
-            }
-            .summary-list {
-                list-style-type: none;
-                padding-left: 0;
-            }
-            .summary-list li {
-                margin-bottom: 5px;
-            }
-        }
-
-        /* CSS untuk tampilan layar */
-        body {
-            background-color: #f4f7f9;
-        }
-        .container-fluid {
-            max-width: 21cm; /* Ukuran A4 */
-            background-color: #fff;
-            padding: 2cm;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            min-height: 29.7cm; /* Ukuran A4 */
+            body { -webkit-print-color-adjust: exact; }
+            @page { margin: 1cm; }
+            .table th, .table td { padding: 0.5rem !important; font-size: 12px; }
+            .table { font-size: 12px; }
+            .text-center { text-align: center; }
         }
         .header {
             text-align: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 15px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
         }
-        .header h3, .header h4 {
-            font-weight: 600;
-            color: #333;
-        }
-        .header p {
-            font-size: 14px;
-            color: #555;
+        .info {
+            margin-bottom: 15px;
         }
         .table th {
-            background-color: #343a40 !important;
-            color: white !important;
+            background-color: #f0f0f0 !important;
+            color: #000 !important;
             text-align: center;
         }
         .table tbody td {
@@ -151,11 +84,6 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
         }
         .fw-bold {
             font-weight: bold;
-        }
-        .summary-box {
-            background-color: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
         }
     </style>
     <script>
@@ -166,15 +94,17 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
 </head>
 <body onload="cetak()">
     <div class="container-fluid">
-        <div class="text-end mb-4 no-print">
-            <button onclick="cetak()" class="btn btn-primary shadow-sm me-2"><i class="fas fa-print me-1"></i> Cetak</button>
-            <a href="javascript:window.history.back()" class="btn btn-secondary shadow-sm"><i class="fas fa-arrow-left me-1"></i> Kembali</a>
+        <!-- Tombol cetak hanya muncul di layar -->
+        <div class="text-end mb-3 no-print">
+            <button onclick="cetak()" class="btn btn-primary">🖨️ Cetak</button>
+            <a href="javascript:window.history.back()" class="btn btn-secondary">‹ Kembali</a>
         </div>
 
+        <!-- Kop Laporan -->
         <div class="header">
-            <h3 class="mb-0"><strong>LAPORAN ABSENSI SISWA</strong></h3>
-            <h4 class="mt-2 mb-1"><?= $judul_laporan ?></h4>
-            <p class="m-0">Periode: <?= date('d F Y', strtotime($tgl_awal)) ?> s.d. <?= date('d F Y', strtotime($tgl_akhir)) ?></p>
+            <h3><strong>ABSENSI SISWA</strong></h3>
+            <h4><?= $judul_laporan ?></h4>
+            <p><strong>Periode:</strong> <?= date('d M Y', strtotime($tgl_awal)) ?> s.d. <?= date('d M Y', strtotime($tgl_akhir)) ?></p>
         </div>
 
         <?php
@@ -251,24 +181,22 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
         }
         ?>
 
-        <table class="table table-bordered table-striped mt-4">
+        <!-- Tabel Rekap -->
+        <table class="table table-bordered table-striped">
             <thead>
                 <tr>
-                    <th rowspan="2" class="align-middle">No</th>
+                    <th>No</th>
                     <?php if ($semua_kelas): ?>
-                        <th rowspan="2" class="align-middle">Kelas</th>
+                        <th>Kelas</th>
                     <?php endif; ?>
-                    <th rowspan="2" class="align-middle">Nama Siswa</th>
-                    <th rowspan="2" class="align-middle">J/K</th>
-                    <th colspan="5" class="text-center">Status Kehadiran</th>
-                    <th rowspan="2" class="align-middle">Total</th>
-                </tr>
-                <tr>
+                    <th>Nama Siswa</th>
+                    <th>Jenis Kelamin</th>
                     <th>Hadir</th>
                     <th>Terlambat</th>
                     <th>Sakit</th>
                     <th>Izin</th>
                     <th>Alfa</th>
+                    <th>Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -279,23 +207,24 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
                         <?php if ($semua_kelas): ?>
                             <td><?= $d['kelas'] ?></td>
                         <?php endif; ?>
-                        <td class="text-start"><?= $d['nama'] ?></td>
+                        <td><?= $d['nama'] ?></td>
                         <td><?= $d['jk'] ?></td>
                         <td><?= $d['hadir'] ?></td>
                         <td><?= $d['terlambat'] ?></td>
                         <td><?= $d['sakit'] ?></td>
                         <td><?= $d['izin'] ?></td>
                         <td><?= $d['alfa'] ?></td>
-                        <td class="fw-bold"><?= $d['total'] ?></td>
+                        <td><strong><?= $d['total'] ?></strong></td>
                     </tr>
                 <?php endforeach; ?>
 
-                <tr class="fw-bold table-dark">
+                <!-- Baris Total -->
+                <tr class="fw-bold">
                     <td></td>
                     <?php if ($semua_kelas): ?>
                         <td></td>
                     <?php endif; ?>
-                    <td class="text-end">Total</td>
+                    <td>Total</td>
                     <td></td>
                     <td><?= $rekapKelas['Hadir'] ?></td>
                     <td><?= $rekapKelas['Terlambat'] ?></td>
@@ -307,25 +236,26 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
             </tbody>
         </table>
 
-        <div class="row mt-5">
-            <div class="col-12 summary-box">
-                <h5 class="mb-3">Ringkasan Kehadiran Keseluruhan:</h5>
-                <ul class="summary-list row">
-                    <li class="col-6 col-md-4"><strong>Hadir:</strong> <?= $rekapKelas['Hadir'] ?></li>
-                    <li class="col-6 col-md-4"><strong>Terlambat:</strong> <?= $rekapKelas['Terlambat'] ?></li>
-                    <li class="col-6 col-md-4"><strong>Sakit:</strong> <?= $rekapKelas['Sakit'] ?></li>
-                    <li class="col-6 col-md-4"><strong>Izin:</strong> <?= $rekapKelas['Izin'] ?></li>
-                    <li class="col-6 col-md-4"><strong>Alfa:</strong> <?= $rekapKelas['Alfa'] ?></li>
+        <!-- Ringkasan Statistik -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h5>Ringkasan Kehadiran:</h5>
+                <ul>
+                    <li><strong>Hadir:</strong> <?= $rekapKelas['Hadir'] ?></li>
+                    <li><strong>Terlambat:</strong> <?= $rekapKelas['Terlambat'] ?></li>
+                    <li><strong>Sakit:</strong> <?= $rekapKelas['Sakit'] ?></li>
+                    <li><strong>Izin:</strong> <?= $rekapKelas['Izin'] ?></li>
+                    <li><strong>Alfa:</strong> <?= $rekapKelas['Alfa'] ?></li>
                 </ul>
             </div>
         </div>
 
         <div class="text-center text-muted mt-5">
-            <hr>
-            <p class="m-0">Dicetak pada: <?= date('d M Y H:i') ?> | Oleh: <?= htmlspecialchars($_SESSION['user']['nama'] ?? 'Admin') ?></p>
+            <p>Dicetak pada: <?= date('d M Y H:i') ?> | Oleh: <?= htmlspecialchars($_SESSION['user']['nama'] ?? 'Admin') ?></p>
         </div>
     </div>
 
+    <!-- Optional: Bootstrap JS jika ingin interaksi (tapi tidak perlu untuk cetak) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

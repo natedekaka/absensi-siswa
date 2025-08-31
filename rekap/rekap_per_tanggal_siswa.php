@@ -9,6 +9,10 @@ if (!isset($_SESSION['user'])) {
 
 require_once '../config.php';
 require_once '../includes/header.php';
+
+// Ambil bulan dan tahun saat ini sebagai default
+$current_month = date('m');
+$current_year = date('Y');
 ?>
 
 <!DOCTYPE html>
@@ -16,7 +20,7 @@ require_once '../includes/header.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekap Absensi Per Kelas</title>
+    <title>Rekap Absensi Siswa Per Tanggal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
@@ -26,11 +30,26 @@ require_once '../includes/header.php';
             height: 400px;
             margin-top: 20px;
         }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .table th, .table td {
+            white-space: nowrap;
+            text-align: center;
+        }
+        .table th.rotate {
+            height: 140px;
+            white-space: nowrap;
+        }
+        .table th.rotate > div {
+            transform: rotate(-45deg);
+            width: 30px;
+        }
     </style>
 </head>
 <body>
 <div class="container-fluid mt-4">
-    <h2>Rekap Absensi Per Kelas</h2>
+    <h2>Rekap Absensi Siswa Per Tanggal</h2>
 
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-3">
@@ -53,21 +72,53 @@ require_once '../includes/header.php';
         </div>
 
         <div class="col-md-3">
-            <label><strong>Tanggal Awal</strong></label>
-            <input type="date" name="tgl_awal" class="form-control" required
-                   value="<?= $_GET['tgl_awal'] ?? date('Y-m-01') ?>">
+            <label><strong>Periode</strong></label>
+            <select name="periode" class="form-select" required>
+                <option value="bulan" <?= (($_GET['periode'] ?? 'bulan') == 'bulan') ? 'selected' : '' ?>>Bulan</option>
+                <option value="semester" <?= (($_GET['periode'] ?? '') == 'semester') ? 'selected' : '' ?>>Semester</option>
+            </select>
         </div>
 
-        <div class="col-md-3">
-            <label><strong>Tanggal Akhir</strong></label>
-            <input type="date" name="tgl_akhir" class="form-control" required
-                   value="<?= $_GET['tgl_akhir'] ?? date('Y-m-t') ?>">
+        <div class="col-md-3" id="bulan-tahun" <?= (($_GET['periode'] ?? 'bulan') == 'semester') ? 'style="display:none;"' : '' ?>>
+            <label><strong>Bulan dan Tahun</strong></label>
+            <div class="row g-2">
+                <div class="col">
+                    <select name="bulan" class="form-select">
+                        <?php for ($m = 1; $m <= 12; $m++): ?>
+                            <option value="<?= str_pad($m, 2, '0', STR_PAD_LEFT) ?>" <?= (($_GET['bulan'] ?? $current_month) == str_pad($m, 2, '0', STR_PAD_LEFT)) ? 'selected' : '' ?>>
+                                <?= date('F', mktime(0, 0, 0, $m, 1)) ?>
+                            </option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+                <div class="col">
+                    <select name="tahun" class="form-select">
+                        <?php for ($y = $current_year - 5; $y <= $current_year + 1; $y++): ?>
+                            <option value="<?= $y ?>" <?= (($_GET['tahun'] ?? $current_year) == $y) ? 'selected' : '' ?>>
+                                <?= $y ?>
+                            </option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3" id="periode-tanggal" <?= (($_GET['periode'] ?? 'bulan') == 'bulan') ? 'style="display:none;"' : '' ?>>
+            <label><strong>Rentang Tanggal</strong></label>
+            <div class="row g-2">
+                <div class="col">
+                    <input type="date" name="tgl_awal" class="form-control" value="<?= $_GET['tgl_awal'] ?? date('Y-m-01') ?>">
+                </div>
+                <div class="col">
+                    <input type="date" name="tgl_akhir" class="form-control" value="<?= $_GET['tgl_akhir'] ?? date('Y-m-t') ?>">
+                </div>
+            </div>
         </div>
 
         <div class="col-md-3">
             <label><strong>Urutkan Berdasarkan</strong></label>
             <select name="sort_by" class="form-select">
-                <option value="">Default (No)</option>
+                <option value="">Default (Nama)</option>
                 <option value="hadir" <?= ($_GET['sort_by'] ?? '') == 'hadir' ? 'selected' : '' ?>>Hadir</option>
                 <option value="terlambat" <?= ($_GET['sort_by'] ?? '') == 'terlambat' ? 'selected' : '' ?>>Terlambat</option>
                 <option value="sakit" <?= ($_GET['sort_by'] ?? '') == 'sakit' ? 'selected' : '' ?>>Sakit</option>
@@ -82,28 +133,35 @@ require_once '../includes/header.php';
         </div>
     </form>
 
-    <?php if (isset($_GET['kelas_id'])): ?>
+    <?php if (isset($_GET['kelas_id']) && (isset($_GET['bulan']) || isset($_GET['tgl_awal']))): ?>
         <?php
         $kelas_id = $_GET['kelas_id'];
-        $tgl_awal = filter_input(INPUT_GET, 'tgl_awal', FILTER_SANITIZE_STRING);
-        $tgl_akhir = filter_input(INPUT_GET, 'tgl_akhir', FILTER_SANITIZE_STRING);
+        $periode = $_GET['periode'] ?? 'bulan';
+        $semua_kelas = ($kelas_id === 'all');
+        $nama_kelas = '';
+
+        // Tentukan rentang tanggal
+        if ($periode == 'bulan') {
+            $bulan = filter_input(INPUT_GET, 'bulan', FILTER_SANITIZE_STRING);
+            $tahun = filter_input(INPUT_GET, 'tahun', FILTER_SANITIZE_STRING);
+            $tgl_awal = "$tahun-$bulan-01";
+            $tgl_akhir = date('Y-m-t', strtotime($tgl_awal));
+        } else {
+            $tgl_awal = filter_input(INPUT_GET, 'tgl_awal', FILTER_SANITIZE_STRING);
+            $tgl_akhir = filter_input(INPUT_GET, 'tgl_akhir', FILTER_SANITIZE_STRING);
+        }
 
         // Validasi tanggal
         if (!strtotime($tgl_awal) || !strtotime($tgl_akhir)) {
             echo "<div class='alert alert-danger'>Tanggal tidak valid.</div>";
             exit;
         }
-
         if (strtotime($tgl_awal) > strtotime($tgl_akhir)) {
             echo "<div class='alert alert-danger'>Tanggal awal tidak boleh lebih besar dari tanggal akhir.</div>";
             exit;
         }
 
-        // Inisialisasi rekap
-        $rekapKelas = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-        $semua_kelas = ($kelas_id === 'all');
-        $nama_kelas = '';
-
+        // Ambil nama kelas
         if (!$semua_kelas) {
             $stmt_kelas = $koneksi->prepare("SELECT nama_kelas FROM kelas WHERE id = ?");
             $stmt_kelas->bind_param("i", $kelas_id);
@@ -113,9 +171,14 @@ require_once '../includes/header.php';
             $stmt_kelas->close();
         }
 
-        // Tampilkan judul
-        echo "<h4>" . ($semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspecialchars($nama_kelas)) . "</h4>";
-        echo "<p><strong>Periode:</strong> " . date('d M Y', strtotime($tgl_awal)) . " s.d. " . date('d M Y', strtotime($tgl_akhir)) . "</p>";
+        // Ambil daftar tanggal dalam periode
+        $dates = [];
+        $current_date = strtotime($tgl_awal);
+        $end_date = strtotime($tgl_akhir);
+        while ($current_date <= $end_date) {
+            $dates[] = date('Y-m-d', $current_date);
+            $current_date = strtotime('+1 day', $current_date);
+        }
 
         // Ambil data siswa
         if ($semua_kelas) {
@@ -126,13 +189,56 @@ require_once '../includes/header.php';
                 ORDER BY k.nama_kelas, s.nama
             ");
         } else {
-            $stmt_siswa = $koneksi->prepare("SELECT id, nama, jenis_kelamin FROM siswa WHERE kelas_id = ?");
+            $stmt_siswa = $koneksi->prepare("SELECT id, nama, jenis_kelamin FROM siswa WHERE kelas_id = ? ORDER BY nama");
             $stmt_siswa->bind_param("i", $kelas_id);
         }
-
         $stmt_siswa->execute();
         $result_siswa = $stmt_siswa->get_result();
+
         $data_siswa = [];
+        $rekap_total = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
+
+        // Kumpulkan data absensi per siswa
+        while ($row = $result_siswa->fetch_assoc()) {
+            $siswa_id = $row['id'];
+            $absensi = array_fill_keys($dates, '-'); // Default: tanda '-' jika tidak ada data
+            $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
+
+            $stmt_absen = $koneksi->prepare("
+                SELECT tanggal, status 
+                FROM absensi 
+                WHERE siswa_id = ? AND tanggal BETWEEN ? AND ?
+            ");
+            $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
+            $stmt_absen->execute();
+            $result_absen = $stmt_absen->get_result();
+
+            while ($absen = $result_absen->fetch_assoc()) {
+                $tanggal = $absen['tanggal'];
+                $status = $absen['status'];
+                if (in_array($tanggal, $dates)) {
+                    $absensi[$tanggal] = substr($status, 0, 1); // Ambil huruf pertama: H, T, S, I, A
+                    $rekap[$status]++;
+                    $rekap_total[$status]++;
+                }
+            }
+            $stmt_absen->close();
+
+            $data_siswa[] = [
+                'id' => $siswa_id,
+                'nama' => htmlspecialchars($row['nama']),
+                'kelas' => $semua_kelas ? htmlspecialchars($row['nama_kelas']) : '',
+                'jk' => htmlspecialchars($row['jenis_kelamin']),
+                'absensi' => $absensi,
+                'hadir' => $rekap['Hadir'],
+                'terlambat' => $rekap['Terlambat'],
+                'sakit' => $rekap['Sakit'],
+                'izin' => $rekap['Izin'],
+                'alfa' => $rekap['Alfa'],
+                'total' => array_sum($rekap)
+            ];
+        }
+        $stmt_siswa->close();
 
         // Ambil sort_by
         $sort_by = $_GET['sort_by'] ?? '';
@@ -142,87 +248,56 @@ require_once '../includes/header.php';
             'sakit' => 'sakit',
             'izin' => 'izin',
             'alfa' => 'alfa',
-            default => null
+            default => 'nama'
         };
 
-        // Kumpulkan data absensi
-        while ($row = $result_siswa->fetch_assoc()) {
-            $siswa_id = $row['id'];
-            $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-
-            $stmt_absen = $koneksi->prepare("
-                SELECT status FROM absensi 
-                WHERE siswa_id = ? 
-                  AND tanggal BETWEEN ? AND ?
-            ");
-            $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
-            $stmt_absen->execute();
-            $result_absen = $stmt_absen->get_result();
-
-            while ($absen = $result_absen->fetch_assoc()) {
-                $status = $absen['status'];
-                if (isset($rekap[$status])) {
-                    $rekap[$status]++;
-                    $rekapKelas[$status]++;
-                }
+        // Urutkan data
+        usort($data_siswa, function($a, $b) use ($sort_field) {
+            if ($sort_field == 'nama') {
+                return strcmp($a['nama'], $b['nama']);
             }
+            return $b[$sort_field] <=> $a[$sort_field]; // descending untuk lainnya
+        });
 
-            $data_siswa[] = [
-                'nama' => htmlspecialchars($row['nama']),
-                'kelas' => $semua_kelas ? htmlspecialchars($row['nama_kelas']) : '',
-                'jk' => htmlspecialchars($row['jenis_kelamin']),
-                'hadir' => $rekap['Hadir'],
-                'terlambat' => $rekap['Terlambat'],
-                'sakit' => $rekap['Sakit'],
-                'izin' => $rekap['Izin'],
-                'alfa' => $rekap['Alfa'],
-                'total' => array_sum($rekap)
-            ];
-
-            $stmt_absen->close();
-        }
-        $stmt_siswa->close();
-
-        // Urutkan data jika perlu
-        if ($sort_field) {
-            usort($data_siswa, function($a, $b) use ($sort_field) {
-                return $b[$sort_field] <=> $a[$sort_field]; // descending
-            });
-        }
-        
-        // Tentukan indeks kolom untuk DataTables
-        $columnIndex = 0;
-        if ($sort_by == 'hadir') $columnIndex = $semua_kelas ? 4 : 3;
-        if ($sort_by == 'terlambat') $columnIndex = $semua_kelas ? 5 : 4;
-        if ($sort_by == 'sakit') $columnIndex = $semua_kelas ? 6 : 5;
-        if ($sort_by == 'izin') $columnIndex = $semua_kelas ? 7 : 6;
-        if ($sort_by == 'alfa') $columnIndex = $semua_kelas ? 8 : 7;
+        // Tampilkan judul
+        echo "<h4>" . ($semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspecialchars($nama_kelas)) . "</h4>";
+        echo "<p><strong>Periode:</strong> " . date('d M Y', strtotime($tgl_awal)) . " s.d. " . date('d M Y', strtotime($tgl_akhir)) . "</p>";
 
         // Tampilkan tabel
+        echo "<div class='table-responsive'>";
         echo "<table id='tabel-rekap' class='table table-bordered table-striped table-hover mt-3'>";
-        echo "<thead class='table-primary'>
-                <tr>
-                    <th>No</th>";
-        if ($semua_kelas) echo "<th>Kelas</th>";
-        echo "<th>Nama Siswa</th>
-                    <th>Jenis Kelamin</th>
-                    <th>Hadir</th>
-                    <th>Terlambat</th>
-                    <th>Sakit</th>
-                    <th>Izin</th>
-                    <th>Alfa</th>
-                    <th>Total</th>
-                </tr>
-              </thead>";
+        echo "<thead class='table-primary'>";
+        echo "<tr>";
+        echo "<th rowspan='2'>No</th>";
+        if ($semua_kelas) echo "<th rowspan='2'>Kelas</th>";
+        echo "<th rowspan='2'>Nama Siswa</th>";
+        echo "<th rowspan='2'>Jenis Kelamin</th>";
+        echo "<th colspan='" . count($dates) . "'>Tanggal</th>";
+        echo "<th rowspan='2'>Hadir</th>";
+        echo "<th rowspan='2'>Terlambat</th>";
+        echo "<th rowspan='2'>Sakit</th>";
+        echo "<th rowspan='2'>Izin</th>";
+        echo "<th rowspan='2'>Alfa</th>";
+        echo "<th rowspan='2'>Total</th>";
+        echo "</tr>";
+        echo "<tr>";
+        foreach ($dates as $date) {
+            echo "<th class='rotate'><div>" . date('d M', strtotime($date)) . "</div></th>";
+        }
+        echo "</tr>";
+        echo "</thead>";
         echo "<tbody>";
 
         $no = 1;
         foreach ($data_siswa as $d) {
             echo "<tr>";
-            echo "<td>{$no}</td>";
+            echo "<td>$no</td>";
             if ($semua_kelas) echo "<td>{$d['kelas']}</td>";
             echo "<td>{$d['nama']}</td>";
             echo "<td>{$d['jk']}</td>";
+            foreach ($dates as $date) {
+                echo "<td>{$d['absensi'][$date]}</td>";
+            }
             echo "<td>{$d['hadir']}</td>";
             echo "<td>{$d['terlambat']}</td>";
             echo "<td>{$d['sakit']}</td>";
@@ -238,15 +313,23 @@ require_once '../includes/header.php';
         echo "<td></td>";
         if ($semua_kelas) echo "<td></td>";
         echo "<td>Total</td><td></td>";
-        echo "<td>{$rekapKelas['Hadir']}</td>";
-        echo "<td>{$rekapKelas['Terlambat']}</td>";
-        echo "<td>{$rekapKelas['Sakit']}</td>";
-        echo "<td>{$rekapKelas['Izin']}</td>";
-        echo "<td>{$rekapKelas['Alfa']}</td>";
-        echo "<td><strong>" . array_sum($rekapKelas) . "</strong></td>";
+        foreach ($dates as $date) {
+            $total_per_tanggal = 0;
+            foreach ($data_siswa as $d) {
+                if ($d['absensi'][$date] != '-') $total_per_tanggal++;
+            }
+            echo "<td>$total_per_tanggal</td>";
+        }
+        echo "<td>{$rekap_total['Hadir']}</td>";
+        echo "<td>{$rekap_total['Terlambat']}</td>";
+        echo "<td>{$rekap_total['Sakit']}</td>";
+        echo "<td>{$rekap_total['Izin']}</td>";
+        echo "<td>{$rekap_total['Alfa']}</td>";
+        echo "<td><strong>" . array_sum($rekap_total) . "</strong></td>";
         echo "</tr>";
 
         echo "</tbody></table>";
+        echo "</div>";
 
         // Grafik Pie
         echo '<div class="chart-container">';
@@ -264,11 +347,11 @@ require_once '../includes/header.php';
                     labels: ["Hadir", "Terlambat", "Sakit", "Izin", "Alfa"],
                     datasets: [{
                         data: [' . 
-                            $rekapKelas['Hadir'] . ',' . 
-                            $rekapKelas['Terlambat'] . ',' . 
-                            $rekapKelas['Sakit'] . ',' . 
-                            $rekapKelas['Izin'] . ',' . 
-                            $rekapKelas['Alfa'] . 
+                            $rekap_total['Hadir'] . ',' . 
+                            $rekap_total['Terlambat'] . ',' . 
+                            $rekap_total['Sakit'] . ',' . 
+                            $rekap_total['Izin'] . ',' . 
+                            $rekap_total['Alfa'] . 
                         '],
                         backgroundColor: ["#4CAF50", "#FFC107", "#2196F3", "#9C27B0", "#F44336"],
                         borderWidth: 1
@@ -303,11 +386,14 @@ require_once '../includes/header.php';
         // Tombol Cetak
         $params = http_build_query([
             'kelas_id' => $kelas_id,
-            'tgl_awal' => $tgl_awal,
-            'tgl_akhir' => $tgl_akhir,
+            'periode' => $periode,
+            'bulan' => $periode == 'bulan' ? $bulan : '',
+            'tahun' => $periode == 'bulan' ? $tahun : '',
+            'tgl_awal' => $periode == 'semester' ? $tgl_awal : '',
+            'tgl_akhir' => $periode == 'semester' ? $tgl_akhir : '',
             'sort_by' => $sort_by
         ]);
-        echo "<a href='cetak.php?$params' class='btn btn-success mt-3' target='_blank'>
+        echo "<a href='cetak_per_tanggal_siswa.php?$params' class='btn btn-success mt-3' target='_blank'>
                 <i class='bi bi-printer'></i> Cetak Rekap
               </a>";
         ?>
@@ -317,37 +403,47 @@ require_once '../includes/header.php';
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
 <script>
 $(document).ready(function() {
-    // Tentukan indeks kolom yang akan diurutkan berdasarkan parameter sort_by
-    const isAllKelas = <?= json_encode($semua_kelas); ?>;
+    // Toggle input berdasarkan periode
+    $('select[name="periode"]').change(function() {
+        var periode = $(this).val();
+        if (periode == 'bulan') {
+            $('#bulan-tahun').show();
+            $('#periode-tanggal').hide();
+            $('#periode-tanggal input').val('');
+        } else {
+            $('#bulan-tahun').hide();
+            $('#periode-tanggal').show();
+            $('#bulan-tahun select').val('');
+        }
+    });
+
+    // DataTables
     const sort_by = '<?= $sort_by; ?>';
     let sortColumnIndex = -1;
-    
-    // Mapping antara nilai sort_by dengan indeks kolom tabel
-    if (sort_by === 'hadir') sortColumnIndex = isAllKelas ? 4 : 3;
-    if (sort_by === 'terlambat') sortColumnIndex = isAllKelas ? 5 : 4;
-    if (sort_by === 'sakit') sortColumnIndex = isAllKelas ? 6 : 5;
-    if (sort_by === 'izin') sortColumnIndex = isAllKelas ? 7 : 6;
-    if (sort_by === 'alfa') sortColumnIndex = isAllKelas ? 8 : 7;
+    if (sort_by === 'hadir') sortColumnIndex = <?= $semua_kelas ? count($dates) + 4 : count($dates) + 3 ?>;
+    if (sort_by === 'terlambat') sortColumnIndex = <?= $semua_kelas ? count($dates) + 5 : count($dates) + 4 ?>;
+    if (sort_by === 'sakit') sortColumnIndex = <?= $semua_kelas ? count($dates) + 6 : count($dates) + 5 ?>;
+    if (sort_by === 'izin') sortColumnIndex = <?= $semua_kelas ? count($dates) + 7 : count($dates) + 6 ?>;
+    if (sort_by === 'alfa') sortColumnIndex = <?= $semua_kelas ? count($dates) + 8 : count($dates) + 7 ?>;
 
     const datatableOptions = {
         language: {
             url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
         },
         pageLength: 25,
+        scrollX: true,
         columnDefs: [
             { orderable: false, targets: [0] }, // Non-sortable: Kolom No
             { orderable: false, targets: [-1] } // Non-sortable: Kolom Total
         ]
     };
-    
-    // Terapkan pengurutan awal jika sort_by dipilih
+
     if (sortColumnIndex > -1) {
         datatableOptions.order = [[sortColumnIndex, "desc"]];
     }
-    
+
     $('#tabel-rekap').DataTable(datatableOptions);
 });
 </script>

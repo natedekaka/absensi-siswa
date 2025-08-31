@@ -7,25 +7,37 @@ if (!isset($_SESSION['user'])) {
 }
 
 require_once '../includes/header.php';
-require_once '../config.php'; 
+require_once '../config.php';
 
 // Tampilkan pesan error jika ada
 if (isset($_SESSION['error'])) {
-    echo '<div class="alert alert-danger">' . $_SESSION['error'] . '</div>';
+    echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>' . $_SESSION['error'] . '
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
     unset($_SESSION['error']);
 }
 
 // Tampilkan pesan sukses jika ada
 if (isset($_GET['success'])) {
-    echo '<div class="alert alert-success">Data berhasil dihapus!</div>';
+    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>Data berhasil dihapus!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
 }
 
 if (isset($_GET['edit_success'])) {
-    echo '<div class="alert alert-success">Data kelas berhasil diperbarui!</div>';
+    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>Data kelas berhasil diperbarui!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
 }
 
 if (isset($_GET['add_success'])) {
-    echo '<div class="alert alert-success">Data kelas berhasil ditambahkan!</div>';
+    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>Data kelas berhasil ditambahkan!
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>';
 }
 
 // Sorting
@@ -52,12 +64,12 @@ $result = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas $order LIMIT 
 <head>
     <meta charset="UTF-8">
     <title>Manajemen Kelas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap @5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css " rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            font-family: 'Poppins', sans-serif;
         }
 
         .container {
@@ -65,71 +77,121 @@ $result = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas $order LIMIT 
         }
 
         .card {
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: none;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease-in-out;
         }
 
-        .table thead {
-            background-color: #007bff;
-            color: white;
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            background-color: #ffffff;
+            border-bottom: none;
+            padding: 1.5rem;
+            border-top-left-radius: 1.5rem;
+            border-top-right-radius: 1.5rem;
+            font-weight: 600;
         }
 
         .btn-rounded {
-            border-radius: 25px;
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
         }
 
-        .btn i {
-            margin-right: 5px;
+        .btn-rounded:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .table thead {
+            background-color: #34495e;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .table thead th:first-child {
+            border-top-left-radius: 1.5rem;
+        }
+
+        .table thead th:last-child {
+            border-top-right-radius: 1.5rem;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: #e9ecef;
+            cursor: pointer;
+            transform: scale(1.01);
+            transition: transform 0.2s;
+        }
+
+        .btn-action {
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .btn-action:hover {
+            transform: scale(1.1);
+        }
+
+        .page-item .page-link {
+            border-radius: 50px;
+            margin: 0 4px;
+            min-width: 40px;
+            text-align: center;
+            transition: all 0.3s;
         }
 
         .page-item.active .page-link {
             background-color: #007bff;
             border-color: #007bff;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.25);
+        }
+
+        .page-item .page-link:hover {
+            background-color: #0056b3;
+            color: white;
         }
 
         .alert {
-            border-radius: 10px;
+            border-radius: 1rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 class="mb-4 text-center">📚 Manajemen Kelas</h2>
+    <h2 class="mb-4 text-center fw-bold">📚 Manajemen Kelas</h2>
 
-    <!-- Tombol Aksi -->
-    <div class="d-flex justify-content-center gap-2 mb-4">
-        <a href="tambah.php" class="btn btn-primary btn-rounded">
-            <i class="fas fa-plus"></i> Tambah Kelas
+    <div class="d-flex justify-content-center flex-wrap gap-3 mb-5">
+        <a href="tambah.php" class="btn btn-primary btn-rounded shadow-sm">
+            <i class="fas fa-plus me-1"></i> Tambah Kelas
         </a>
-        <a href="template_kelas.csv" class="btn btn-secondary btn-rounded">
-            <i class="fas fa-download"></i> Template
+        <a href="template_kelas.csv" class="btn btn-secondary btn-rounded shadow-sm">
+            <i class="fas fa-download me-1"></i> Template
         </a>
-        <a href="import.php" class="btn btn-info btn-rounded">
-            <i class="fas fa-file-import"></i> Import CSV
+        <a href="import.php" class="btn btn-info btn-rounded text-white shadow-sm">
+            <i class="fas fa-file-import me-1"></i> Import CSV
         </a>
     </div>
 
-    <!-- Notifikasi -->
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger"><?= $_SESSION['error'] ?></div>
-        <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_GET['success'])): ?>
-        <div class="alert alert-success">Data berhasil dihapus!</div>
-    <?php elseif (isset($_GET['edit_success'])): ?>
-        <div class="alert alert-success">Data kelas berhasil diperbarui!</div>
-    <?php elseif (isset($_GET['add_success'])): ?>
-        <div class="alert alert-success">Data kelas berhasil ditambahkan!</div>
-    <?php endif; ?>
-
-    <!-- Tabel Kelas -->
-    <div class="card">
+    <div class="card p-0">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle text-center">
-                    <thead>
+                <table class="table table-hover align-middle text-center mb-0">
+                    <thead class="bg-dark text-white">
                         <tr>
                             <th>
                                 <a href="?sort=<?= ($sort === 'asc') ? 'desc' : 'asc' ?>&page=<?= $page ?>" class="text-white text-decoration-none">
@@ -141,41 +203,52 @@ $result = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas $order LIMIT 
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($row = $result->fetch_assoc()): ?>
-                        <tr>
-                            <td><?= htmlspecialchars($row['nama_kelas']) ?></td>
-                            <td><?= htmlspecialchars($row['wali_kelas']) ?></td>
-                            <td>
-                                <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-sm" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="hapus.php?id=<?= $row['id'] ?>" class="btn btn-danger btn-sm" title="Hapus"
-                                   onclick="return confirm('Yakin ingin menghapus kelas ini?')">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
+                        <?php if ($result->num_rows > 0): ?>
+                            <?php while ($row = $result->fetch_assoc()): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nama_kelas']) ?></td>
+                                <td><?= htmlspecialchars($row['wali_kelas']) ?></td>
+                                <td>
+                                    <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-action me-2" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="hapus.php?id=<?= $row['id'] ?>" class="btn btn-danger btn-action" title="Hapus"
+                                       onclick="return confirm('Yakin ingin menghapus kelas ini?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">
+                                    <i class="fas fa-exclamation-circle fa-2x d-block mb-2"></i>
+                                    Belum ada data kelas yang ditambahkan.
+                                </td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
-
-            <!-- Pagination -->
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center">
-                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                    <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                        <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sort ?>"><?= $i ?></a>
-                    </li>
-                    <?php endfor; ?>
-                </ul>
-            </nav>
         </div>
+        
+        <?php if ($totalPages > 1): ?>
+            <div class="card-footer bg-white border-0 pt-0 pb-3">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
+                            <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sort ?>"><?= $i ?></a>
+                        </li>
+                        <?php endfor; ?>
+                    </ul>
+                </nav>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap @5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

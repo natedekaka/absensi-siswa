@@ -12,7 +12,7 @@ require_once '../includes/header.php';
 ?>
 <h2>Rekap Absensi Per Kelas</h2>
 
-<!-- Form Input -->
+<!-- Form Input dengan Rentang Tanggal -->
 <form method="GET" class="row g-3 mb-4">
     <div class="col-md-4">
         <label>Kelas</label>
@@ -31,19 +31,14 @@ require_once '../includes/header.php';
         </select>
     </div>
     <div class="col-md-3">
-        <label>Bulan</label>
-        <select name="bulan" class="form-select" required>
-            <?php for($i=1; $i<=12; $i++): ?>
-            <option value="<?= $i ?>" <?= ($i == ($_GET['bulan'] ?? date('n'))) ? 'selected' : '' ?>>
-                <?= date('F', mktime(0,0,0,$i,1)) ?>
-            </option>
-            <?php endfor; ?>
-        </select>
+        <label>Tanggal Awal</label>
+        <input type="date" name="tgl_awal" class="form-control" required
+               value="<?= $_GET['tgl_awal'] ?? date('Y-m-01') ?>">
     </div>
     <div class="col-md-3">
-        <label>Tahun</label>
-        <input type="number" name="tahun" class="form-control"
-               value="<?= $_GET['tahun'] ?? date('Y') ?>" required>
+        <label>Tanggal Akhir</label>
+        <input type="date" name="tgl_akhir" class="form-control" required
+               value="<?= $_GET['tgl_akhir'] ?? date('Y-m-t') ?>">
     </div>
     <div class="col-md-2 d-flex align-items-end">
         <button type="submit" class="btn btn-primary">Tampilkan</button>
@@ -54,11 +49,18 @@ require_once '../includes/header.php';
 if (isset($_GET['kelas_id'])) {
     // Validasi input
     $kelas_id = filter_input(INPUT_GET, 'kelas_id', FILTER_VALIDATE_INT);
-    $bulan = filter_input(INPUT_GET, 'bulan', FILTER_VALIDATE_INT);
-    $tahun = filter_input(INPUT_GET, 'tahun', FILTER_VALIDATE_INT);
+    $tgl_awal = filter_input(INPUT_GET, 'tgl_awal', FILTER_SANITIZE_STRING);
+    $tgl_akhir = filter_input(INPUT_GET, 'tgl_akhir', FILTER_SANITIZE_STRING);
 
-    if (!$kelas_id || !$bulan || !$tahun) {
-        echo "<div class='alert alert-danger'>Input tidak valid.</div>";
+    // Validasi tanggal
+    if (!$kelas_id || !strtotime($tgl_awal) || !strtotime($tgl_akhir)) {
+        echo "<div class='alert alert-danger'>Input tidak valid. Pastikan kelas dan tanggal diisi dengan benar.</div>";
+        exit;
+    }
+
+    // Pastikan tgl_awal <= tgl_akhir
+    if (strtotime($tgl_awal) > strtotime($tgl_akhir)) {
+        echo "<div class='alert alert-danger'>Tanggal awal tidak boleh lebih besar dari tanggal akhir.</div>";
         exit;
     }
 
@@ -71,7 +73,7 @@ if (isset($_GET['kelas_id'])) {
     $stmt_kelas->close();
 
     echo "<h4>Rekap Kelas: " . htmlspecialchars($nama_kelas) . "</h4>";
-    echo "<p>Periode: " . date('F Y', mktime(0,0,0,$bulan,1,$tahun)) . "</p>";
+    echo "<p><strong>Periode:</strong> " . date('d M Y', strtotime($tgl_awal)) . " s.d. " . date('d M Y', strtotime($tgl_akhir)) . "</p>";
 
     // Inisialisasi rekap total untuk kelas
     $rekapKelas = [
@@ -104,14 +106,18 @@ if (isset($_GET['kelas_id'])) {
     $stmt_siswa->execute();
     $result_siswa = $stmt_siswa->get_result();
 
-    $no = 1; // Mulai penomoran dari 1
+    $no = 1;
 
     while($row = $result_siswa->fetch_assoc()) {
         $siswa_id = $row['id'];
 
-        // Ambil absensi per siswa
-        $stmt_absen = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?");
-        $stmt_absen->bind_param("iii", $siswa_id, $bulan, $tahun);
+        // Ambil absensi per siswa berdasarkan rentang tanggal
+        $stmt_absen = $koneksi->prepare("
+            SELECT status FROM absensi 
+            WHERE siswa_id = ? 
+              AND tanggal BETWEEN ? AND ?
+        ");
+        $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
         $stmt_absen->execute();
         $result_absen = $stmt_absen->get_result();
 
@@ -125,12 +131,14 @@ if (isset($_GET['kelas_id'])) {
 
         while($absen = $result_absen->fetch_assoc()) {
             $status = $absen['status'];
-            $rekap[$status]++;
-            $rekapKelas[$status]++;
+            if (isset($rekap[$status])) {
+                $rekap[$status]++;
+                $rekapKelas[$status]++;
+            }
         }
 
         echo "<tr>";
-        echo "<td>{$no}</td>"; // Kolom nomor
+        echo "<td>{$no}</td>";
         echo "<td>" . htmlspecialchars($row['nama']) . "</td>";
         echo "<td>" . htmlspecialchars($row['jenis_kelamin']) . "</td>";
         echo "<td>{$rekap['Hadir']}</td>";
@@ -141,7 +149,7 @@ if (isset($_GET['kelas_id'])) {
         echo "<td>" . array_sum($rekap) . "</td>";
         echo "</tr>";
 
-        $no++; // Tambah nomor setiap baris
+        $no++;
 
         $stmt_absen->close();
     }
@@ -149,9 +157,9 @@ if (isset($_GET['kelas_id'])) {
 
     // Baris total per status untuk seluruh kelas
     echo "<tr class='table-primary fw-bold'>";
-    echo "<td></td>"; // Biarkan kosong
+    echo "<td></td>";
     echo "<td>Total</td>";
-    echo "<td></td>"; 
+    echo "<td></td>";
     echo "<td>{$rekapKelas['Hadir']}</td>";
     echo "<td>{$rekapKelas['Terlambat']}</td>";
     echo "<td>{$rekapKelas['Sakit']}</td>";
@@ -163,11 +171,12 @@ if (isset($_GET['kelas_id'])) {
     echo "</tbody></table>";
 
     // Grafik Pie
-    echo '<div class="chart-container">';
+    echo '<div class="chart-container" style="height:400px; margin-top:20px;">';
     echo '<canvas id="chart-kelas"></canvas>';
     echo '</div>';
 
     // Script grafik
+    echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
     echo '<script>
     document.addEventListener("DOMContentLoaded", function() {
         var ctx = document.getElementById("chart-kelas").getContext("2d");
@@ -185,20 +194,27 @@ if (isset($_GET['kelas_id'])) {
                     '],
                     backgroundColor: [
                         "#4CAF50", "#FFC107", "#2196F3", "#9C27B0", "#F44336"
-                    ]
+                    ],
+                    borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    title: { display: true, text: "Persentase Kehadiran Kelas" },
+                    title: {
+                        display: true,
+                        text: "Persentase Kehadiran Kelas (' . htmlspecialchars($nama_kelas) . ')",
+                        font: { size: 16 }
+                    },
                     legend: { position: "right" },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
                                 var total = context.dataset.data.reduce((a,b)=>a+b,0);
-                                return context.label + ": " + context.raw + " (" + Math.round((context.raw/total)*100) + "%)";
+                                var value = context.raw;
+                                var percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return context.label + ": " + value + " (" + percentage + "%)";
                             }
                         }
                     }
@@ -208,7 +224,9 @@ if (isset($_GET['kelas_id'])) {
     });
     </script>';
 
-    echo "<a href='cetak.php?type=kelas&id=$kelas_id&bulan=$bulan&tahun=$tahun' class='btn btn-success' target='_blank'>Cetak</a>";
+    // Tombol Cetak (dengan rentang tanggal)
+    echo "<a href='cetak.php?type=kelas&id=$kelas_id&tgl_awal=$tgl_awal&tgl_akhir=$tgl_akhir' class='btn btn-success mt-3' target='_blank'>Cetak Rekap</a>";
 }
 ?>
+
 <?php require_once '../includes/footer.php'; ?>
