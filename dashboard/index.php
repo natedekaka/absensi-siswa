@@ -55,6 +55,36 @@ if ($result && $row = $result->fetch_assoc()) {
     $statistics['absen_minggu_ini'] = $row['total'];
 }
 
+// === ANALISIS GENDER (sesuai format: "Laki-laki" / "Perempuan") ===
+$sql = "SELECT jenis_kelamin, COUNT(*) AS jumlah FROM siswa GROUP BY jenis_kelamin";
+$result = $koneksi->query($sql);
+$gender_stats = ['L' => 0, 'P' => 0];
+
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        if ($row['jenis_kelamin'] === 'Laki-laki') {
+            $gender_stats['L'] = $row['jumlah'];
+        } elseif ($row['jenis_kelamin'] === 'Perempuan') {
+            $gender_stats['P'] = $row['jumlah'];
+        }
+        // Abaikan nilai lain (jika ada)
+    }
+}
+
+// === ANALISIS PER KELAS (dengan "Laki-laki" / "Perempuan") ===
+$sql = "
+    SELECT 
+        k.id AS kelas_id,
+        k.nama_kelas,
+        COUNT(s.id) AS total_siswa,
+        SUM(CASE WHEN s.jenis_kelamin = 'Laki-laki' THEN 1 ELSE 0 END) AS laki,
+        SUM(CASE WHEN s.jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) AS perempuan
+    FROM kelas k
+    LEFT JOIN siswa s ON k.id = s.kelas_id
+    GROUP BY k.id, k.nama_kelas
+    ORDER BY k.nama_kelas
+";
+$kelas_stats = $koneksi->query($sql);
 // Ambil 10 absensi terbaru
 $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas 
         FROM absensi a
@@ -77,15 +107,17 @@ while ($row = $result->fetch_assoc()) {
     $absensi_harian[] = $row;
 }
 ?>
+
 <?php include '../includes/header.php'; ?>
+<!-- Pastikan header.php sudah memuat Bootstrap 5.3+, Font Awesome, dan jQuery jika diperlukan -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-    /* Custom CSS untuk palet warna WhatsApp */
     :root {
-        --whatsapp-green: #25D366; /* Warna hijau utama WhatsApp */
-        --whatsapp-dark: #128C7E; /* Hijau gelap untuk header */
-        --whatsapp-light: #ECE5DD; /* Latar belakang terang ala WhatsApp */
-        --whatsapp-gray: #546E7A; /* Abu-abu untuk teks sekunder */
-        --whatsapp-white: #FFFFFF; /* Putih untuk aksen */
+        --whatsapp-green: #25D366;
+        --whatsapp-dark: #128C7E;
+        --whatsapp-light: #ECE5DD;
+        --whatsapp-gray: #546E7A;
+        --whatsapp-white: #FFFFFF;
     }
     .bg-whatsapp-green { background-color: var(--whatsapp-green) !important; }
     .text-whatsapp-green { color: var(--whatsapp-green) !important; }
@@ -103,11 +135,19 @@ while ($row = $result->fetch_assoc()) {
     .card-footer-whatsapp {
         background-color: rgba(0,0,0,.15);
     }
+    .gender-card {
+        transition: transform 0.2s;
+    }
+    .gender-card:hover {
+        transform: translateY(-3px);
+    }
 </style>
+
 <div class="container mt-4">
     <h2 class="mb-4 text-whatsapp-dark">Dashboard</h2>
 
-    <div class="card mb-4 shadow-sm rounded">
+    <!-- Card Selamat Datang -->
+    <div class="card mb-4 shadow-sm rounded-3">
         <div class="card-body bg-whatsapp-light">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <div>
@@ -124,6 +164,7 @@ while ($row = $result->fetch_assoc()) {
         </div>
     </div>
 
+    <!-- Statistik Utama -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card text-white bg-whatsapp-green shadow-sm h-100 rounded-3">
@@ -183,6 +224,75 @@ while ($row = $result->fetch_assoc()) {
         </div>
     </div>
 
+    <!-- ANALISIS GENDER & PER KELAS -->
+    <div class="row g-3 mb-4">
+        <!-- Gender -->
+        <div class="col-md-6">
+            <div class="card gender-card shadow-sm rounded-3 h-100">
+                <div class="card-header bg-whatsapp-dark text-white">
+                    <i class="fas fa-venus-mars me-2"></i>Analisis Gender Siswa
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-around align-items-center text-center">
+                        <div>
+                            <div class="display-6 text-primary"><i class="fas fa-male"></i></div>
+                            <h5 class="mt-2">Laki-laki</h5>
+                            <p class="display-6 mb-0"><?= $gender_stats['L'] ?></p>
+                        </div>
+                        <div class="vr"></div>
+                        <div>
+                            <div class="display-6 text-danger"><i class="fas fa-female"></i></div>
+                            <h5 class="mt-2">Perempuan</h5>
+                            <p class="display-6 mb-0"><?= $gender_stats['P'] ?></p>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-center">
+                        <small class="text-muted">Total: <?= $statistics['siswa'] ?> siswa</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Per Kelas -->
+        <div class="col-md-6">
+            <div class="card shadow-sm rounded-3 h-100">
+                <div class="card-header bg-whatsapp-dark text-white d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-school me-2"></i>Analisis Per Kelas</span>
+                    <a href="../kelas/" class="btn btn-sm bg-whatsapp-green text-white">Detail</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Kelas</th>
+                                    <th>Total</th>
+                                    <th>L</th>
+                                    <th>P</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if ($kelas_stats && $kelas_stats->num_rows > 0): ?>
+                                    <?php while ($row = $kelas_stats->fetch_assoc()): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($row['nama_kelas']) ?></td>
+                                            <td><strong><?= $row['total_siswa'] ?></strong></td>
+                                            <td><?= $row['laki'] ?></td>
+                                            <td><?= $row['perempuan'] ?></td>
+                                        </tr>
+                                    <?php endwhile; ?>
+                                <?php else: ?>
+                                    <tr><td colspan="4" class="text-center text-muted">Tidak ada data kelas</td></tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grafik & Quick Actions -->
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card shadow-sm rounded-3">
@@ -248,6 +358,7 @@ while ($row = $result->fetch_assoc()) {
         </div>
     </div>
 
+    <!-- Absensi Terbaru -->
     <div class="row">
         <div class="col-md-12">
             <div class="card shadow-sm rounded-3">
@@ -275,8 +386,8 @@ while ($row = $result->fetch_assoc()) {
                                             <td><?= htmlspecialchars($row['nama_kelas']) ?></td>
                                             <td>
                                                 <span class="badge rounded-pill
-                                                    <?= $row['status'] === 'Hadir' ? 'bg-whatsapp-green text-white' : '' ?>
-                                                    <?= $row['status'] === 'Sakit' ? 'bg-whatsapp-light text-dark' : '' ?>
+                                                    <?= $row['status'] === 'Hadir' ? 'bg-success text-white' : '' ?>
+                                                    <?= $row['status'] === 'Sakit' ? 'bg-warning text-dark' : '' ?>
                                                     <?= $row['status'] === 'Izin' ? 'bg-info text-white' : '' ?>
                                                     <?= $row['status'] === 'Alfa' ? 'bg-danger text-white' : '' ?>
                                                     <?= $row['status'] === 'Terlambat' ? 'bg-whatsapp-gray text-white' : '' ?>">
@@ -302,7 +413,8 @@ while ($row = $result->fetch_assoc()) {
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('absensiChart').getContext('2d');
-    const labels = <?= json_encode(array_column($absensi_harian, 'tanggal')) ?>;
+    // Format label menjadi hari (Sen, Sel, dst)
+    const labels = <?= json_encode(array_map(fn($d) => date('D', strtotime($d)), array_column($absensi_harian, 'tanggal'))) ?>;
     const data = <?= json_encode(array_column($absensi_harian, 'jumlah')) ?>;
 
     new Chart(ctx, {
@@ -312,29 +424,27 @@ while ($row = $result->fetch_assoc()) {
             datasets: [{
                 label: 'Jumlah Absensi',
                 data: data,
-                borderColor: 'var(--whatsapp-green)', // Mengubah warna garis grafik menjadi hijau WhatsApp
-                backgroundColor: 'rgba(37, 211, 102, 0.2)', // Latar belakang grafik hijau transparan
+                borderColor: 'var(--whatsapp-green)',
+                backgroundColor: 'rgba(37, 211, 102, 0.2)',
                 tension: 0.4,
                 pointRadius: 4,
-                pointHoverRadius: 6
+                pointHoverRadius: 6,
+                fill: true
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: {
-                    display: false
-                }
+                legend: { display: false }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
+                    ticks: { stepSize: 1 }
                 }
             }
         }
     });
 </script>
+
 <?php include '../includes/footer.php'; ?>

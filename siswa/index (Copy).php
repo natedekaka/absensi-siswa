@@ -99,7 +99,6 @@ body {
             <a href="import.php" class="btn btn-wa-success rounded-pill px-4 shadow-sm">
                 <i class="fas fa-file-import me-1"></i> Import CSV
             </a>
-         
         </div>
     </div>
 

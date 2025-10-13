@@ -7,18 +7,19 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Custom CSS untuk palet warna ungu */
+        /* Custom CSS untuk palet warna WhatsApp */
         :root {
-            --purple-main: #6C5B7B;
-            --purple-dark: #3F334E;
-            --purple-light: #C8A2C8;
-            --purple-accent: #A16A9E;
+            --whatsapp-green: #25D366; /* Warna hijau utama WhatsApp */
+            --whatsapp-dark: #128C7E; /* Hijau gelap untuk navbar */
+            --whatsapp-light: #ECE5DD; /* Latar belakang terang ala WhatsApp */
+            --whatsapp-gray: #546E7A; /* Abu-abu untuk teks sekunder */
+            --whatsapp-white: #FFFFFF; /* Putih untuk aksen */
         }
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-            background-color: #f5f0f7; /* Latar belakang lebih lembut */
+            background-color: var(--whatsapp-light); /* Latar belakang terang */
         }
         .container {
             flex: 1;
@@ -26,19 +27,19 @@
         footer {
             margin-top: auto;
             padding: 20px 0;
-            background-color: var(--purple-light);
-            color: var(--purple-dark);
+            background-color: var(--whatsapp-dark);
+            color: var(--whatsapp-white);
         }
         .navbar-toggler {
             border: none;
         }
         .brand-text {
-            color: white;
+            color: var(--whatsapp-white);
             font-weight: bold;
             margin-right: 15px;
         }
         .user-info {
-            color: var(--purple-light);
+            color: var(--whatsapp-white);
             margin-right: 15px;
         }
         .chart-container {
@@ -47,36 +48,36 @@
             margin: 20px auto;
         }
         .navbar {
-            background-color: var(--purple-dark) !important;
+            background-color: var(--whatsapp-dark) !important;
         }
         .nav-link, .navbar-brand {
-            color: var(--purple-light) !important;
+            color: var(--whatsapp-white) !important;
         }
         .nav-link:hover, .navbar-brand:hover {
-            color: #fff !important;
+            color: var(--whatsapp-green) !important;
         }
         .dropdown-menu {
-            background-color: var(--purple-dark);
-            border: 1px solid var(--purple-main);
+            background-color: var(--whatsapp-dark);
+            border: 1px solid var(--whatsapp-gray);
         }
         .dropdown-item {
-            color: var(--purple-light);
+            color: var(--whatsapp-white);
         }
         .dropdown-item:hover {
-            background-color: var(--purple-main);
-            color: #fff;
+            background-color: var(--whatsapp-green);
+            color: var(--whatsapp-white);
         }
         .btn-outline-light {
-            color: var(--purple-light);
-            border-color: var(--purple-light);
+            color: var(--whatsapp-white);
+            border-color: var(--whatsapp-white);
         }
         .btn-outline-light:hover {
-            background-color: var(--purple-light);
-            color: var(--purple-dark) !important;
+            background-color: var(--whatsapp-green);
+            color: var(--whatsapp-white) !important;
         }
         .badge.bg-light.text-dark {
-            background-color: var(--purple-light) !important;
-            color: var(--purple-dark) !important;
+            background-color: var(--whatsapp-green) !important;
+            color: var(--whatsapp-white) !important;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -126,6 +127,7 @@
                         <ul class="dropdown-menu" aria-labelledby="rekapDropdown">
                             <li><a class="dropdown-item" href="../rekap/siswa.php">Per Siswa</a></li>
                             <li><a class="dropdown-item" href="../rekap/kelas.php">Per Kelas</a></li>
+                            <li><a class="dropdown-item" href="../rekap/rekap_per_tanggal_siswa.php">Per Tanggal</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -155,9 +157,7 @@
                         <i class="fas fa-sign-out-alt me-1"></i>Logout
                     </a>
                 <?php else: ?>
-                    <a href="../login.php" class="btn btn-outline-light">
-                        <i class="fas fa-sign-in-alt me-1"></i>Login
-                    </a>
+                    
                 <?php endif; ?>
             </div>
         </div>
