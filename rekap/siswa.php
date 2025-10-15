@@ -1,5 +1,11 @@
 <?php
+// Tambahkan baris ini untuk debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
+// ... sisanya kode
 
 // Cek apakah user sudah login
 if (!isset($_SESSION['user'])) {
@@ -16,17 +22,17 @@ require_once '../includes/functions.php';
     <div class="card-body">
         <ul class="nav nav-tabs" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="bulan-tab" data-bs-toggle="tab" data-bs-target="#bulan" type="button" role="tab">Per Bulan</button>
+                <button class="nav-link active" id="bulan-tab" data-bs-toggle="tab" data-bs-target="#bulan" type="button" role="tab">Rentang Tanggal</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="rentang-tab" data-bs-toggle="tab" data-bs-target="#rentang" type="button" role="tab">Rentang Tanggal</button>
+                <button class="nav-link" id="rentang-tab" data-bs-toggle="tab" data-bs-target="#rentang" type="button" role="tab">Rentang Tanggal Spesifik</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="semester-tab" data-bs-toggle="tab" data-bs-target="#semester" type="button" role="tab">Per Semester</button>
             </li>
         </ul>
         <div class="tab-content" id="myTabContent">
-            <!-- Tab Per Bulan -->
+            <!-- Tab Rentang Tanggal -->
             <div class="tab-pane fade show active" id="bulan" role="tabpanel">
                 <form method="GET" class="row g-3 mt-3">
                     <input type="hidden" name="mode" value="bulan">
@@ -36,19 +42,14 @@ require_once '../includes/functions.php';
                                placeholder="Masukkan nama siswa" value="<?= $_GET['cari'] ?? '' ?>">
                     </div>
                     <div class="col-md-3">
-                        <label>Bulan</label>
-                        <select name="bulan" class="form-select" required>
-                            <?php for($i=1; $i<=12; $i++): ?>
-                            <option value="<?= $i ?>" <?= ($i == ($_GET['bulan'] ?? date('n'))) ? 'selected' : '' ?>>
-                                <?= date('F', mktime(0,0,0,$i,1)) ?>
-                            </option>
-                            <?php endfor; ?>
-                        </select>
+                        <label>Dari Tanggal</label>
+                        <input type="date" name="dari_tanggal" class="form-control" 
+                               value="<?= $_GET['dari_tanggal'] ?? date('Y-m-01') ?>" required>
                     </div>
                     <div class="col-md-3">
-                        <label>Tahun</label>
-                        <input type="number" name="tahun" class="form-control" 
-                               value="<?= $_GET['tahun'] ?? date('Y') ?>" required>
+                        <label>Sampai Tanggal</label>
+                        <input type="date" name="sampai_tanggal" class="form-control" 
+                               value="<?= $_GET['sampai_tanggal'] ?? date('Y-m-t') ?>" required>
                     </div>
                     <div class="col-md-12 mt-4">
                         <button type="submit" class="btn btn-primary">Cari</button>
@@ -56,7 +57,7 @@ require_once '../includes/functions.php';
                     </div>
                 </form>
             </div>
-            <!-- Tab Rentang Tanggal -->
+            <!-- Tab Rentang Tanggal Spesifik -->
             <div class="tab-pane fade" id="rentang" role="tabpanel">
                 <form method="GET" class="row g-3 mt-3">
                     <input type="hidden" name="mode" value="rentang">
@@ -134,24 +135,44 @@ if (isset($_GET['mode'])) {
         while($siswa = $siswa_result->fetch_assoc()) {
             $siswa_id = $siswa['id'];
             $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
+            $detail = ['Terlambat' => [], 'Sakit' => [], 'Izin' => [], 'Alfa' => []];
             
             // Proses berdasarkan mode
             if ($mode == 'bulan') {
-                $bulan = $_GET['bulan'];
-                $tahun = $_GET['tahun'];
-                $absensi = getAbsensiBySiswa($siswa_id);
+                $dari_tanggal = $_GET['dari_tanggal'];
+                $sampai_tanggal = $_GET['sampai_tanggal'];
+                
+                // Tentukan tanggal mulai dan akhir
+                $tanggal_mulai = $dari_tanggal;
+                $tanggal_akhir = $sampai_tanggal;
+                
+                // Query untuk mengambil data absensi dalam rentang tanggal
+                $stmt = $koneksi->prepare("SELECT status, tanggal FROM absensi 
+                                          WHERE siswa_id = ? 
+                                          AND tanggal BETWEEN ? AND ?");
+                $stmt->bind_param("iss", $siswa_id, $tanggal_mulai, $tanggal_akhir);
+                $stmt->execute();
+                $absensi = $stmt->get_result();
+                
                 while($absen = $absensi->fetch_assoc()) {
-                    if (date('n', strtotime($absen['tanggal'])) == $bulan && 
-                        date('Y', strtotime($absen['tanggal'])) == $tahun) {
-                        $rekap[$absen['status']]++;
+                    $rekap[$absen['status']]++;
+                    
+                    // Simpan detail tanggal untuk status non-hadir
+                    if ($absen['status'] != 'Hadir') {
+                        $detail[$absen['status']][] = $absen['tanggal'];
                     }
                 }
-                $periode = date('F Y', mktime(0,0,0,$bulan,1,$tahun));
+                
+                // Format periode untuk ditampilkan
+                $periode = date('d F Y', strtotime($dari_tanggal)) . ' - ' . date('d F Y', strtotime($sampai_tanggal));
                 
             } elseif ($mode == 'rentang') {
                 $dari = $_GET['dari'];
                 $sampai = $_GET['sampai'];
-                $stmt = $koneksi->prepare("SELECT status FROM absensi 
+                $tanggal_mulai = $dari;
+                $tanggal_akhir = $sampai;
+                
+                $stmt = $koneksi->prepare("SELECT status, tanggal FROM absensi 
                                           WHERE siswa_id = ? 
                                           AND tanggal BETWEEN ? AND ?");
                 $stmt->bind_param("iss", $siswa_id, $dari, $sampai);
@@ -159,6 +180,11 @@ if (isset($_GET['mode'])) {
                 $absensi = $stmt->get_result();
                 while($absen = $absensi->fetch_assoc()) {
                     $rekap[$absen['status']]++;
+                    
+                    // Simpan detail tanggal untuk status non-hadir
+                    if ($absen['status'] != 'Hadir') {
+                        $detail[$absen['status']][] = $absen['tanggal'];
+                    }
                 }
                 $periode = date('d M Y', strtotime($dari)) . ' - ' . date('d M Y', strtotime($sampai));
                 
@@ -175,7 +201,10 @@ if (isset($_GET['mode'])) {
                     $sampai = $tahun_akhir . '-06-30';
                 }
                 
-                $stmt = $koneksi->prepare("SELECT status FROM absensi 
+                $tanggal_mulai = $dari;
+                $tanggal_akhir = $sampai;
+                
+                $stmt = $koneksi->prepare("SELECT status, tanggal FROM absensi 
                                           WHERE siswa_id = ? 
                                           AND tanggal BETWEEN ? AND ?");
                 $stmt->bind_param("iss", $siswa_id, $dari, $sampai);
@@ -183,8 +212,26 @@ if (isset($_GET['mode'])) {
                 $absensi = $stmt->get_result();
                 while($absen = $absensi->fetch_assoc()) {
                     $rekap[$absen['status']]++;
+                    
+                    // Simpan detail tanggal untuk status non-hadir
+                    if ($absen['status'] != 'Hadir') {
+                        $detail[$absen['status']][] = $absen['tanggal'];
+                    }
                 }
                 $periode = 'Semester ' . $semester . ' TA ' . $tahun_ajaran;
+            }
+            
+            // Hitung total dan persentase
+            $total = array_sum($rekap);
+            $persentase = [];
+            if ($total > 0) {
+                foreach ($rekap as $status => $jumlah) {
+                    $persentase[$status] = round(($jumlah / $total) * 100, 2);
+                }
+            } else {
+                foreach ($rekap as $status => $jumlah) {
+                    $persentase[$status] = 0;
+                }
             }
             
             // Tampilkan hasil rekap
@@ -194,25 +241,81 @@ if (isset($_GET['mode'])) {
             echo '</div>';
             echo '<div class="card-body">';
             echo '<p><strong>Jenis Kelamin:</strong> ' . htmlspecialchars($siswa['jenis_kelamin']) . '</p>';
-            echo '<p>Periode: ' . $periode . '</p>';
-            
-            // Tabel Rekap
-            echo '<table class="table table-bordered">';
-            echo '<tr><th>Hadir</th><th>Terlambat</th><th>Sakit</th><th>Izin</th><th>Alfa</th><th>Total</th></tr>';
-            echo '<tr>';
-            echo '<td>' . $rekap['Hadir'] . '</td>';
-            echo '<td>' . $rekap['Terlambat'] . '</td>';
-            echo '<td>' . $rekap['Sakit'] . '</td>';
-            echo '<td>' . $rekap['Izin'] . '</td>';
-            echo '<td>' . $rekap['Alfa'] . '</td>';
-            echo '<td>' . array_sum($rekap) . '</td>';
-            echo '</tr>';
-            echo '</table>';
+            echo '<p><strong>Periode:</strong> ' . $periode . '</p>';
+            echo '<p><strong>Tanggal Mulai Rekap:</strong> ' . date('d F Y', strtotime($tanggal_mulai)) . '</p>';
+            echo '<p><strong>Tanggal Akhir Rekap:</strong> ' . date('d F Y', strtotime($tanggal_akhir)) . '</p>';
             
             // Grafik Pie
+            echo '<div class="row mt-4">';
+            echo '<div class="col-md-6">';
+            echo '<h5>Grafik Persentase Kehadiran</h5>';
             echo '<div class="chart-container" style="height: 300px;">';
             echo '<canvas id="chart-' . $siswa_id . '"></canvas>';
             echo '</div>';
+            echo '</div>';
+            
+            // Tabel Detail Grafik
+            echo '<div class="col-md-6">';
+            echo '<h5>Detail Persentase Kehadiran</h5>';
+            echo '<table class="table table-bordered">';
+            echo '<thead><tr><th>Status</th><th>Jumlah</th><th>Persentase</th></tr></thead>';
+            echo '<tbody>';
+            
+            // Tampilkan data untuk setiap status
+            foreach (['Hadir', 'Terlambat', 'Sakit', 'Izin', 'Alfa'] as $status) {
+                $color = '';
+                if ($status == 'Hadir') $color = '#4CAF50';
+                elseif ($status == 'Terlambat') $color = '#FFC107';
+                elseif ($status == 'Sakit') $color = '#2196F3';
+                elseif ($status == 'Izin') $color = '#9C27B0';
+                elseif ($status == 'Alfa') $color = '#F44336';
+                
+                echo '<tr>';
+                echo '<td><span style="display:inline-block;width:12px;height:12px;background-color:' . $color . ';margin-right:5px;"></span>' . $status . '</td>';
+                echo '<td>' . $rekap[$status] . '</td>';
+                echo '<td>' . $persentase[$status] . '%</td>';
+                echo '</tr>';
+            }
+            
+            echo '<tr class="table-active">';
+            echo '<td><strong>Total</strong></td>';
+            echo '<td><strong>' . $total . '</strong></td>';
+            echo '<td><strong>100%</strong></td>';
+            echo '</tr>';
+            echo '</tbody></table>';
+            echo '</div>';
+            echo '</div>';
+            
+            // Tabel Detail Tanggal
+            echo '<h5 class="mt-4">Histori Kehadiran</h5>';
+            echo '<table class="table table-bordered">';
+            echo '<thead><tr><th>Status</th><th>Tanggal</th></tr></thead>';
+            echo '<tbody>';
+            
+            // Tampilkan detail untuk setiap status non-hadir
+            foreach (['Terlambat', 'Sakit', 'Izin', 'Alfa'] as $status) {
+                if (!empty($detail[$status])) {
+                    $first_row = true;
+                    foreach ($detail[$status] as $tanggal) {
+                        echo '<tr>';
+                        if ($first_row) {
+                            $rowspan = count($detail[$status]);
+                            echo '<td rowspan="' . $rowspan . '">' . $status . '</td>';
+                            $first_row = false;
+                        }
+                        echo '<td>' . date('d F Y', strtotime($tanggal)) . '</td>';
+                        echo '</tr>';
+                    }
+                }
+            }
+            
+            // Jika tidak ada data kehadiran non-hadir
+            if (empty($detail['Terlambat']) && empty($detail['Sakit']) && 
+                empty($detail['Izin']) && empty($detail['Alfa'])) {
+                echo '<tr><td colspan="2" class="text-center">Tidak ada histori kehadiran untuk periode ini</td></tr>';
+            }
+            
+            echo '</tbody></table>';
             
             // Skrip untuk grafik
             echo '<script>
