@@ -2,6 +2,10 @@
 // Kita perlu koneksi ke database untuk mengambil nama siswa berdasarkan ID
 require_once '../config.php';
 
+// --- SETEL ZONA WAKTU DEFAULT KE INDONESIA (WIB) ---
+// Ini memastikan semua fungsi date() menggunakan waktu yang benar untuk lokasi Anda.
+date_default_timezone_set('Asia/Jakarta');
+
 // Inisialisasi variabel untuk pesan
  $success_message = '';
  $error_message = '';
@@ -20,7 +24,7 @@ if (isset($_GET['success']) && isset($_GET['siswa_id'])) {
         $siswa = $result_nama->fetch_assoc();
         $nama_siswa = htmlspecialchars($siswa['nama']);
         
-        // Format tanggal dan waktu (lebih robust dari strftime)
+        // Format tanggal dan waktu (sekarang akan menggunakan zona waktu Asia/Jakarta)
         $array_bulan = array(1=>'Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember');
         $tanggal = date('d') . ' ' . $array_bulan[date('n')] . ' ' . date('Y');
         $waktu = date('H:i:s');
@@ -29,7 +33,7 @@ if (isset($_GET['success']) && isset($_GET['siswa_id'])) {
         $success_message = "
             <div class='alert alert-success alert-dismissible fade show' role='alert'>
                 <h4 class='alert-heading'><i class='bi bi-check-circle-fill'></i> Absensi Berhasil!</h4>
-                <p>Siswa <strong>{$nama_siswa}</strong> telah berhasil dicatat hadir pada hari <strong>{$tanggal}</strong> pukul <strong>{$waktu}</strong>.</p>
+                <p>Siswa <strong>{$nama_siswa}</strong> telah berhasil dicatat hadir pada hari <strong>{$tanggal}</strong> pukul <strong>{$waktu}</strong> WIB.</p>
                 <hr>
                 <p class='mb-0'>Terima kasih, silakan lanjutkan untuk siswa berikutnya.</p>
                 <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>

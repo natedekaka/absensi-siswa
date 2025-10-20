@@ -85,18 +85,10 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container">
-        <!-- 🔁 LOGO DENGAN LINK DINAMIS BERDASARKAN STATUS LOGIN -->
-        <?php if (isset($_SESSION['user'])): ?>
-            <a class="navbar-brand d-flex align-items-center fw-bold" href="../dashboard/">
-                <i class="fas fa-book-reader me-2"></i>
-                <span>Absensi Siswa</span>
-            </a>
-        <?php else: ?>
-            <a class="navbar-brand d-flex align-items-center fw-bold" href="/absensi-siswa">
-                <i class="fas fa-book-reader me-2"></i>
-                <span>Absensi Siswa</span>
-            </a>
-        <?php endif; ?>
+        <a class="navbar-brand d-flex align-items-center fw-bold" href="../dashboard/">
+            <i class="fas fa-book-reader me-2"></i>
+            <span>Absensi Siswa</span>
+        </a>
 
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
             aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
