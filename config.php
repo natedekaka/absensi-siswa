@@ -3,7 +3,7 @@
 
 $host = 'localhost';
 $user = 'root';
-$pass = '!@3Chromebook';
+$pass = '!@3Chromebook*';
 $db   = 'absensi_db3';
 
 $koneksi = new mysqli($host, $user, $pass, $db);

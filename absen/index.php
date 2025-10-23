@@ -16,10 +16,25 @@ require_once '../includes/header.php';
     --wa-bg: #ECE5DD;
     --wa-text: #333;
 }
+
+/* --- PERUBAHAN CSS DIMULAI DI SINI --- */
+/* CSS untuk membuat tampilan seimbang dengan footer di bawah */
 body {
+    margin: 0; /* Hapus margin default browser */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Pastikan body setinggi layar */
     background-color: var(--wa-bg) !important;
     color: var(--wa-text);
 }
+
+/* Wrapper ini akan mengisi ruang kosong dan mendorong footer ke bawah */
+.content-wrapper {
+    flex-grow: 1; /* Ini adalah kuncinya: buat area ini mengembang */
+}
+/* --- PERUBAHAN CSS SELESAI DI SINI --- */
+
+
 .absensi-card {
     background: white;
     border-radius: 1rem;
@@ -73,75 +88,79 @@ body {
 }
 </style>
 
-<div class="container py-4">
-    <div class="d-flex align-items-center mb-4">
-        <h2 class="fw-bold mb-0" style="color: var(--wa-green);">
-            <i class="fas fa-calendar-check me-2"></i>Input Absensi
-        </h2>
+<!-- PERUBAHAN: Saya menambahkan wrapper .content-wrapper -->
+<div class="content-wrapper">
+    <div class="container py-4">
+        <div class="d-flex align-items-center mb-4">
+            <h2 class="fw-bold mb-0" style="color: var(--wa-green);">
+                <i class="fas fa-calendar-check me-2"></i>Input Absensi
+            </h2>
+        </div>
+
+        <form method="POST" action="proses.php" id="form-absensi">
+            <input type="hidden" name="kelas_id" id="kelas_id">
+
+            <!-- Filter Tanggal & Kelas -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="absensi-card p-3 h-100">
+                        <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
+                            <i class="fas fa-calendar-alt me-2"></i> Tanggal
+                        </label>
+                        <input type="date" name="tanggal" id="tanggal" 
+                               class="form-control" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="absensi-card p-3 h-100">
+                        <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
+                            <i class="fas fa-chalkboard me-2"></i> Kelas
+                        </label>
+                        <select id="kelas" class="form-select" required>
+                            <option value="">Pilih Kelas</option>
+                            <option value="all">Semua Kelas</option>
+                            <?php
+                            $kelas = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas");
+                            while ($row = $kelas->fetch_assoc()):
+                            ?>
+                            <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pencarian Siswa -->
+            <div class="row mb-4" id="searchContainer" style="display: none;">
+                <div class="col-md-6">
+                    <div class="position-relative">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="search_nama" class="form-control search-input" 
+                               placeholder="Cari nama siswa...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tombol Simpan Atas -->
+            <div id="tombolSimpanAtas" class="mb-4" style="display: none;">
+                <button type="submit" class="btn btn-wa-primary">
+                    <i class="fas fa-save me-2"></i>Simpan Absensi
+                </button>
+            </div>
+
+            <!-- Daftar Siswa -->
+            <div id="siswa-container" class="mb-4"></div>
+
+            <!-- Tombol Simpan Bawah -->
+            <div id="tombolSimpanBawah" class="text-center" style="display: none;">
+                <button type="submit" class="btn btn-wa-primary btn-lg px-5">
+                    <i class="fas fa-save me-2"></i>Simpan Semua Absensi
+                </button>
+            </div>
+        </form>
     </div>
-
-    <form method="POST" action="proses.php" id="form-absensi">
-        <input type="hidden" name="kelas_id" id="kelas_id">
-
-        <!-- Filter Tanggal & Kelas -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-6 col-lg-4">
-                <div class="absensi-card p-3 h-100">
-                    <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
-                        <i class="fas fa-calendar-alt me-2"></i> Tanggal
-                    </label>
-                    <input type="date" name="tanggal" id="tanggal" 
-                           class="form-control" value="<?= date('Y-m-d') ?>" required>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-4">
-                <div class="absensi-card p-3 h-100">
-                    <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
-                        <i class="fas fa-chalkboard me-2"></i> Kelas
-                    </label>
-                    <select id="kelas" class="form-select" required>
-                        <option value="">Pilih Kelas</option>
-                        <option value="all">Semua Kelas</option>
-                        <?php
-                        $kelas = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas");
-                        while ($row = $kelas->fetch_assoc()):
-                        ?>
-                        <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
-                        <?php endwhile; ?>
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pencarian Siswa -->
-        <div class="row mb-4" id="searchContainer" style="display: none;">
-            <div class="col-md-6">
-                <div class="position-relative">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="search_nama" class="form-control search-input" 
-                           placeholder="Cari nama siswa...">
-                </div>
-            </div>
-        </div>
-
-        <!-- Tombol Simpan Atas -->
-        <div id="tombolSimpanAtas" class="mb-4" style="display: none;">
-            <button type="submit" class="btn btn-wa-primary">
-                <i class="fas fa-save me-2"></i>Simpan Absensi
-            </button>
-        </div>
-
-        <!-- Daftar Siswa -->
-        <div id="siswa-container" class="mb-4"></div>
-
-        <!-- Tombol Simpan Bawah -->
-        <div id="tombolSimpanBawah" class="text-center" style="display: none;">
-            <button type="submit" class="btn btn-wa-primary btn-lg px-5">
-                <i class="fas fa-save me-2"></i>Simpan Semua Absensi
-            </button>
-        </div>
-    </form>
 </div>
+<!-- AKHIR PERUBAHAN -->
 
 <script>
 function toggleElements(show) {
