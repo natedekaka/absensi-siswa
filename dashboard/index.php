@@ -104,20 +104,30 @@ if ($result) {
     }
 }
 
-// === ANALISIS PER KELAS (dengan "Laki-laki" / "Perempuan") ===
+// === ANALISIS PER KELAS (dengan "Laki-laki" / "Perempuan" dan status kehadiran) ===
+// Diubah untuk mengambil data per hari ini
  $sql = "
     SELECT 
         k.id AS kelas_id,
         k.nama_kelas,
         COUNT(s.id) AS total_siswa,
         SUM(CASE WHEN s.jenis_kelamin = 'Laki-laki' THEN 1 ELSE 0 END) AS laki,
-        SUM(CASE WHEN s.jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) AS perempuan
+        SUM(CASE WHEN s.jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) AS perempuan,
+        SUM(CASE WHEN a.status = 'Hadir' THEN 1 ELSE 0 END) AS hadir,
+        SUM(CASE WHEN a.status = 'Sakit' THEN 1 ELSE 0 END) AS sakit,
+        SUM(CASE WHEN a.status = 'Izin' THEN 1 ELSE 0 END) AS izin,
+        SUM(CASE WHEN a.status = 'Alfa' THEN 1 ELSE 0 END) AS alfa,
+        SUM(CASE WHEN a.status = 'Terlambat' THEN 1 ELSE 0 END) AS terlambat
     FROM kelas k
     LEFT JOIN siswa s ON k.id = s.kelas_id
+    LEFT JOIN absensi a ON s.id = a.siswa_id AND a.tanggal = ?
     GROUP BY k.id, k.nama_kelas
     ORDER BY k.nama_kelas
 ";
- $kelas_stats = $koneksi->query($sql);
+ $stmt = $koneksi->prepare($sql);
+ $stmt->bind_param('s', $today);
+ $stmt->execute();
+ $kelas_stats = $stmt->get_result();
 
 // Ambil 10 absensi terbaru
  $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas 
@@ -141,7 +151,7 @@ while ($row = $result->fetch_assoc()) {
     $absensi_harian[] = $row;
 }
 
-// Top 5 Siswa dengan Alfa Terbanyak (Bulan Ini)
+// Top Siswa dengan Alfa Terbanyak (Bulan Ini) - TANPA LIMIT
  $start_month = date('Y-m-01');
  $end_month = date('Y-m-t');
  $sql = "
@@ -155,14 +165,13 @@ while ($row = $result->fetch_assoc()) {
     WHERE a.status = 'Alfa' AND a.tanggal BETWEEN ? AND ?
     GROUP BY s.id, s.nama, k.nama_kelas
     ORDER BY total_alfa DESC
-    LIMIT 5
 ";
  $stmt = $koneksi->prepare($sql);
  $stmt->bind_param('ss', $start_month, $end_month);
  $stmt->execute();
  $top_alfa_siswa = $stmt->get_result();
 
-// Top 5 Siswa dengan Terlambat Terbanyak (Bulan Ini)
+// Top Siswa dengan Terlambat Terbanyak (Bulan Ini) - TANPA LIMIT
  $sql = "
     SELECT 
         s.nama AS nama_siswa, 
@@ -174,7 +183,6 @@ while ($row = $result->fetch_assoc()) {
     WHERE a.status = 'Terlambat' AND a.tanggal BETWEEN ? AND ?
     GROUP BY s.id, s.nama, k.nama_kelas
     ORDER BY total_terlambat DESC
-    LIMIT 5
 ";
  $stmt = $koneksi->prepare($sql);
  $stmt->bind_param('ss', $start_month, $end_month);
@@ -258,6 +266,42 @@ if ($result) {
     }
     .seconds {
         animation: pulse 1s infinite;
+    }
+    /* Style untuk scrollbar di tabel peringatan terlambat dan alfa */
+    .scrollable-table {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    /* Style untuk indikator scroll */
+    .scroll-indicator {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,0.1));
+        height: 20px;
+        pointer-events: none;
+        display: none;
+    }
+    .has-scroll .scroll-indicator {
+        display: block;
+    }
+    /* Badge colors for attendance status */
+    .badge-hadir { background-color: #198754; }
+    .badge-sakit { background-color: #FFC107; color: #000; }
+    .badge-izin { background-color: #0DCAF0; }
+    .badge-alfa { background-color: #DC3545; }
+    .badge-terlambat { background-color: var(--whatsapp-gray); }
+    /* Style untuk tabel analisis per kelas dengan header sticky */
+    .kelas-table-container {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+    .kelas-table-container thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f8f9fa;
+        z-index: 10;
     }
 </style>
 
@@ -412,10 +456,10 @@ if ($result) {
                 <div class="card-header bg-danger text-white">
                     <i class="fas fa-exclamation-triangle me-2"></i>Peringatan Alfa Bulan Ini ⚠️
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <div class="card-body p-0 position-relative" id="alfa-container">
+                    <div class="table-responsive scrollable-table">
                         <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                            <thead class="table-light sticky-top">
                                 <tr>
                                     <th>Nama Siswa</th>
                                     <th>Kelas</th>
@@ -423,6 +467,13 @@ if ($result) {
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php 
+                                // Hitung total siswa alfa untuk menentukan apakah perlu scroll
+                                $total_alfa = 0;
+                                if ($top_alfa_siswa && $top_alfa_siswa->num_rows > 0) {
+                                    $total_alfa = $top_alfa_siswa->num_rows;
+                                }
+                                ?>
                                 <?php if ($top_alfa_siswa && $top_alfa_siswa->num_rows > 0): ?>
                                     <?php while ($row = $top_alfa_siswa->fetch_assoc()): ?>
                                         <tr>
@@ -437,6 +488,7 @@ if ($result) {
                             </tbody>
                         </table>
                     </div>
+                    <div class="scroll-indicator"></div>
                 </div>
             </div>
         </div>
@@ -447,10 +499,10 @@ if ($result) {
                 <div class="card-header bg-whatsapp-gray text-white">
                     <i class="fas fa-clock me-2"></i>Peringatan Terlambat Bulan Ini ⏰
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <div class="card-body p-0 position-relative" id="terlambat-container">
+                    <div class="table-responsive scrollable-table">
                         <table class="table table-hover mb-0">
-                            <thead class="table-light">
+                            <thead class="table-light sticky-top">
                                 <tr>
                                     <th>Nama Siswa</th>
                                     <th>Kelas</th>
@@ -458,6 +510,15 @@ if ($result) {
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php 
+                                // Hitung total siswa terlambat untuk menentukan apakah perlu scroll
+                                $total_terlambat = 0;
+                                if ($top_terlambat_siswa && $top_terlambat_siswa->num_rows > 0) {
+                                    $total_terlambat = $top_terlambat_siswa->num_rows;
+                                    // Reset pointer result set ke awal
+                                    $top_terlambat_siswa->data_seek(0);
+                                }
+                                ?>
                                 <?php if ($top_terlambat_siswa && $top_terlambat_siswa->num_rows > 0): ?>
                                     <?php while ($row = $top_terlambat_siswa->fetch_assoc()): ?>
                                         <tr>
@@ -472,6 +533,7 @@ if ($result) {
                             </tbody>
                         </table>
                     </div>
+                    <div class="scroll-indicator"></div>
                 </div>
             </div>
         </div>
@@ -524,11 +586,11 @@ if ($result) {
         <div class="col-md-12">
             <div class="card shadow-sm rounded-3">
                 <div class="card-header bg-whatsapp-dark text-white d-flex justify-content-between align-items-center">
-                    <span><i class="fas fa-school me-2"></i>Analisis Per Kelas</span>
+                    <span><i class="fas fa-school me-2"></i>Analisis Per Kelas (Hari Ini)</span>
                     <a href="../kelas/" class="btn btn-sm bg-whatsapp-green text-white">Detail</a>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <div class="kelas-table-container">
                         <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
@@ -536,6 +598,11 @@ if ($result) {
                                     <th>Total</th>
                                     <th>L</th>
                                     <th>P</th>
+                                    <th>Hadir</th>
+                                    <th>Sakit</th>
+                                    <th>Izin</th>
+                                    <th>Alfa</th>
+                                    <th>Terlambat</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -546,10 +613,15 @@ if ($result) {
                                             <td><strong><?= $row['total_siswa'] ?></strong></td>
                                             <td><?= $row['laki'] ?></td>
                                             <td><?= $row['perempuan'] ?></td>
+                                            <td><span class="badge badge-hadir"><?= $row['hadir'] ?? 0 ?></span></td>
+                                            <td><span class="badge badge-sakit"><?= $row['sakit'] ?? 0 ?></span></td>
+                                            <td><span class="badge badge-izin"><?= $row['izin'] ?? 0 ?></span></td>
+                                            <td><span class="badge badge-alfa"><?= $row['alfa'] ?? 0 ?></span></td>
+                                            <td><span class="badge badge-terlambat"><?= $row['terlambat'] ?? 0 ?></span></td>
                                         </tr>
                                     <?php endwhile; ?>
                                 <?php else: ?>
-                                    <tr><td colspan="4" class="text-center text-muted">Tidak ada data kelas</td></tr>
+                                    <tr><td colspan="9" class="text-center text-muted">Tidak ada data kelas</td></tr>
                                 <?php endif; ?>
                             </tbody>
                         </table>
@@ -792,6 +864,47 @@ if ($result) {
                 }
             }
         }
+    });
+    
+    // Cek apakah tabel terlambat dan alfa memerlukan scroll
+    document.addEventListener('DOMContentLoaded', function() {
+        // Untuk tabel terlambat
+        const terlambatContainer = document.getElementById('terlambat-container');
+        const terlambatTable = terlambatContainer.querySelector('.scrollable-table');
+        
+        // Jika jumlah siswa terlambat lebih dari 5, tambahkan kelas has-scroll
+        const totalTerlambat = <?= $total_terlambat ?>;
+        if (totalTerlambat > 5) {
+            terlambatContainer.classList.add('has-scroll');
+        }
+        
+        // Deteksi scroll untuk menampilkan/menyembunyikan indikator scroll
+        terlambatTable.addEventListener('scroll', function() {
+            if (this.scrollTop > 0) {
+                terlambatContainer.classList.add('scrolled');
+            } else {
+                terlambatContainer.classList.remove('scrolled');
+            }
+        });
+        
+        // Untuk tabel alfa
+        const alfaContainer = document.getElementById('alfa-container');
+        const alfaTable = alfaContainer.querySelector('.scrollable-table');
+        
+        // Jika jumlah siswa alfa lebih dari 5, tambahkan kelas has-scroll
+        const totalAlfa = <?= $total_alfa ?>;
+        if (totalAlfa > 5) {
+            alfaContainer.classList.add('has-scroll');
+        }
+        
+        // Deteksi scroll untuk menampilkan/menyembunyikan indikator scroll
+        alfaTable.addEventListener('scroll', function() {
+            if (this.scrollTop > 0) {
+                alfaContainer.classList.add('scrolled');
+            } else {
+                alfaContainer.classList.remove('scrolled');
+            }
+        });
     });
 </script>
 
