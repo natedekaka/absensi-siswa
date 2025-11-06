@@ -1,4 +1,4 @@
 test hallo
 test git kembali
-di debian 13
-update 3
+di fedora 43
+update 1
