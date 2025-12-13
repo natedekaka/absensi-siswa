@@ -1,5 +1,5 @@
 test hallo
 test git kembali
-di omarchy
+di fedora 43
 update
 
