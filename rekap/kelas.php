@@ -85,8 +85,8 @@ require_once '../includes/header.php';
     <?php if (isset($_GET['kelas_id'])): ?>
         <?php
         $kelas_id = $_GET['kelas_id'];
-        $tgl_awal = filter_input(INPUT_GET, 'tgl_awal', FILTER_SANITIZE_STRING);
-        $tgl_akhir = filter_input(INPUT_GET, 'tgl_akhir', FILTER_SANITIZE_STRING);
+        $tgl_awal = htmlspecialchars($_GET['tgl_awal'] ?? '');
+        $tgl_akhir = htmlspecialchars($_GET['tgl_akhir'] ?? '');
 
         // Validasi tanggal
         if (!strtotime($tgl_awal) || !strtotime($tgl_akhir)) {

@@ -56,75 +56,18 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* CSS untuk tampilan cetak */
-        @media print {
-            .no-print { display: none; }
-            body { 
-                -webkit-print-color-adjust: exact !important; 
-                print-color-adjust: exact !important;
-                font-family: 'Times New Roman', Times, serif;
-                margin: 0;
-            }
-            @page { 
-                size: A4;
-                margin: 2cm 2cm 2cm 2cm;
-            }
-            .header, .footer {
-                position: fixed;
-                left: 0;
-                width: 100%;
-                text-align: center;
-            }
-            .header {
-                top: 0;
-            }
-            .footer {
-                bottom: 0;
-            }
-            .content {
-                margin-top: 2cm;
-                margin-bottom: 2cm;
-            }
-            .table th, .table td { 
-                padding: 0.5rem !important; 
-                font-size: 11px; 
-            }
-            .table { 
-                font-size: 11px;
-                border: 1px solid #000;
-            }
-            .table-bordered th, .table-bordered td {
-                border: 1px solid #000 !important;
-            }
-            .table thead th {
-                background-color: #d1d1d1 !important;
-                color: #000 !important;
-            }
-            .info-section {
-                border: 1px solid #000;
-                padding: 10px;
-                margin-bottom: 20px;
-                background-color: #f7f7f7;
-            }
-            .summary-list {
-                list-style-type: none;
-                padding-left: 0;
-            }
-            .summary-list li {
-                margin-bottom: 5px;
-            }
-        }
-
-        /* CSS untuk tampilan layar */
+        /* CSS UNTUK TAMPILAN LAYAR (PREVIEW) */
         body {
             background-color: #f4f7f9;
+            font-family: Arial, sans-serif;
         }
         .container-fluid {
-            max-width: 21cm; /* Ukuran A4 */
+            max-width: 21cm; /* Simulasi lebar kertas A4 */
             background-color: #fff;
-            padding: 2cm;
+            padding: 1.5cm;
+            margin: 20px auto;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            min-height: 29.7cm; /* Ukuran A4 */
+            min-height: 29.7cm;
         }
         .header {
             text-align: center;
@@ -132,30 +75,58 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
             border-bottom: 2px solid #333;
             padding-bottom: 15px;
         }
-        .header h3, .header h4 {
-            font-weight: 600;
-            color: #333;
-        }
-        .header p {
-            font-size: 14px;
-            color: #555;
-        }
         .table th {
             background-color: #343a40 !important;
             color: white !important;
             text-align: center;
         }
-        .table tbody td {
-            vertical-align: middle;
-            text-align: center;
-        }
-        .fw-bold {
-            font-weight: bold;
-        }
-        .summary-box {
-            background-color: #e9ecef;
-            padding: 15px;
-            border-radius: 8px;
+
+        /* CSS KHUSUS UNTUK CETAK (PRINT) */
+        @media print {
+            .no-print { display: none !important; } /* Sembunyikan tombol cetak */
+            
+            body { 
+                background-color: #fff !important;
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                margin: 0;
+            }
+            
+            .container-fluid {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+            }
+
+            @page { 
+                size: A4;
+                margin: 1.5cm; /* Jarak aman pinggir kertas */
+            }
+
+            /* Perbaikan Garis Tabel agar muncul saat diprint */
+            .table { 
+                width: 100% !important;
+                border-collapse: collapse !important;
+                font-size: 10pt; 
+            }
+            .table-bordered th, .table-bordered td {
+                border: 1px solid #000 !important; /* Garis hitam pekat */
+                padding: 6px !important;
+            }
+            
+            /* HEADER TABEL: Muncul lagi di setiap halaman baru jika data panjang */
+            thead { display: table-header-group; } 
+            
+            /* CEGAH POTONGAN: Mencegah satu baris terbelah di dua halaman */
+            tr { page-break-inside: avoid; }
+            
+            .summary-box {
+                border: 1px solid #000 !important;
+                background-color: #f7f7f7 !important;
+                page-break-inside: avoid; /* Kotak ringkasan tidak terpotong */
+            }
         }
     </style>
     <script>
