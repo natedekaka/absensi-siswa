@@ -4,7 +4,7 @@
 $host = 'db'; 
 $user = 'user'; 
 $pass = 'pass123';
-$db   = 'absensi_db3'; // Sesuaikan dengan nama baru yang Anda buat
+$db   = 'absensi_db3'; // Sesuaikan dengan nama baru
 
 $koneksi = new mysqli($host, $user, $pass, $db);
 
