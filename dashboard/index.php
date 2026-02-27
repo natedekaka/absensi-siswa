@@ -39,9 +39,17 @@ if ($result && $row = $result->fetch_assoc()) {
 
 // Hitung absensi hari ini
  $today = date('Y-m-d');
- $sql = "SELECT COUNT(*) AS total FROM absensi WHERE tanggal = ?";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('s', $today);
+ $semester_id_filter = $_GET['semester_id'] ?? '';
+ 
+ if ($semester_id_filter) {
+     $sql = "SELECT COUNT(*) AS total FROM absensi WHERE tanggal = ? AND semester_id = ?";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('si', $today, $semester_id_filter);
+ } else {
+     $sql = "SELECT COUNT(*) AS total FROM absensi WHERE tanggal = ?";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('s', $today);
+ }
  $stmt->execute();
  $result = $stmt->get_result();
 if ($result && $row = $result->fetch_assoc()) {
@@ -49,9 +57,15 @@ if ($result && $row = $result->fetch_assoc()) {
 }
 
 // Hitung detail absensi HARI INI (Versi Perbaikan: Case-Insensitive)
- $sql = "SELECT LOWER(status) AS status_lowercase, COUNT(*) AS total FROM absensi WHERE tanggal = ? GROUP BY status_lowercase";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('s', $today);
+ if ($semester_id_filter) {
+     $sql = "SELECT LOWER(status) AS status_lowercase, COUNT(*) AS total FROM absensi WHERE tanggal = ? AND semester_id = ? GROUP BY status_lowercase";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('si', $today, $semester_id_filter);
+ } else {
+     $sql = "SELECT LOWER(status) AS status_lowercase, COUNT(*) AS total FROM absensi WHERE tanggal = ? GROUP BY status_lowercase";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('s', $today);
+ }
  $stmt->execute();
  $result = $stmt->get_result();
  $today_status = ['Hadir' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0, 'Terlambat' => 0];
@@ -79,9 +93,15 @@ if ($result) {
 // Hitung absensi minggu ini
  $start_week = date('Y-m-d', strtotime('monday this week'));
  $end_week = date('Y-m-d', strtotime('sunday this week'));
- $sql = "SELECT COUNT(*) AS total FROM absensi WHERE tanggal BETWEEN ? AND ?";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('ss', $start_week, $end_week);
+ if ($semester_id_filter) {
+     $sql = "SELECT COUNT(*) AS total FROM absensi WHERE tanggal BETWEEN ? AND ? AND semester_id = ?";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ssi', $start_week, $end_week, $semester_id_filter);
+ } else {
+     $sql = "SELECT COUNT(*) AS total FROM absensi WHERE tanggal BETWEEN ? AND ?";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ss', $start_week, $end_week);
+ }
  $stmt->execute();
  $result = $stmt->get_result();
 if ($result && $row = $result->fetch_assoc()) {
@@ -106,44 +126,89 @@ if ($result) {
 
 // === ANALISIS PER KELAS (dengan "Laki-laki" / "Perempuan" dan status kehadiran) ===
 // Diubah untuk mengambil data per hari ini
- $sql = "
-    SELECT 
-        k.id AS kelas_id,
-        k.nama_kelas,
-        COUNT(s.id) AS total_siswa,
-        SUM(CASE WHEN s.jenis_kelamin = 'Laki-laki' THEN 1 ELSE 0 END) AS laki,
-        SUM(CASE WHEN s.jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) AS perempuan,
-        SUM(CASE WHEN a.status = 'Hadir' THEN 1 ELSE 0 END) AS hadir,
-        SUM(CASE WHEN a.status = 'Sakit' THEN 1 ELSE 0 END) AS sakit,
-        SUM(CASE WHEN a.status = 'Izin' THEN 1 ELSE 0 END) AS izin,
-        SUM(CASE WHEN a.status = 'Alfa' THEN 1 ELSE 0 END) AS alfa,
-        SUM(CASE WHEN a.status = 'Terlambat' THEN 1 ELSE 0 END) AS terlambat
-    FROM kelas k
-    LEFT JOIN siswa s ON k.id = s.kelas_id
-    LEFT JOIN absensi a ON s.id = a.siswa_id AND a.tanggal = ?
-    GROUP BY k.id, k.nama_kelas
-    ORDER BY k.nama_kelas
-";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('s', $today);
+ if ($semester_id_filter) {
+     $sql = "
+         SELECT 
+             k.id AS kelas_id,
+             k.nama_kelas,
+             COUNT(s.id) AS total_siswa,
+             SUM(CASE WHEN s.jenis_kelamin = 'Laki-laki' THEN 1 ELSE 0 END) AS laki,
+             SUM(CASE WHEN s.jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) AS perempuan,
+             SUM(CASE WHEN a.status = 'Hadir' THEN 1 ELSE 0 END) AS hadir,
+             SUM(CASE WHEN a.status = 'Sakit' THEN 1 ELSE 0 END) AS sakit,
+             SUM(CASE WHEN a.status = 'Izin' THEN 1 ELSE 0 END) AS izin,
+             SUM(CASE WHEN a.status = 'Alfa' THEN 1 ELSE 0 END) AS alfa,
+             SUM(CASE WHEN a.status = 'Terlambat' THEN 1 ELSE 0 END) AS terlambat
+         FROM kelas k
+         LEFT JOIN siswa s ON k.id = s.kelas_id
+         LEFT JOIN absensi a ON s.id = a.siswa_id AND a.tanggal = ? AND a.semester_id = ?
+         GROUP BY k.id, k.nama_kelas
+         ORDER BY k.nama_kelas
+     ";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('si', $today, $semester_id_filter);
+ } else {
+     $sql = "
+         SELECT 
+             k.id AS kelas_id,
+             k.nama_kelas,
+             COUNT(s.id) AS total_siswa,
+             SUM(CASE WHEN s.jenis_kelamin = 'Laki-laki' THEN 1 ELSE 0 END) AS laki,
+             SUM(CASE WHEN s.jenis_kelamin = 'Perempuan' THEN 1 ELSE 0 END) AS perempuan,
+             SUM(CASE WHEN a.status = 'Hadir' THEN 1 ELSE 0 END) AS hadir,
+             SUM(CASE WHEN a.status = 'Sakit' THEN 1 ELSE 0 END) AS sakit,
+             SUM(CASE WHEN a.status = 'Izin' THEN 1 ELSE 0 END) AS izin,
+             SUM(CASE WHEN a.status = 'Alfa' THEN 1 ELSE 0 END) AS alfa,
+             SUM(CASE WHEN a.status = 'Terlambat' THEN 1 ELSE 0 END) AS terlambat
+         FROM kelas k
+         LEFT JOIN siswa s ON k.id = s.kelas_id
+         LEFT JOIN absensi a ON s.id = a.siswa_id AND a.tanggal = ?
+         GROUP BY k.id, k.nama_kelas
+         ORDER BY k.nama_kelas
+     ";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('s', $today);
+ }
  $stmt->execute();
  $kelas_stats = $stmt->get_result();
 
 // Ambil 10 absensi terbaru
- $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas 
-        FROM absensi a
-        JOIN siswa s ON a.siswa_id = s.id
-        JOIN kelas k ON s.kelas_id = k.id
-        ORDER BY a.tanggal DESC, a.id DESC
-        LIMIT 10";
- $absensi_terbaru = $koneksi->query($sql);
+ if ($semester_id_filter) {
+     $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas 
+             FROM absensi a
+             JOIN siswa s ON a.siswa_id = s.id
+             JOIN kelas k ON s.kelas_id = k.id
+             WHERE a.semester_id = ?
+             ORDER BY a.tanggal DESC, a.id DESC
+             LIMIT 10";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('i', $semester_id_filter);
+     $stmt->execute();
+     $absensi_terbaru = $stmt->get_result();
+ } else {
+     $sql = "SELECT a.id, a.tanggal, a.status, s.nama AS nama_siswa, k.nama_kelas 
+             FROM absensi a
+             JOIN siswa s ON a.siswa_id = s.id
+             JOIN kelas k ON s.kelas_id = k.id
+             ORDER BY a.tanggal DESC, a.id DESC
+             LIMIT 10";
+     $absensi_terbaru = $koneksi->query($sql);
+ }
 
 // Ambil data absensi harian dalam minggu ini untuk grafik
- $sql = "SELECT tanggal, COUNT(*) AS jumlah FROM absensi 
-        WHERE tanggal BETWEEN ? AND ? 
-        GROUP BY tanggal ORDER BY tanggal";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('ss', $start_week, $end_week);
+ if ($semester_id_filter) {
+     $sql = "SELECT tanggal, COUNT(*) AS jumlah FROM absensi 
+             WHERE tanggal BETWEEN ? AND ? AND semester_id = ?
+             GROUP BY tanggal ORDER BY tanggal";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ssi', $start_week, $end_week, $semester_id_filter);
+ } else {
+     $sql = "SELECT tanggal, COUNT(*) AS jumlah FROM absensi 
+             WHERE tanggal BETWEEN ? AND ? 
+             GROUP BY tanggal ORDER BY tanggal";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ss', $start_week, $end_week);
+ }
  $stmt->execute();
  $result = $stmt->get_result();
  $absensi_harian = [];
@@ -154,38 +219,72 @@ while ($row = $result->fetch_assoc()) {
 // Top Siswa dengan Alfa Terbanyak (Bulan Ini) - TANPA LIMIT
  $start_month = date('Y-m-01');
  $end_month = date('Y-m-t');
- $sql = "
-    SELECT 
-        s.nama AS nama_siswa, 
-        k.nama_kelas, 
-        COUNT(*) AS total_alfa 
-    FROM absensi a
-    JOIN siswa s ON a.siswa_id = s.id
-    JOIN kelas k ON s.kelas_id = k.id
-    WHERE a.status = 'Alfa' AND a.tanggal BETWEEN ? AND ?
-    GROUP BY s.id, s.nama, k.nama_kelas
-    ORDER BY total_alfa DESC
-";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('ss', $start_month, $end_month);
+ if ($semester_id_filter) {
+     $sql = "
+         SELECT 
+             s.nama AS nama_siswa, 
+             k.nama_kelas, 
+             COUNT(*) AS total_alfa 
+         FROM absensi a
+         JOIN siswa s ON a.siswa_id = s.id
+         JOIN kelas k ON s.kelas_id = k.id
+         WHERE a.status = 'Alfa' AND a.tanggal BETWEEN ? AND ? AND a.semester_id = ?
+         GROUP BY s.id, s.nama, k.nama_kelas
+         ORDER BY total_alfa DESC
+     ";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ssi', $start_month, $end_month, $semester_id_filter);
+ } else {
+     $sql = "
+         SELECT 
+             s.nama AS nama_siswa, 
+             k.nama_kelas, 
+             COUNT(*) AS total_alfa 
+         FROM absensi a
+         JOIN siswa s ON a.siswa_id = s.id
+         JOIN kelas k ON s.kelas_id = k.id
+         WHERE a.status = 'Alfa' AND a.tanggal BETWEEN ? AND ?
+         GROUP BY s.id, s.nama, k.nama_kelas
+         ORDER BY total_alfa DESC
+     ";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ss', $start_month, $end_month);
+ }
  $stmt->execute();
  $top_alfa_siswa = $stmt->get_result();
 
 // Top Siswa dengan Terlambat Terbanyak (Bulan Ini) - TANPA LIMIT
- $sql = "
-    SELECT 
-        s.nama AS nama_siswa, 
-        k.nama_kelas, 
-        COUNT(*) AS total_terlambat 
-    FROM absensi a
-    JOIN siswa s ON a.siswa_id = s.id
-    JOIN kelas k ON s.kelas_id = k.id
-    WHERE a.status = 'Terlambat' AND a.tanggal BETWEEN ? AND ?
-    GROUP BY s.id, s.nama, k.nama_kelas
-    ORDER BY total_terlambat DESC
-";
- $stmt = $koneksi->prepare($sql);
- $stmt->bind_param('ss', $start_month, $end_month);
+ if ($semester_id_filter) {
+     $sql = "
+         SELECT 
+             s.nama AS nama_siswa, 
+             k.nama_kelas, 
+             COUNT(*) AS total_terlambat 
+         FROM absensi a
+         JOIN siswa s ON a.siswa_id = s.id
+         JOIN kelas k ON s.kelas_id = k.id
+         WHERE a.status = 'Terlambat' AND a.tanggal BETWEEN ? AND ? AND a.semester_id = ?
+         GROUP BY s.id, s.nama, k.nama_kelas
+         ORDER BY total_terlambat DESC
+     ";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ssi', $start_month, $end_month, $semester_id_filter);
+ } else {
+     $sql = "
+         SELECT 
+             s.nama AS nama_siswa, 
+             k.nama_kelas, 
+             COUNT(*) AS total_terlambat 
+         FROM absensi a
+         JOIN siswa s ON a.siswa_id = s.id
+         JOIN kelas k ON s.kelas_id = k.id
+         WHERE a.status = 'Terlambat' AND a.tanggal BETWEEN ? AND ?
+         GROUP BY s.id, s.nama, k.nama_kelas
+         ORDER BY total_terlambat DESC
+     ";
+     $stmt = $koneksi->prepare($sql);
+     $stmt->bind_param('ss', $start_month, $end_month);
+ }
  $stmt->execute();
  $top_terlambat_siswa = $stmt->get_result();
 
@@ -316,6 +415,36 @@ if ($result) {
             <div class="location-info-header">
                 <i class="fas fa-map-marker-alt"></i> Cimahi, Jawa Barat (GMT+7)
             </div>
+        </div>
+    </div>
+
+    <!-- Filter Semester -->
+    <?php
+    $semester_id_filter = $_GET['semester_id'] ?? '';
+    $semester_aktif = $koneksi->query("SELECT * FROM semester WHERE is_active = 1 LIMIT 1")->fetch_assoc();
+    if (empty($semester_id_filter) && $semester_aktif) {
+        $semester_id_filter = $semester_aktif['id'];
+    }
+    ?>
+    <div class="card mb-4 shadow-sm rounded-3">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label class="col-form-label"><strong><i class="fas fa-graduation-cap me-2"></i>Filter Semester:</strong></label>
+                </div>
+                <div class="col-auto">
+                    <select name="semester_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">Semua Semester</option>
+                        <?php
+                        $semester_list = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                        while ($row = $semester_list->fetch_assoc()): ?>
+                            <option value="<?= $row['id'] ?>" <?= ($row['id'] == $semester_id_filter) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($row['nama']) ?>
+                            </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+            </form>
         </div>
     </div>
 

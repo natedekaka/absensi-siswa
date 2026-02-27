@@ -36,17 +36,30 @@ require_once '../includes/functions.php';
             <div class="tab-pane fade show active" id="bulan" role="tabpanel">
                 <form method="GET" class="row g-3 mt-3">
                     <input type="hidden" name="mode" value="bulan">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label>Cari Nama Siswa</label>
                         <input type="text" name="cari" class="form-control" 
                                placeholder="Masukkan nama siswa" value="<?= $_GET['cari'] ?? '' ?>">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
+                        <label>Semester</label>
+                        <select name="semester_id" class="form-select" required>
+                            <option value="">Pilih Semester</option>
+                            <?php
+                            $semester_list = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                            while ($row = $semester_list->fetch_assoc()): ?>
+                                <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['semester_id'] ?? '')) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($row['nama']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label>Dari Tanggal</label>
                         <input type="date" name="dari_tanggal" class="form-control" 
                                value="<?= $_GET['dari_tanggal'] ?? date('Y-m-01') ?>" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label>Sampai Tanggal</label>
                         <input type="date" name="sampai_tanggal" class="form-control" 
                                value="<?= $_GET['sampai_tanggal'] ?? date('Y-m-t') ?>" required>
@@ -61,25 +74,33 @@ require_once '../includes/functions.php';
             <div class="tab-pane fade" id="rentang" role="tabpanel">
                 <form method="GET" class="row g-3 mt-3">
                     <input type="hidden" name="mode" value="rentang">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label>Cari Nama Siswa</label>
                         <input type="text" name="cari" class="form-control" 
                                placeholder="Masukkan nama siswa" value="<?= $_GET['cari'] ?? '' ?>">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-4">
+                        <label>Semester</label>
+                        <select name="semester_id" class="form-select" required>
+                            <option value="">Pilih Semester</option>
+                            <?php
+                            $semester_list = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                            while ($row = $semester_list->fetch_assoc()): ?>
+                                <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['semester_id'] ?? '')) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($row['nama']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label>Dari Tanggal</label>
                         <input type="date" name="dari" class="form-control" 
                                value="<?= $_GET['dari'] ?? date('Y-m-01') ?>" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label>Sampai Tanggal</label>
                         <input type="date" name="sampai" class="form-control" 
                                value="<?= $_GET['sampai'] ?? date('Y-m-t') ?>" required>
-                    </div>
-                    <div class="col-md-12 mt-4">
-                        <button type="submit" class="btn btn-primary">Cari</button>
-                        <a href="siswa.php" class="btn btn-secondary">Reset</a>
-                    </div>
                 </form>
             </div>
             <!-- Tab Per Semester -->
@@ -91,18 +112,17 @@ require_once '../includes/functions.php';
                         <input type="text" name="cari" class="form-control" 
                                placeholder="Masukkan nama siswa" value="<?= $_GET['cari'] ?? '' ?>">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-6">
                         <label>Semester</label>
-                        <select name="semester" class="form-select" required>
-                            <option value="1" <?= (($_GET['semester'] ?? '1') == '1') ? 'selected' : '' ?>>Semester 1</option>
-                            <option value="2" <?= (($_GET['semester'] ?? '2') == '2') ? 'selected' : '' ?>>Semester 2</option>
+                        <select name="semester_id" class="form-select" required>
+                            <?php
+                            $semester_list = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                            while ($row = $semester_list->fetch_assoc()): ?>
+                                <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['semester_id'] ?? '')) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($row['nama']) ?>
+                                </option>
+                            <?php endwhile; ?>
                         </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label>Tahun Ajaran</label>
-                        <input type="text" name="tahun_ajaran" class="form-control" 
-                               value="<?= $_GET['tahun_ajaran'] ?? date('Y') . '/' . (date('Y')+1) ?>" required
-                               placeholder="Contoh: 2023/2024">
                     </div>
                     <div class="col-md-12 mt-4">
                         <button type="submit" class="btn btn-primary">Cari</button>
@@ -141,6 +161,7 @@ if (isset($_GET['mode'])) {
             if ($mode == 'bulan') {
                 $dari_tanggal = $_GET['dari_tanggal'];
                 $sampai_tanggal = $_GET['sampai_tanggal'];
+                $semester_id = $_GET['semester_id'];
                 
                 // Tentukan tanggal mulai dan akhir
                 $tanggal_mulai = $dari_tanggal;
@@ -149,8 +170,9 @@ if (isset($_GET['mode'])) {
                 // Query untuk mengambil data absensi dalam rentang tanggal
                 $stmt = $koneksi->prepare("SELECT status, tanggal FROM absensi 
                                           WHERE siswa_id = ? 
-                                          AND tanggal BETWEEN ? AND ?");
-                $stmt->bind_param("iss", $siswa_id, $tanggal_mulai, $tanggal_akhir);
+                                          AND tanggal BETWEEN ? AND ?
+                                          AND semester_id = ?");
+                $stmt->bind_param("issi", $siswa_id, $tanggal_mulai, $tanggal_akhir, $semester_id);
                 $stmt->execute();
                 $absensi = $stmt->get_result();
                 
@@ -169,13 +191,15 @@ if (isset($_GET['mode'])) {
             } elseif ($mode == 'rentang') {
                 $dari = $_GET['dari'];
                 $sampai = $_GET['sampai'];
+                $semester_id = $_GET['semester_id'];
                 $tanggal_mulai = $dari;
                 $tanggal_akhir = $sampai;
                 
                 $stmt = $koneksi->prepare("SELECT status, tanggal FROM absensi 
                                           WHERE siswa_id = ? 
-                                          AND tanggal BETWEEN ? AND ?");
-                $stmt->bind_param("iss", $siswa_id, $dari, $sampai);
+                                          AND tanggal BETWEEN ? AND ?
+                                          AND semester_id = ?");
+                $stmt->bind_param("issi", $siswa_id, $dari, $sampai, $semester_id);
                 $stmt->execute();
                 $absensi = $stmt->get_result();
                 while($absen = $absensi->fetch_assoc()) {
@@ -189,25 +213,19 @@ if (isset($_GET['mode'])) {
                 $periode = date('d M Y', strtotime($dari)) . ' - ' . date('d M Y', strtotime($sampai));
                 
             } elseif ($mode == 'semester') {
-                $semester = $_GET['semester'];
-                $tahun_ajaran = $_GET['tahun_ajaran'];
-                list($tahun_awal, $tahun_akhir) = explode('/', $tahun_ajaran);
+                $semester_id = $_GET['semester_id'];
                 
-                if ($semester == 1) {
-                    $dari = $tahun_awal . '-07-01';
-                    $sampai = $tahun_awal . '-12-31';
-                } else {
-                    $dari = $tahun_akhir . '-01-01';
-                    $sampai = $tahun_akhir . '-06-30';
-                }
+                // Get semester info from database
+                $semester_info = $koneksi->query("SELECT * FROM semester WHERE id = $semester_id")->fetch_assoc();
                 
-                $tanggal_mulai = $dari;
-                $tanggal_akhir = $sampai;
+                $tanggal_mulai = $semester_info['tgl_mulai'];
+                $tanggal_akhir = $semester_info['tgl_selesai'];
                 
                 $stmt = $koneksi->prepare("SELECT status, tanggal FROM absensi 
                                           WHERE siswa_id = ? 
-                                          AND tanggal BETWEEN ? AND ?");
-                $stmt->bind_param("iss", $siswa_id, $dari, $sampai);
+                                          AND tanggal BETWEEN ? AND ?
+                                          AND semester_id = ?");
+                $stmt->bind_param("issi", $siswa_id, $tanggal_mulai, $tanggal_akhir, $semester_id);
                 $stmt->execute();
                 $absensi = $stmt->get_result();
                 while($absen = $absensi->fetch_assoc()) {
@@ -218,7 +236,7 @@ if (isset($_GET['mode'])) {
                         $detail[$absen['status']][] = $absen['tanggal'];
                     }
                 }
-                $periode = 'Semester ' . $semester . ' TA ' . $tahun_ajaran;
+                $periode = $semester_info['nama'];
             }
             
             // Hitung total dan persentase
@@ -369,9 +387,27 @@ if (isset($_GET['mode'])) {
             });
             </script>';
             
-            // Tombol cetak
-            $cetak_params = "type=siswa&id=$siswa_id&mode=$mode";
-            echo '<a href="cetak.php?' . $cetak_params . '" 
+            // Tombol cetak - gunakan format yang compatible dengan cetak.php
+            $semester_id_cetak = $_GET['semester_id'] ?? '';
+            $tgl_awal_cetak = '';
+            $tgl_akhir_cetak = '';
+            
+            if ($mode == 'semester') {
+                $semester_info = $koneksi->query("SELECT * FROM semester WHERE id = $semester_id_cetak")->fetch_assoc();
+                $tgl_awal_cetak = $semester_info['tgl_mulai'] ?? '';
+                $tgl_akhir_cetak = $semester_info['tgl_selesai'] ?? '';
+            } elseif ($mode == 'bulan') {
+                $tgl_awal_cetak = $_GET['dari_tanggal'] ?? '';
+                $tgl_akhir_cetak = $_GET['sampai_tanggal'] ?? '';
+            } elseif ($mode == 'rentang') {
+                $tgl_awal_cetak = $_GET['dari'] ?? '';
+                $tgl_akhir_cetak = $_GET['sampai'] ?? '';
+            }
+            
+            // Redirect ke cetak.php dengan format yang benar
+            $cetak_url = "cetak.php?kelas_id={$siswa_id}&semester_id={$semester_id_cetak}&tgl_awal={$tgl_awal_cetak}&tgl_akhir={$tgl_akhir_cetak}&mode=siswa";
+            
+            echo '<a href="' . $cetak_url . '" 
                   class="btn btn-success" target="_blank">Cetak</a>';
             
             echo '</div></div>';

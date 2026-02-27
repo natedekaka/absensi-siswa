@@ -99,10 +99,11 @@ body {
 
         <form method="POST" action="proses.php" id="form-absensi">
             <input type="hidden" name="kelas_id" id="kelas_id">
+            <input type="hidden" name="semester_id" id="semester_id">
 
-            <!-- Filter Tanggal & Kelas -->
+            <!-- Filter Tanggal, Semester & Kelas -->
             <div class="row g-4 mb-4">
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-4 col-lg-3">
                     <div class="absensi-card p-3 h-100">
                         <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
                             <i class="fas fa-calendar-alt me-2"></i> Tanggal
@@ -111,7 +112,24 @@ body {
                                class="form-control" value="<?= date('Y-m-d') ?>" required>
                     </div>
                 </div>
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-4 col-lg-3">
+                    <div class="absensi-card p-3 h-100">
+                        <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
+                            <i class="fas fa-graduation-cap me-2"></i> Semester
+                        </label>
+                        <select id="semester" name="semester_id" class="form-select" required>
+                            <option value="">Pilih Semester</option>
+                            <?php
+                            $semester = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                            while ($row = $semester->fetch_assoc()):
+                                $selected = $row['is_active'] ? 'selected' : '';
+                            ?>
+                            <option value="<?= $row['id'] ?>" <?= $selected ?>><?= htmlspecialchars($row['nama']) ?></option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4 col-lg-3">
                     <div class="absensi-card p-3 h-100">
                         <label class="form-label fw-semibold d-flex align-items-center mb-2" style="color: var(--wa-green);">
                             <i class="fas fa-chalkboard me-2"></i> Kelas
@@ -170,6 +188,11 @@ function toggleElements(show) {
     document.getElementById('searchContainer').style.display = display;
 }
 
+document.getElementById('semester').addEventListener('change', function() {
+    document.getElementById('semester_id').value = this.value;
+    loadSiswa();
+});
+
 document.getElementById('kelas').addEventListener('change', function () {
     const kelasId = this.value;
     document.getElementById('kelas_id').value = kelasId;
@@ -189,10 +212,11 @@ document.getElementById('search_nama').addEventListener('input', loadSiswa);
 function loadSiswa() {
     const kelasId = document.getElementById('kelas').value;
     const tanggal = document.getElementById('tanggal').value;
+    const semesterId = document.getElementById('semester').value;
     const search = document.getElementById('search_nama').value;
 
-    if (kelasId) {
-        let url = `get_siswa.php?kelas_id=${encodeURIComponent(kelasId)}&tanggal=${encodeURIComponent(tanggal)}`;
+    if (kelasId && semesterId) {
+        let url = `get_siswa.php?kelas_id=${encodeURIComponent(kelasId)}&tanggal=${encodeURIComponent(tanggal)}&semester_id=${encodeURIComponent(semesterId)}`;
         if (search) url += `&search=${encodeURIComponent(search)}`;
 
         fetch(url)
@@ -208,6 +232,8 @@ function loadSiswa() {
                 document.getElementById('siswa-container').innerHTML = 
                     '<div class="alert alert-danger rounded-3">Gagal memuat data siswa.</div>';
             });
+    } else if (kelasId) {
+        document.getElementById('siswa-container').innerHTML = '<div class="alert alert-warning">Pilih semester terlebih dahulu!</div>';
     }
 }
 </script>

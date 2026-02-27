@@ -34,6 +34,20 @@ require_once '../includes/header.php';
 
     <form method="GET" class="row g-3 mb-4">
         <div class="col-md-3">
+            <label><strong>Semester</strong></label>
+            <select name="semester_id" class="form-select" required>
+                <option value="">-- Pilih Semester --</option>
+                <?php
+                $stmt_semester = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                while ($row = $stmt_semester->fetch_assoc()): ?>
+                    <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['semester_id'] ?? '')) ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($row['nama']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div class="col-md-3">
             <label><strong>Kelas</strong></label>
             <select name="kelas_id" class="form-select" required>
                 <option value="">-- Pilih Kelas --</option>
@@ -82,9 +96,10 @@ require_once '../includes/header.php';
         </div>
     </form>
 
-    <?php if (isset($_GET['kelas_id'])): ?>
+    <?php if (isset($_GET['kelas_id']) && isset($_GET['semester_id'])): ?>
         <?php
         $kelas_id = $_GET['kelas_id'];
+        $semester_id = $_GET['semester_id'];
         $tgl_awal = htmlspecialchars($_GET['tgl_awal'] ?? '');
         $tgl_akhir = htmlspecialchars($_GET['tgl_akhir'] ?? '');
 
@@ -98,6 +113,10 @@ require_once '../includes/header.php';
             echo "<div class='alert alert-danger'>Tanggal awal tidak boleh lebih besar dari tanggal akhir.</div>";
             exit;
         }
+
+        // Ambil nama semester
+        $semester = $koneksi->query("SELECT nama FROM semester WHERE id = $semester_id")->fetch_assoc();
+        $nama_semester = $semester ? $semester['nama'] : 'Semua Semester';
 
         // Inisialisasi rekap
         $rekapKelas = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
@@ -115,6 +134,7 @@ require_once '../includes/header.php';
 
         // Tampilkan judul
         echo "<h4>" . ($semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspecialchars($nama_kelas)) . "</h4>";
+        echo "<p><strong>Semester:</strong> " . htmlspecialchars($nama_semester) . "</p>";
         echo "<p><strong>Periode:</strong> " . date('d M Y', strtotime($tgl_awal)) . " s.d. " . date('d M Y', strtotime($tgl_akhir)) . "</p>";
 
         // Ambil data siswa
@@ -154,8 +174,9 @@ require_once '../includes/header.php';
                 SELECT status FROM absensi 
                 WHERE siswa_id = ? 
                   AND tanggal BETWEEN ? AND ?
+                  AND semester_id = ?
             ");
-            $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
+            $stmt_absen->bind_param("issi", $siswa_id, $tgl_awal, $tgl_akhir, $semester_id);
             $stmt_absen->execute();
             $result_absen = $stmt_absen->get_result();
 
@@ -303,6 +324,7 @@ require_once '../includes/header.php';
         // Tombol Cetak
         $params = http_build_query([
             'kelas_id' => $kelas_id,
+            'semester_id' => $semester_id,
             'tgl_awal' => $tgl_awal,
             'tgl_akhir' => $tgl_akhir,
             'sort_by' => $sort_by

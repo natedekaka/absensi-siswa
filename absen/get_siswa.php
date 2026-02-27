@@ -3,9 +3,10 @@ require_once '../config.php';
 
 $kelas_id = $_GET['kelas_id'];
 $tanggal = $_GET['tanggal'] ?? date('Y-m-d');
+$semester_id = $_GET['semester_id'] ?? null;
 $search = isset($_GET['search']) ? $koneksi->real_escape_string($_GET['search']) : '';
 
-// Query: Gabungkan siswa + kelas + rekap historis
+// Query: Gabungkan siswa + kelas + rekap historis berdasarkan semester
 $query = "
     SELECT 
         s.*,
@@ -26,6 +27,7 @@ $query = "
             SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) AS izin,
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
         FROM absensi
+        WHERE semester_id = " . (int)$semester_id . "
         GROUP BY siswa_id
     ) rekap ON s.id = rekap.siswa_id
 ";
@@ -179,9 +181,9 @@ if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $status_sebelumnya = '';
         
-        // Cek status hari ini
-        $check = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal = ?");
-        $check->bind_param("is", $row['id'], $tanggal);
+        // Cek status hari ini berdasarkan semester
+        $check = $koneksi->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal = ? AND semester_id = ?");
+        $check->bind_param("isi", $row['id'], $tanggal, $semester_id);
         $check->execute();
         $check->store_result();
         if ($check->num_rows > 0) {

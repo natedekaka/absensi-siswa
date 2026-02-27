@@ -150,6 +150,11 @@
                             <li><a class="dropdown-item" href="../kelas/import.php"><i class="fas fa-chalkboard me-2"></i> Import Kelas</a></li>
                         </ul>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../tahun_ajaran/">
+                            <i class="fas fa-calendar-alt nav-icon"></i> Tahun Ajaran
+                        </a>
+                    </li>
                 </ul>
             <?php endif; ?>
 

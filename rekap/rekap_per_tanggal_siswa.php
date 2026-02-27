@@ -48,6 +48,19 @@ $current_year = date('Y');
         <h2>Rekap Absensi Siswa Per Tanggal</h2>
         <form method="GET" class="row g-3 mb-4">
             <div class="col-md-3">
+                <label><strong>Semester</strong></label>
+                <select name="semester_id" class="form-select" required>
+                    <option value="">-- Pilih Semester --</option>
+                    <?php
+                    $stmt_semester = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                    while ($row = $stmt_semester->fetch_assoc()): ?>
+                        <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['semester_id'] ?? '')) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($row['nama']) ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+            <div class="col-md-3">
                 <label><strong>Kelas</strong></label>
                 <select name="kelas_id" class="form-select" required>
                     <option value="">-- Pilih Kelas --</option>
@@ -123,9 +136,10 @@ $current_year = date('Y');
             </div>
         </form>
 
-        <?php if (isset($_GET['kelas_id']) && (isset($_GET['bulan']) || isset($_GET['tgl_awal']))): ?>
+        <?php if (isset($_GET['kelas_id']) && isset($_GET['semester_id']) && (isset($_GET['bulan']) || isset($_GET['tgl_awal']))): ?>
             <?php
             $kelas_id = $_GET['kelas_id'];
+            $semester_id = $_GET['semester_id'];
             $periode = $_GET['periode'] ?? 'bulan';
             $semua_kelas = ($kelas_id === 'all');
             $nama_kelas = '';
@@ -199,9 +213,9 @@ $current_year = date('Y');
                 $stmt_absen = $koneksi->prepare("
                     SELECT tanggal, status
                     FROM absensi
-                    WHERE siswa_id = ? AND tanggal BETWEEN ? AND ?
+                    WHERE siswa_id = ? AND tanggal BETWEEN ? AND ? AND semester_id = ?
                 ");
-                $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
+                $stmt_absen->bind_param("issi", $siswa_id, $tgl_awal, $tgl_akhir, $semester_id);
                 $stmt_absen->execute();
                 $result_absen = $stmt_absen->get_result();
 
@@ -376,6 +390,7 @@ $current_year = date('Y');
             // Tombol Cetak
             $params = http_build_query([
                 'kelas_id' => $kelas_id,
+                'semester_id' => $semester_id,
                 'periode' => $periode,
                 'bulan' => $periode == 'bulan' ? $bulan : '',
                 'tahun' => $periode == 'bulan' ? $tahun : '',

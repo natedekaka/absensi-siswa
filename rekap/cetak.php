@@ -11,12 +11,134 @@ require_once '../config.php';
 
 // Ambil parameter dari URL
 $kelas_id = $_GET['kelas_id'] ?? '';
+$semester_id = $_GET['semester_id'] ?? '';
 $tgl_awal = $_GET['tgl_awal'] ?? '';
 $tgl_akhir = $_GET['tgl_akhir'] ?? '';
 $sort_by = $_GET['sort_by'] ?? '';
+$mode = $_GET['mode'] ?? '';
 
-// Validasi input
-if (empty($kelas_id) || empty($tgl_awal) || empty($tgl_akhir)) {
+// Cek jika mode adalah siswa (cetak per siswa)
+if ($mode == 'siswa') {
+    $siswa_id = $kelas_id; // kelas_id di sini adalah siswa_id
+    $kelas_id = '';
+    
+    // Ambil data siswa
+    $stmt_siswa = $koneksi->prepare("SELECT s.nama, s.nis, k.nama_kelas FROM siswa s JOIN kelas k ON s.kelas_id = k.id WHERE s.id = ?");
+    $stmt_siswa->bind_param("i", $siswa_id);
+    $stmt_siswa->execute();
+    $result_siswa = $stmt_siswa->get_result();
+    
+    if ($result_siswa->num_rows == 0) {
+        die("<h3 class='text-danger'>Siswa tidak ditemukan.</h3>");
+    }
+    $data_siswa = $result_siswa->fetch_assoc();
+    $nama_siswa = $data_siswa['nama'];
+    $nama_kelas = $data_siswa['nama_kelas'];
+    $nis = $data_siswa['nis'];
+    $stmt_siswa->close();
+    
+    // Ambil data absensi
+    $stmt_absen = $koneksi->prepare("
+        SELECT tanggal, status FROM absensi 
+        WHERE siswa_id = ? AND tanggal BETWEEN ? AND ? AND semester_id = ?
+        ORDER BY tanggal
+    ");
+    $stmt_absen->bind_param("issi", $siswa_id, $tgl_awal, $tgl_akhir, $semester_id);
+    $stmt_absen->execute();
+    $result_absen = $stmt_absen->get_result();
+    
+    $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
+    $detail_absensi = [];
+    
+    while ($row = $result_absen->fetch_assoc()) {
+        $rekap[$row['status']]++;
+        $detail_absensi[] = $row;
+    }
+    $stmt_absen->close();
+    
+    // Ambil nama semester
+    $semester = $koneksi->query("SELECT nama FROM semester WHERE id = $semester_id")->fetch_assoc();
+    $nama_semester = $semester ? $semester['nama'] : 'Semua Semester';
+    
+    // Tampilkan halaman cetak untuk siswa
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cetak Rekap Absensi Siswa</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+            body { background-color: #f4f7f9; font-family: Arial, sans-serif; }
+            .container-fluid { max-width: 21cm; background-color: #fff; padding: 1.5cm; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+            .table th { background-color: #343a40 !important; color: white !important; }
+            @media print {
+                body { background: white; }
+                .container-fluid { box-shadow: none; margin: 0; padding: 0.5cm; }
+                .no-print { display: none !important; }
+                .table { font-size: 10pt; }
+                .table-bordered th, .table-bordered td { border: 1px solid #000 !important; }
+            }
+        </style>
+    </head>
+    <body onload="window.print()">
+        <div class="container-fluid">
+            <div class="text-end mb-4 no-print">
+                <button onclick="window.print()" class="btn btn-primary">Cetak</button>
+                <a href="javascript:window.history.back()" class="btn btn-secondary">Kembali</a>
+            </div>
+            <div class="header">
+                <h3><strong>LAPORAN ABSENSI SISWA</strong></h3>
+                <h4 class="mt-2"><?= htmlspecialchars($nama_siswa) ?></h4>
+                <p class="m-0">NIS: <?= htmlspecialchars($nis) ?> | Kelas: <?= htmlspecialchars($nama_kelas) ?></p>
+                <p class="m-0">Semester: <?= htmlspecialchars($nama_semester) ?></p>
+                <p class="m-0">Periode: <?= date('d F Y', strtotime($tgl_awal)) ?> s.d. <?= date('d F Y', strtotime($tgl_akhir)) ?></p>
+            </div>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $no = 1; foreach ($detail_absensi as $absen): ?>
+                    <tr>
+                        <td><?= $no++ ?></td>
+                        <td><?= date('d/m/Y', strtotime($absen['tanggal'])) ?></td>
+                        <td>
+                            <?php 
+                            $status_class = ['Hadir' => 'success', 'Terlambat' => 'warning', 'Sakit' => 'secondary', 'Izin' => 'info', 'Alfa' => 'danger'];
+                            $class = $status_class[$absen['status']] ?? 'secondary';
+                            ?>
+                            <span class="badge bg-<?= $class ?>"><?= $absen['status'] ?></span>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+            <div class="mt-4">
+                <h5>Rekap:</h5>
+                <div class="row">
+                    <div class="col"><span class="badge bg-success">Hadir: <?= $rekap['Hadir'] ?></span></div>
+                    <div class="col"><span class="badge bg-warning text-dark">Terlambat: <?= $rekap['Terlambat'] ?></span></div>
+                    <div class="col"><span class="badge bg-secondary">Sakit: <?= $rekap['Sakit'] ?></span></div>
+                    <div class="col"><span class="badge bg-info">Izin: <?= $rekap['Izin'] ?></span></div>
+                    <div class="col"><span class="badge bg-danger">Alfa: <?= $rekap['Alfa'] ?></span></div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+// Validasi input untuk mode kelas
+if (empty($kelas_id) || empty($semester_id) || empty($tgl_awal) || empty($tgl_akhir)) {
     die("<h3 class='text-danger'>Parameter tidak lengkap.</h3>");
 }
 
@@ -45,6 +167,10 @@ if (!$semua_kelas) {
 
 // Judul laporan
 $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspecialchars($nama_kelas);
+
+// Ambil nama semester
+$semester = $koneksi->query("SELECT nama FROM semester WHERE id = $semester_id")->fetch_assoc();
+$nama_semester = $semester ? $semester['nama'] : 'Semua Semester';
 ?>
 
 <!DOCTYPE html>
@@ -145,6 +271,7 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
         <div class="header">
             <h3 class="mb-0"><strong>LAPORAN ABSENSI SISWA</strong></h3>
             <h4 class="mt-2 mb-1"><?= $judul_laporan ?></h4>
+            <p class="m-0">Semester: <?= htmlspecialchars($nama_semester) ?></p>
             <p class="m-0">Periode: <?= date('d F Y', strtotime($tgl_awal)) ?> s.d. <?= date('d F Y', strtotime($tgl_akhir)) ?></p>
         </div>
 
@@ -185,8 +312,9 @@ $judul_laporan = $semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspec
                 SELECT status FROM absensi 
                 WHERE siswa_id = ? 
                   AND tanggal BETWEEN ? AND ?
+                  AND semester_id = ?
             ");
-            $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
+            $stmt_absen->bind_param("issi", $siswa_id, $tgl_awal, $tgl_akhir, $semester_id);
             $stmt_absen->execute();
             $result_absen = $stmt_absen->get_result();
 

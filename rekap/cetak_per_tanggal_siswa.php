@@ -9,6 +9,7 @@ require_once '../config.php';
 
 // Ambil parameter dari URL
 $kelas_id = filter_input(INPUT_GET, 'kelas_id', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$semester_id = filter_input(INPUT_GET, 'semester_id', FILTER_SANITIZE_NUMBER_INT);
 $periode = filter_input(INPUT_GET, 'periode', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $sort_by = filter_input(INPUT_GET, 'sort_by', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
@@ -23,8 +24,8 @@ if ($periode == 'bulan') {
 }
 
 // Validasi parameter
-if (!$kelas_id || !strtotime($tgl_awal) || !strtotime($tgl_akhir)) {
-    echo "<p>Tanggal atau kelas tidak valid.</p>";
+if (!$kelas_id || !$semester_id || !strtotime($tgl_awal) || !strtotime($tgl_akhir)) {
+    echo "<p>Parameter tidak lengkap. Pastikan semester, kelas, dan tanggal dipilih.</p>";
     exit;
 }
 
@@ -81,9 +82,9 @@ while ($row = $result_siswa->fetch_assoc()) {
     $stmt_absen = $koneksi->prepare("
         SELECT tanggal, status
         FROM absensi
-        WHERE siswa_id = ? AND tanggal BETWEEN ? AND ?
+        WHERE siswa_id = ? AND tanggal BETWEEN ? AND ? AND semester_id = ?
     ");
-    $stmt_absen->bind_param("iss", $siswa_id, $tgl_awal, $tgl_akhir);
+    $stmt_absen->bind_param("issi", $siswa_id, $tgl_awal, $tgl_akhir, $semester_id);
     $stmt_absen->execute();
     $result_absen = $stmt_absen->get_result();
     
