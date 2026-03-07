@@ -1,26 +1,25 @@
 <?php
 session_start();
 
-// Cek apakah user sudah login
 if (!isset($_SESSION['user'])) {
     header("Location: ../login.php");
     exit;
 }
 
-require_once '../config.php';
+require_once '../core/init.php';
+require_once '../core/Database.php';
 
 if (isset($_GET['id'])) {
     $id = $_GET['id'];
     
-    // Hapus data absensi terkait siswa terlebih dahulu
-    $koneksi->query("DELETE FROM absensi WHERE siswa_id = $id");
+    conn()->query("DELETE FROM absensi WHERE siswa_id = $id");
     
-    // Hapus siswa
-    $stmt = $koneksi->prepare("DELETE FROM siswa WHERE id = ?");
+    $stmt = conn()->prepare("DELETE FROM siswa WHERE id = ?");
     $stmt->bind_param("i", $id);
     
     if ($stmt->execute()) {
-        header("Location: index.php?success=1");
+        $_SESSION['success'] = "Siswa berhasil dihapus!";
+        header("Location: index.php");
         exit;
     } else {
         die("Error: " . $stmt->error);
@@ -29,4 +28,3 @@ if (isset($_GET['id'])) {
     header("Location: index.php");
     exit;
 }
-?>

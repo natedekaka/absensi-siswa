@@ -1,13 +1,15 @@
 <?php
 session_start();
 
-// Cek apakah user sudah login
 if (!isset($_SESSION['user'])) {
     header("Location: ../login.php");
     exit;
 }
 
-require_once '../config.php';
+require_once '../core/init.php';
+require_once '../core/Database.php';
+
+$title = 'Import Kelas - Sistem Absensi Siswa';
 
 $error = '';
 $success = '';
@@ -17,7 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $file = $_FILES['csv_file']['tmp_name'];
         $handle = fopen($file, "r");
         
-        // Lewati header
         fgetcsv($handle);
         
         $imported = 0;
@@ -27,16 +28,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if (count($data) < 2) continue;
             
             $nama_kelas = trim($data[0]);
-            $wali_kelas = trim($data[1]);
+            $wali_kelas = trim($data[1] ?? '');
             
-            // Validasi data
-            if (empty($nama_kelas) || empty($wali_kelas)) {
-                $errors[] = "Data tidak valid: $nama_kelas, $wali_kelas";
+            if (empty($nama_kelas)) {
                 continue;
             }
             
-            // Cek duplikat kelas
-            $cek = $koneksi->prepare("SELECT id FROM kelas WHERE nama_kelas = ?");
+            $cek = conn()->prepare("SELECT id FROM kelas WHERE nama_kelas = ?");
             $cek->bind_param("s", $nama_kelas);
             $cek->execute();
             $cek->store_result();
@@ -46,8 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 continue;
             }
             
-            // Insert data
-            $stmt = $koneksi->prepare("INSERT INTO kelas (nama_kelas, wali_kelas) VALUES (?, ?)");
+            $stmt = conn()->prepare("INSERT INTO kelas (nama_kelas,wali_kelas) VALUES (?, ?)");
             $stmt->bind_param("ss", $nama_kelas, $wali_kelas);
             
             if ($stmt->execute()) {
@@ -71,30 +68,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 }
 
-require_once '../includes/header.php';
+ob_start();
 ?>
 
-<h2>Import Data Kelas</h2>
+<div class="d-flex align-items-center mb-4">
+    <a href="index.php" class="btn btn-outline-secondary me-3">
+        <i class="fas fa-arrow-left"></i>
+    </a>
+    <h2 class="fw-bold text-wa-dark mb-0">
+        <i class="fas fa-file-import me-2"></i>Import Kelas
+    </h2>
+</div>
 
-<?php if ($success): ?>
-    <div class="alert alert-success"><?= $success ?></div>
-<?php endif; ?>
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card-custom">
+            <div class="card-body">
+                <?php if ($success): ?>
+                    <div class="alert alert-success"><?= $success ?></div>
+                <?php endif; ?>
 
-<?php if ($error): ?>
-    <div class="alert alert-danger"><?= $error ?></div>
-<?php endif; ?>
+                <?php if ($error): ?>
+                    <div class="alert alert-danger"><?= $error ?></div>
+                <?php endif; ?>
 
-<form method="POST" enctype="multipart/form-data">
-    <div class="mb-3">
-        <label>Pilih File CSV</label>
-        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
-        <small class="text-muted">
-            Format: nama_kelas,wali_kelas<br>
-            <a href="template_kelas.csv" class="btn btn-sm btn-outline-secondary mt-2">Unduh Template</a>
-        </small>
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pilih File CSV</label>
+                        <input type="file" name="csv_file" class="form-control form-control-custom" accept=".csv" required>
+                        <small class="text-muted">
+                            Format: nama_kelas,wali_kelas
+                        </small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-wa-primary">
+                            <i class="fas fa-upload me-2"></i>Import
+                        </button>
+                        <a href="index.php" class="btn btn-outline-secondary">Kembali</a>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Import</button>
-    <a href="index.php" class="btn btn-secondary">Kembali</a>
-</form>
+</div>
 
-<?php require_once '../includes/footer.php'; ?>
+<?php
+$content = ob_get_clean();
+require_once '../views/layout.php';

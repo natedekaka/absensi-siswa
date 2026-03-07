@@ -4,11 +4,11 @@ if (!isset($_SESSION['user'])) {
     die('Akses ditolak.');
 }
 
-require_once '../config.php';
+require_once '../core/init.php';
+require_once '../core/Database.php';
 
-// Ambil parameter filter
-$keyword = isset($_GET['cari']) ? $koneksi->real_escape_string($_GET['cari']) : '';
-$kelas_id_filter = isset($_GET['kelas_id']) ? $koneksi->real_escape_string($_GET['kelas_id']) : '';
+$keyword = isset($_GET['cari']) ? db()->escape($_GET['cari']) : '';
+$kelas_id_filter = isset($_GET['kelas_id']) ? db()->escape($_GET['kelas_id']) : '';
 
 // Bangun query
 $query = "SELECT siswa.nis, siswa.nisn, siswa.nama, siswa.jenis_kelamin, kelas.nama_kelas

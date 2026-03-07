@@ -1,256 +1,149 @@
 <?php
 session_start();
-// Cek apakah user sudah login
 if (!isset($_SESSION['user'])) {
     header("Location: ../login.php");
     exit;
 }
 
-require_once '../includes/header.php';
-require_once '../config.php';
+require_once '../core/init.php';
+require_once '../core/Database.php';
 
-// Tampilkan pesan error jika ada
-if (isset($_SESSION['error'])) {
-    echo '<div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>' . $_SESSION['error'] . '
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>';
-    unset($_SESSION['error']);
-}
+$title = 'Data Kelas - Sistem Absensi Siswa';
 
-// Tampilkan pesan sukses jika ada
-if (isset($_GET['success'])) {
-    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>Data berhasil dihapus!
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>';
-}
+ob_start();
 
-if (isset($_GET['edit_success'])) {
-    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>Data kelas berhasil diperbarui!
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>';
-}
-
-if (isset($_GET['add_success'])) {
-    echo '<div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>Data kelas berhasil ditambahkan!
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>';
-}
-
-// Sorting
-$sort = isset($_GET['sort']) ? $_GET['sort'] : 'asc';
-$order = ($sort === 'desc') ? 'DESC' : 'ASC';
-
-// Pagination
-$limit = 10; // Jumlah data per halaman
-$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-$start = ($page - 1) * $limit;
-
-// Ambil total data
-$totalResult = $koneksi->query("SELECT COUNT(*) AS total FROM kelas");
-$totalRow = $totalResult->fetch_assoc();
-$totalData = $totalRow['total'];
-$totalPages = ceil($totalData / $limit);
-
-// Ambil data sesuai halaman dan urutan
-$result = $koneksi->query("SELECT * FROM kelas ORDER BY nama_kelas $order LIMIT $start, $limit");
+$kelas = conn()->query("SELECT k.*, COUNT(s.id) as total_siswa 
+                        FROM kelas k 
+                        LEFT JOIN siswa s ON k.id = s.kelas_id 
+                        GROUP BY k.id 
+                        ORDER BY k.nama_kelas");
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Manajemen Kelas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f0f2f5;
-            font-family: 'Poppins', sans-serif;
-        }
+<style>
+.class-card {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+.class-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+.class-card-header {
+    background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);
+    padding: 1.25rem;
+    position: relative;
+}
+.class-card-header .kelas-icon {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    font-size: 4rem;
+    opacity: 0.15;
+    color: white;
+}
+.class-card-body {
+    padding: 1.25rem;
+}
+.kelas-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.badge-wali {
+    background: rgba(18, 140, 126, 0.1);
+    color: var(--wa-dark);
+}
+.badge-siswa {
+    background: rgba(37, 211, 102, 0.1);
+    color: #1ebe57;
+}
+.class-card .dropdown-toggle::after {
+    display: none;
+}
+</style>
 
-        .container {
-            margin-top: 50px;
-        }
-
-        .card {
-            border: none;
-            border-radius: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            transition: transform 0.3s ease-in-out;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .card-header {
-            background-color: #ffffff;
-            border-bottom: none;
-            padding: 1.5rem;
-            border-top-left-radius: 1.5rem;
-            border-top-right-radius: 1.5rem;
-            font-weight: 600;
-        }
-
-        .btn-rounded {
-            border-radius: 50px;
-            padding: 10px 25px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-rounded:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        }
-
-        .table thead {
-            background-color: #34495e;
-            color: white;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-        
-        .table thead th:first-child {
-            border-top-left-radius: 1.5rem;
-        }
-
-        .table thead th:last-child {
-            border-top-right-radius: 1.5rem;
-        }
-
-        .table-hover tbody tr:hover {
-            background-color: #e9ecef;
-            cursor: pointer;
-            transform: scale(1.01);
-            transition: transform 0.2s;
-        }
-
-        .btn-action {
-            border-radius: 50%;
-            width: 38px;
-            height: 38px;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            transition: transform 0.2s ease-in-out;
-        }
-        
-        .btn-action:hover {
-            transform: scale(1.1);
-        }
-
-        .page-item .page-link {
-            border-radius: 50px;
-            margin: 0 4px;
-            min-width: 40px;
-            text-align: center;
-            transition: all 0.3s;
-        }
-
-        .page-item.active .page-link {
-            background-color: #007bff;
-            border-color: #007bff;
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.25);
-        }
-
-        .page-item .page-link:hover {
-            background-color: #0056b3;
-            color: white;
-        }
-
-        .alert {
-            border-radius: 1rem;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h2 class="mb-4 text-center fw-bold">📚 Manajemen Kelas</h2>
-
-    <div class="d-flex justify-content-center flex-wrap gap-3 mb-5">
-        <a href="tambah.php" class="btn btn-primary btn-rounded shadow-sm">
-            <i class="fas fa-plus me-1"></i> Tambah Kelas
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-wa-dark mb-0">
+        <i class="fas fa-door-open me-2"></i>Data Kelas
+    </h2>
+    <div class="d-flex gap-2">
+        <a href="tambah.php" class="btn btn-wa-primary">
+            <i class="fas fa-plus me-2"></i>Tambah
         </a>
-        <a href="template_kelas.csv" class="btn btn-secondary btn-rounded shadow-sm">
-            <i class="fas fa-download me-1"></i> Template
+        <a href="import.php" class="btn btn-wa-success">
+            <i class="fas fa-file-import me-2"></i>Import
         </a>
-        <a href="import.php" class="btn btn-info btn-rounded text-white shadow-sm">
-            <i class="fas fa-file-import me-1"></i> Import CSV
-        </a>
-    </div>
-
-    <div class="card p-0">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle text-center mb-0">
-                    <thead class="bg-dark text-white">
-                        <tr>
-                            <th>
-                                <a href="?sort=<?= ($sort === 'asc') ? 'desc' : 'asc' ?>&page=<?= $page ?>" class="text-white text-decoration-none">
-                                    Kelas <i class="fas <?= ($sort === 'asc') ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up-alt' ?>"></i>
-                                </a>
-                            </th>
-                            <th>Wali Kelas</th>
-                            <th>Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if ($result->num_rows > 0): ?>
-                            <?php while ($row = $result->fetch_assoc()): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($row['nama_kelas']) ?></td>
-                                <td><?= htmlspecialchars($row['wali_kelas']) ?></td>
-                                <td>
-                                    <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-warning btn-action me-2" title="Edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <a href="hapus.php?id=<?= $row['id'] ?>" class="btn btn-danger btn-action" title="Hapus"
-                                       onclick="return confirm('Yakin ingin menghapus kelas ini?')">
-                                        <i class="fas fa-trash"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr>
-                                <td colspan="3" class="text-center text-muted py-4">
-                                    <i class="fas fa-exclamation-circle fa-2x d-block mb-2"></i>
-                                    Belum ada data kelas yang ditambahkan.
-                                </td>
-                            </tr>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        
-        <?php if ($totalPages > 1): ?>
-            <div class="card-footer bg-white border-0 pt-0 pb-3">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center mb-0">
-                        <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                            <a class="page-link" href="?page=<?= $i ?>&sort=<?= $sort ?>"><?= $i ?></a>
-                        </li>
-                        <?php endfor; ?>
-                    </ul>
-                </nav>
-            </div>
-        <?php endif; ?>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<div class="row g-4">
+    <?php if ($kelas && $kelas->num_rows > 0): ?>
+        <?php while ($row = $kelas->fetch_assoc()): ?>
+        <div class="col-md-6 col-lg-4">
+            <div class="card class-card h-100 shadow-sm">
+                <div class="class-card-header text-white position-relative">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="mb-1 fw-bold"><?= htmlspecialchars($row['nama_kelas']) ?></h5>
+                            <small class="opacity-75">Kelas</small>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light text-dark rounded-circle" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item py-2" href="edit.php?id=<?= $row['id'] ?>">
+                                    <i class="fas fa-edit me-2 text-warning"></i>Edit
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" href="hapus.php?id=<?= $row['id'] ?>" 
+                                       onclick="return confirm('Yakin hapus kelas <?= htmlspecialchars($row['nama_kelas']) ?>?')">
+                                    <i class="fas fa-trash me-2"></i>Hapus
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <i class="fas fa-school kelas-icon"></i>
+                </div>
+                <div class="class-card-body d-flex flex-column">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="kelas-badge badge-wali">
+                            <i class="fas fa-user-tie"></i>
+                            <?= htmlspecialchars($row['wali_kelas'] ?? 'Belum ada') ?>
+                        </span>
+                        <span class="kelas-badge badge-siswa">
+                            <i class="fas fa-users"></i>
+                            <?= $row['total_siswa'] ?> Siswa
+                        </span>
+                    </div>
+                    <div class="mt-auto d-flex gap-2">
+                        <a href="../siswa/?kelas_id=<?= $row['id'] ?>" class="btn btn-outline-dark flex-fill">
+                            <i class="fas fa-users me-1"></i> Lihat Siswa
+                        </a>
+                        <a href="../absensi/?kelas_id=<?= $row['id'] ?>" class="btn btn-wa-success flex-fill">
+                            <i class="fas fa-clipboard-check me-1"></i> Absensi
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endwhile; ?>
+    <?php else: ?>
+        <div class="col-12">
+            <div class="card-custom p-5 text-center">
+                <i class="fas fa-door-open fa-3x text-muted mb-3"></i>
+                <p class="text-muted mb-0">Belum ada data kelas</p>
+            </div>
+        </div>
+    <?php endif; ?>
+</div>
 
-</body>
-</html>
-
-<?php require_once '../includes/footer.php'; ?>
+<?php
+$content = ob_get_clean();
+require_once '../views/layout.php';

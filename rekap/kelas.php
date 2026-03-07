@@ -1,379 +1,409 @@
 <?php
 session_start();
 
-// Cek login
 if (!isset($_SESSION['user'])) {
     header("Location: ../login.php");
     exit;
 }
 
-require_once '../config.php';
-require_once '../includes/header.php';
+require_once '../core/init.php';
+require_once '../core/Database.php';
+
+$title = 'Rekap Absensi - Sistem Absensi Siswa';
+
+$semester_id = $_GET['semester_id'] ?? '';
+$kelas_id = $_GET['kelas_id'] ?? '';
+$tgl_awal = $_GET['tgl_awal'] ?? date('Y-m-01');
+$tgl_akhir = $_GET['tgl_akhir'] ?? date('Y-m-t');
+
+ob_start();
 ?>
 
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekap Absensi Per Kelas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin-top: 20px;
-        }
-    </style>
-</head>
-<body>
-<div class="container-fluid mt-4">
-    <h2>Rekap Absensi Per Kelas</h2>
+<style>
+.filter-card {
+    border: none;
+    border-radius: 20px;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.filter-header {
+    background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-radius: 20px 20px 0 0;
+}
+.stat-card {
+    border: none;
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+.stat-hadir { background: rgba(25, 135, 84, 0.1); color: #198754; }
+.stat-terlambat { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+.stat-sakit { background: rgba(13, 202, 240, 0.1); color: #0dcaf0; }
+.stat-izin { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
+.stat-alfa { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.table-rekap {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.table-rekap thead {
+    background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);
+    color: white;
+}
+.table-rekap tbody tr {
+    transition: all 0.2s;
+}
+.table-rekap tbody tr:hover {
+    background: var(--wa-light);
+}
+.rekap-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+.badge-hadir { background: rgba(25, 135, 84, 0.1); color: #198754; }
+.badge-terlambat { background: rgba(255, 193, 7, 0.15); color: #b38600; }
+.badge-sakit { background: rgba(13, 202, 240, 0.1); color: #0dcaf0; }
+.badge-izin { background: rgba(111, 66, 193, 0.1); color: #6f42c1; }
+.badge-alfa { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.progress-custom {
+    height: 8px;
+    border-radius: 10px;
+    background: #e9ecef;
+}
+.progress-bar-hadir { background: linear-gradient(90deg, #25D366, #198754); }
+</style>
 
-    <form method="GET" class="row g-3 mb-4">
-        <div class="col-md-3">
-            <label><strong>Semester</strong></label>
-            <select name="semester_id" class="form-select" required>
-                <option value="">-- Pilih Semester --</option>
-                <?php
-                $stmt_semester = $koneksi->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
-                while ($row = $stmt_semester->fetch_assoc()): ?>
-                    <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['semester_id'] ?? '')) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($row['nama']) ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <label><strong>Kelas</strong></label>
-            <select name="kelas_id" class="form-select" required>
-                <option value="">-- Pilih Kelas --</option>
-                <option value="all" <?= (isset($_GET['kelas_id']) && $_GET['kelas_id'] == 'all') ? 'selected' : '' ?>>
-                    🔍 Semua Kelas
-                </option>
-                <?php
-                $stmt_kelas = $koneksi->prepare("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
-                $stmt_kelas->execute();
-                $result_kelas = $stmt_kelas->get_result();
-                while ($row = $result_kelas->fetch_assoc()): ?>
-                    <option value="<?= $row['id'] ?>" <?= ($row['id'] == ($_GET['kelas_id'] ?? '')) ? 'selected' : '' ?>>
-                        <?= htmlspecialchars($row['nama_kelas']) ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-
-        <div class="col-md-3">
-            <label><strong>Tanggal Awal</strong></label>
-            <input type="date" name="tgl_awal" class="form-control" required
-                   value="<?= $_GET['tgl_awal'] ?? date('Y-m-01') ?>">
-        </div>
-
-        <div class="col-md-3">
-            <label><strong>Tanggal Akhir</strong></label>
-            <input type="date" name="tgl_akhir" class="form-control" required
-                   value="<?= $_GET['tgl_akhir'] ?? date('Y-m-t') ?>">
-        </div>
-
-        <div class="col-md-3">
-            <label><strong>Urutkan Berdasarkan</strong></label>
-            <select name="sort_by" class="form-select">
-                <option value="">Default (No)</option>
-                <option value="hadir" <?= ($_GET['sort_by'] ?? '') == 'hadir' ? 'selected' : '' ?>>Hadir</option>
-                <option value="terlambat" <?= ($_GET['sort_by'] ?? '') == 'terlambat' ? 'selected' : '' ?>>Terlambat</option>
-                <option value="sakit" <?= ($_GET['sort_by'] ?? '') == 'sakit' ? 'selected' : '' ?>>Sakit</option>
-                <option value="izin" <?= ($_GET['sort_by'] ?? '') == 'izin' ? 'selected' : '' ?>>Izin</option>
-                <option value="alfa" <?= ($_GET['sort_by'] ?? '') == 'alfa' ? 'selected' : '' ?>>Alfa</option>
-            </select>
-        </div>
-
-        <div class="col-12 d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Tampilkan</button>
-            <a href="?" class="btn btn-secondary">Reset</a>
-        </div>
-    </form>
-
-    <?php if (isset($_GET['kelas_id']) && isset($_GET['semester_id'])): ?>
-        <?php
-        $kelas_id = $_GET['kelas_id'];
-        $semester_id = $_GET['semester_id'];
-        $tgl_awal = htmlspecialchars($_GET['tgl_awal'] ?? '');
-        $tgl_akhir = htmlspecialchars($_GET['tgl_akhir'] ?? '');
-
-        // Validasi tanggal
-        if (!strtotime($tgl_awal) || !strtotime($tgl_akhir)) {
-            echo "<div class='alert alert-danger'>Tanggal tidak valid.</div>";
-            exit;
-        }
-
-        if (strtotime($tgl_awal) > strtotime($tgl_akhir)) {
-            echo "<div class='alert alert-danger'>Tanggal awal tidak boleh lebih besar dari tanggal akhir.</div>";
-            exit;
-        }
-
-        // Ambil nama semester
-        $semester = $koneksi->query("SELECT nama FROM semester WHERE id = $semester_id")->fetch_assoc();
-        $nama_semester = $semester ? $semester['nama'] : 'Semua Semester';
-
-        // Inisialisasi rekap
-        $rekapKelas = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-        $semua_kelas = ($kelas_id === 'all');
-        $nama_kelas = '';
-
-        if (!$semua_kelas) {
-            $stmt_kelas = $koneksi->prepare("SELECT nama_kelas FROM kelas WHERE id = ?");
-            $stmt_kelas->bind_param("i", $kelas_id);
-            $stmt_kelas->execute();
-            $stmt_kelas->bind_result($nama_kelas);
-            $stmt_kelas->fetch();
-            $stmt_kelas->close();
-        }
-
-        // Tampilkan judul
-        echo "<h4>" . ($semua_kelas ? "Rekap Semua Kelas" : "Rekap Kelas: " . htmlspecialchars($nama_kelas)) . "</h4>";
-        echo "<p><strong>Semester:</strong> " . htmlspecialchars($nama_semester) . "</p>";
-        echo "<p><strong>Periode:</strong> " . date('d M Y', strtotime($tgl_awal)) . " s.d. " . date('d M Y', strtotime($tgl_akhir)) . "</p>";
-
-        // Ambil data siswa
-        if ($semua_kelas) {
-            $stmt_siswa = $koneksi->prepare("
-                SELECT s.id, s.nama, s.jenis_kelamin, k.nama_kelas 
-                FROM siswa s 
-                JOIN kelas k ON s.kelas_id = k.id 
-                ORDER BY k.nama_kelas, s.nama
-            ");
-        } else {
-            $stmt_siswa = $koneksi->prepare("SELECT id, nama, jenis_kelamin FROM siswa WHERE kelas_id = ?");
-            $stmt_siswa->bind_param("i", $kelas_id);
-        }
-
-        $stmt_siswa->execute();
-        $result_siswa = $stmt_siswa->get_result();
-        $data_siswa = [];
-
-        // Ambil sort_by
-        $sort_by = $_GET['sort_by'] ?? '';
-        $sort_field = match($sort_by) {
-            'hadir' => 'hadir',
-            'terlambat' => 'terlambat',
-            'sakit' => 'sakit',
-            'izin' => 'izin',
-            'alfa' => 'alfa',
-            default => null
-        };
-
-        // Kumpulkan data absensi
-        while ($row = $result_siswa->fetch_assoc()) {
-            $siswa_id = $row['id'];
-            $rekap = ['Hadir' => 0, 'Terlambat' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0];
-
-            $stmt_absen = $koneksi->prepare("
-                SELECT status FROM absensi 
-                WHERE siswa_id = ? 
-                  AND tanggal BETWEEN ? AND ?
-                  AND semester_id = ?
-            ");
-            $stmt_absen->bind_param("issi", $siswa_id, $tgl_awal, $tgl_akhir, $semester_id);
-            $stmt_absen->execute();
-            $result_absen = $stmt_absen->get_result();
-
-            while ($absen = $result_absen->fetch_assoc()) {
-                $status = $absen['status'];
-                if (isset($rekap[$status])) {
-                    $rekap[$status]++;
-                    $rekapKelas[$status]++;
-                }
-            }
-
-            $data_siswa[] = [
-                'nama' => htmlspecialchars($row['nama']),
-                'kelas' => $semua_kelas ? htmlspecialchars($row['nama_kelas']) : '',
-                'jk' => htmlspecialchars($row['jenis_kelamin']),
-                'hadir' => $rekap['Hadir'],
-                'terlambat' => $rekap['Terlambat'],
-                'sakit' => $rekap['Sakit'],
-                'izin' => $rekap['Izin'],
-                'alfa' => $rekap['Alfa'],
-                'total' => array_sum($rekap)
-            ];
-
-            $stmt_absen->close();
-        }
-        $stmt_siswa->close();
-
-        // Urutkan data jika perlu
-        if ($sort_field) {
-            usort($data_siswa, function($a, $b) use ($sort_field) {
-                return $b[$sort_field] <=> $a[$sort_field]; // descending
-            });
-        }
-        
-        // Tentukan indeks kolom untuk DataTables
-        $columnIndex = 0;
-        if ($sort_by == 'hadir') $columnIndex = $semua_kelas ? 4 : 3;
-        if ($sort_by == 'terlambat') $columnIndex = $semua_kelas ? 5 : 4;
-        if ($sort_by == 'sakit') $columnIndex = $semua_kelas ? 6 : 5;
-        if ($sort_by == 'izin') $columnIndex = $semua_kelas ? 7 : 6;
-        if ($sort_by == 'alfa') $columnIndex = $semua_kelas ? 8 : 7;
-
-        // Tampilkan tabel
-        echo "<table id='tabel-rekap' class='table table-bordered table-striped table-hover mt-3'>";
-        echo "<thead class='table-primary'>
-                <tr>
-                    <th>No</th>";
-        if ($semua_kelas) echo "<th>Kelas</th>";
-        echo "<th>Nama Siswa</th>
-                    <th>Jenis Kelamin</th>
-                    <th>Hadir</th>
-                    <th>Terlambat</th>
-                    <th>Sakit</th>
-                    <th>Izin</th>
-                    <th>Alfa</th>
-                    <th>Total</th>
-                </tr>
-              </thead>";
-        echo "<tbody>";
-
-        $no = 1;
-        foreach ($data_siswa as $d) {
-            echo "<tr>";
-            echo "<td>{$no}</td>";
-            if ($semua_kelas) echo "<td>{$d['kelas']}</td>";
-            echo "<td>{$d['nama']}</td>";
-            echo "<td>{$d['jk']}</td>";
-            echo "<td>{$d['hadir']}</td>";
-            echo "<td>{$d['terlambat']}</td>";
-            echo "<td>{$d['sakit']}</td>";
-            echo "<td>{$d['izin']}</td>";
-            echo "<td>{$d['alfa']}</td>";
-            echo "<td><strong>{$d['total']}</strong></td>";
-            echo "</tr>";
-            $no++;
-        }
-
-        // Baris total
-        echo "<tr class='table-primary fw-bold'>";
-        echo "<td></td>";
-        if ($semua_kelas) echo "<td></td>";
-        echo "<td>Total</td><td></td>";
-        echo "<td>{$rekapKelas['Hadir']}</td>";
-        echo "<td>{$rekapKelas['Terlambat']}</td>";
-        echo "<td>{$rekapKelas['Sakit']}</td>";
-        echo "<td>{$rekapKelas['Izin']}</td>";
-        echo "<td>{$rekapKelas['Alfa']}</td>";
-        echo "<td><strong>" . array_sum($rekapKelas) . "</strong></td>";
-        echo "</tr>";
-
-        echo "</tbody></table>";
-
-        // Grafik Pie
-        echo '<div class="chart-container">';
-        echo '<canvas id="chart-kelas"></canvas>';
-        echo '</div>';
-
-        // Chart.js Script
-        echo '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
-        echo '<script>
-        document.addEventListener("DOMContentLoaded", function() {
-            var ctx = document.getElementById("chart-kelas").getContext("2d");
-            new Chart(ctx, {
-                type: "pie",
-                data: {
-                    labels: ["Hadir", "Terlambat", "Sakit", "Izin", "Alfa"],
-                    datasets: [{
-                        data: [' . 
-                            $rekapKelas['Hadir'] . ',' . 
-                            $rekapKelas['Terlambat'] . ',' . 
-                            $rekapKelas['Sakit'] . ',' . 
-                            $rekapKelas['Izin'] . ',' . 
-                            $rekapKelas['Alfa'] . 
-                        '],
-                        backgroundColor: ["#4CAF50", "#FFC107", "#2196F3", "#9C27B0", "#F44336"],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: "Rekap Kehadiran ' . ($semua_kelas ? 'Semua Kelas' : addslashes(htmlspecialchars($nama_kelas))) . '",
-                            font: { size: 16 }
-                        },
-                        legend: { position: "right" },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    var total = context.dataset.data.reduce((a,b)=>a+b,0);
-                                    var value = context.raw;
-                                    var percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                                    return context.label + ": " + value + " (" + percentage + "%)";
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        });
-        </script>';
-
-        // Tombol Cetak
-        $params = http_build_query([
-            'kelas_id' => $kelas_id,
-            'semester_id' => $semester_id,
-            'tgl_awal' => $tgl_awal,
-            'tgl_akhir' => $tgl_akhir,
-            'sort_by' => $sort_by
-        ]);
-        echo "<a href='cetak.php?$params' class='btn btn-success mt-3' target='_blank'>
-                <i class='bi bi-printer'></i> Cetak Rekap
-              </a>";
-        ?>
-    <?php endif; ?>
+<div class="d-flex align-items-center mb-4">
+    <h2 class="fw-bold text-wa-dark mb-0">
+        <i class="fas fa-chart-pie me-2"></i>Rekap Absensi
+    </h2>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<!-- Filter Section -->
+<form method="GET">
+    <div class="filter-card mb-4">
+        <div class="filter-header d-flex align-items-center">
+            <i class="fas fa-filter me-2"></i>
+            <span class="fw-semibold">Filter Data</span>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-muted small">SEMESTER</label>
+                    <select name="semester_id" class="form-select" required>
+                        <option value="">Pilih Semester</option>
+                        <?php
+                        $semester = conn()->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                        while ($row = $semester->fetch_assoc()):
+                        ?>
+                        <option value="<?= $row['id'] ?>" <?= ($row['id'] == $semester_id) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($row['nama']) ?>
+                        </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold text-muted small">KELAS</label>
+                    <select name="kelas_id" class="form-select">
+                        <option value="">Semua Kelas</option>
+                        <?php
+                        $kelas = conn()->query("SELECT * FROM kelas ORDER BY nama_kelas");
+                        while ($row = $kelas->fetch_assoc()):
+                        ?>
+                        <option value="<?= $row['id'] ?>" <?= ($row['id'] == $kelas_id) ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($row['nama_kelas']) ?>
+                        </option>
+                        <?php endwhile; ?>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-muted small">TANGGAL AWAL</label>
+                    <input type="date" name="tgl_awal" class="form-control" value="<?= $tgl_awal ?>">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold text-muted small">TANGGAL AKHIR</label>
+                    <input type="date" name="tgl_akhir" class="form-control" value="<?= $tgl_akhir ?>">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-wa-primary w-100">
+                        <i class="fas fa-search me-1"></i> Tampilkan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
 
+<?php
+if ($semester_id && $kelas_id):
+    $kelas = conn()->query("SELECT nama_kelas,wali_kelas FROM kelas WHERE id = $kelas_id")->fetch_assoc();
+    
+    // Get statistics
+    $stats = conn()->query("
+        SELECT 
+            SUM(CASE WHEN status = 'Hadir' THEN 1 ELSE 0 END) as hadir,
+            SUM(CASE WHEN status = 'Terlambat' THEN 1 ELSE 0 END) as terlambat,
+            SUM(CASE WHEN status = 'Sakit' THEN 1 ELSE 0 END) as sakit,
+            SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) as izin,
+            SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) as alfa,
+            COUNT(*) as total
+        FROM absensi 
+        WHERE semester_id = $semester_id 
+        AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir'
+    ")->fetch_assoc();
+
+    $total_siswa = conn()->query("SELECT COUNT(*) as total FROM siswa WHERE kelas_id = $kelas_id")->fetch_assoc()['total'];
+    $total_hari = (strtotime($tgl_akhir) - strtotime($tgl_awal)) / (60*60*24) + 1;
+    $total_seharusnya = $total_siswa * $total_hari;
+    $kehadiran_persen = $total_seharusnya > 0 ? round(($stats['hadir'] / $total_seharusnya) * 100, 1) : 0;
+
+    // Get siswa data
+    $siswa = conn()->query("
+        SELECT s.id, s.nama, s.jenis_kelamin,
+            SUM(CASE WHEN a.status = 'Hadir' THEN 1 ELSE 0 END) as hadir,
+            SUM(CASE WHEN a.status = 'Terlambat' THEN 1 ELSE 0 END) as terlambat,
+            SUM(CASE WHEN a.status = 'Sakit' THEN 1 ELSE 0 END) as sakit,
+            SUM(CASE WHEN a.status = 'Izin' THEN 1 ELSE 0 END) as izin,
+            SUM(CASE WHEN a.status = 'Alfa' THEN 1 ELSE 0 END) as alfa,
+            COUNT(a.id) as total_absen
+        FROM siswa s
+        LEFT JOIN absensi a ON s.id = a.siswa_id 
+            AND a.semester_id = $semester_id
+            AND a.tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir'
+        WHERE s.kelas_id = $kelas_id
+        GROUP BY s.id, s.nama, s.jenis_kelamin
+        ORDER BY (alfa + sakit + izin) DESC, nama ASC
+    ");
+?>
+
+<!-- Stats Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-2">
+        <div class="stat-card shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Kehadiran</small>
+                    <h3 class="mb-0 fw-bold text-success"><?= $kehadiran_persen ?>%</h3>
+                </div>
+                <div class="stat-icon stat-hadir">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="progress progress-custom mt-3">
+                <div class="progress-bar progress-bar-hadir" style="width: <?= $kehadiran_persen ?>%"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stat-card shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Hadir</small>
+                    <h3 class="mb-0 fw-bold text-success"><?= $stats['hadir'] ?></h3>
+                </div>
+                <div class="stat-icon stat-hadir">
+                    <i class="fas fa-user-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stat-card shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Terlambat</small>
+                    <h3 class="mb-0 fw-bold" style="color: #b38600"><?= $stats['terlambat'] ?></h3>
+                </div>
+                <div class="stat-icon stat-terlambat">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stat-card shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Sakit</small>
+                    <h3 class="mb-0 fw-bold text-info"><?= $stats['sakit'] ?></h3>
+                </div>
+                <div class="stat-icon stat-sakit">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stat-card shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Izin</small>
+                    <h3 class="mb-0 fw-bold" style="color: #6f42c1"><?= $stats['izin'] ?></h3>
+                </div>
+                <div class="stat-icon stat-izin">
+                    <i class="fas fa-envelope"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="stat-card shadow-sm bg-white">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <small class="text-muted d-block">Alfa</small>
+                    <h3 class="mb-0 fw-bold text-danger"><?= $stats['alfa'] ?></h3>
+                </div>
+                <div class="stat-icon stat-alfa">
+                    <i class="fas fa-user-times"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Card -->
+<div class="card-custom mb-4 border-start border-4 border-success">
+    <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">
+                <i class="fas fa-school me-2 text-success"></i>
+                <?= htmlspecialchars($kelas['nama_kelas']) ?>
+                <small class="text-muted">- <?= htmlspecialchars($kelas['wali_kelas'] ?? 'Belum ada wali kelas') ?></small>
+            </h5>
+            <small class="text-muted">
+                <i class="fas fa-calendar me-1"></i>
+                <?= date('d M Y', strtotime($tgl_awal)) ?> - <?= date('d M Y', strtotime($tgl_akhir)) ?>
+                <span class="mx-2">|</span>
+                <i class="fas fa-users me-1"></i><?= $total_siswa ?> Siswa
+                <span class="mx-2">|</span>
+                <i class="fas fa-calendar-day me-1"></i><?= $total_hari ?> Hari
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Section -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card-custom p-3" style="height: 300px">
+            <h6 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2"></i>Statistik</h6>
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card-custom p-3" style="height: 300px">
+            <h6 class="fw-bold mb-3"><i class="fas fa-chart-bar me-2"></i>Kehadiran per Hari</h6>
+            <canvas id="barChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Table Section -->
+<div class="card-custom">
+    <div class="table-responsive">
+        <table class="table table-rekap mb-0">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 50px">No</th>
+                    <th>Nama Siswa</th>
+                    <th class="text-center"><span class="rekap-badge badge-hadir">Hadir</span></th>
+                    <th class="text-center"><span class="rekap-badge badge-terlambat">Terlambat</span></th>
+                    <th class="text-center"><span class="rekap-badge badge-sakit">Sakit</span></th>
+                    <th class="text-center"><span class="rekap-badge badge-izin">Izin</span></th>
+                    <th class="text-center"><span class="rekap-badge badge-alfa">Alfa</span></th>
+                    <th class="text-center">% Kehadiran</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php $no = 1; while ($row = $siswa->fetch_assoc()):
+                    $persen = $total_hari > 0 ? round(($row['hadir'] / $total_hari) * 100, 1) : 0;
+                    $persen_class = $persen >= 80 ? 'text-success' : ($persen >= 60 ? 'text-warning' : 'text-danger');
+                ?>
+                <tr>
+                    <td class="text-center text-muted"><?= $no++ ?></td>
+                    <td>
+                        <div class="fw-semibold"><?= htmlspecialchars($row['nama']) ?></div>
+                        <small class="text-muted"><?= $row['jenis_kelamin'] ?></small>
+                    </td>
+                    <td class="text-center">
+                        <span class="rekap-badge badge-hadir"><?= $row['hadir'] ?></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="rekap-badge badge-terlambat"><?= $row['terlambat'] ?></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="rekap-badge badge-sakit"><?= $row['sakit'] ?></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="rekap-badge badge-izin"><?= $row['izin'] ?></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="rekap-badge badge-alfa"><?= $row['alfa'] ?></span>
+                    </td>
+                    <td class="text-center">
+                        <span class="fw-bold <?= $persen_class ?>"><?= $persen ?>%</span>
+                    </td>
+                </tr>
+                <?php endwhile; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-$(document).ready(function() {
-    // Tentukan indeks kolom yang akan diurutkan berdasarkan parameter sort_by
-    const isAllKelas = <?= json_encode($semua_kelas); ?>;
-    const sort_by = '<?= $sort_by; ?>';
-    let sortColumnIndex = -1;
-    
-    // Mapping antara nilai sort_by dengan indeks kolom tabel
-    if (sort_by === 'hadir') sortColumnIndex = isAllKelas ? 4 : 3;
-    if (sort_by === 'terlambat') sortColumnIndex = isAllKelas ? 5 : 4;
-    if (sort_by === 'sakit') sortColumnIndex = isAllKelas ? 6 : 5;
-    if (sort_by === 'izin') sortColumnIndex = isAllKelas ? 7 : 6;
-    if (sort_by === 'alfa') sortColumnIndex = isAllKelas ? 8 : 7;
-
-    const datatableOptions = {
-        language: {
-            url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json"
-        },
-        pageLength: 25,
-        columnDefs: [
-            { orderable: false, targets: [0] }, // Non-sortable: Kolom No
-            { orderable: false, targets: [-1] } // Non-sortable: Kolom Total
-        ]
-    };
-    
-    // Terapkan pengurutan awal jika sort_by dipilih
-    if (sortColumnIndex > -1) {
-        datatableOptions.order = [[sortColumnIndex, "desc"]];
+new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Hadir', 'Terlambat', 'Sakit', 'Izin', 'Alfa'],
+        datasets: [{
+            data: [<?= $stats['hadir'] ?>, <?= $stats['terlambat'] ?>, <?= $stats['sakit'] ?>, <?= $stats['izin'] ?>, <?= $stats['alfa'] ?>],
+            backgroundColor: ['#198754', '#ffc107', '#0dcaf0', '#6f42c1', '#dc3545'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'right' } }
     }
-    
-    $('#tabel-rekap').DataTable(datatableOptions);
+});
+
+new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+        labels: <?= json_encode($labels) ?>,
+        datasets: [
+            { label: 'Hadir', data: <?= json_encode($data_hadir) ?>, backgroundColor: '#198754', borderRadius: 5 },
+            { label: 'Alfa', data: <?= json_encode($data_alfa) ?>, backgroundColor: '#dc3545', borderRadius: 5 }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } }
+    }
 });
 </script>
 
-<?php require_once '../includes/footer.php'; ?>
-</body>
-</html>
+<?php endif; ?>
+
+<?php
+$content = ob_get_clean();
+require_once '../views/layout.php';

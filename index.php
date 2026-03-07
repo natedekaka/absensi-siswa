@@ -1,14 +1,13 @@
 <?php
 session_start();
 
-// Jika user sudah login, arahkan ke dashboard
+require_once 'core/init.php';
+require_once 'core/Database.php';
+
 if (isset($_SESSION['user'])) {
-    header("Location: dashboard/");
+    header("Location: " . BASE_URL . "dashboard/");
     exit;
-} 
-// Jika belum login, arahkan ke halaman login
-else {
-    header("Location: login.php");
+} else {
+    header("Location: " . BASE_URL . "login.php");
     exit;
 }
-?>
