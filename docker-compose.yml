@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  db:
+    image: docker.io/library/mariadb:10
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: absensi_siswa
+    ports:
+      - "3306:3306"
+  phpmyadmin:
+    image: docker.io/library/phpmyadmin:latest
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: rootpass
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+  web:
+    image: docker.io/library/php:8.2-apache
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8080:80"
+    command: bash -c "docker-php-ext-install mysqli && apache2-foreground"
+    depends_on:
+      - db
