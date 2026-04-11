@@ -12,6 +12,8 @@ header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 
 $barcode = isset($_GET['barcode']) ? $_GET['barcode'] : '';
+$tgl_cek = isset($_GET['tgl']) ? $_GET['tgl'] : date('Y-m-d');
+$semester_id = isset($_GET['semester_id']) ? (int)$_GET['semester_id'] : null;
 
 if (empty($barcode)) {
     echo json_encode(['success' => false, 'message' => 'Barcode tidak boleh kosong']);
@@ -46,18 +48,20 @@ try {
 
     $siswa = $result->fetch_assoc();
 
-    // Check if already absented today
-    $today = date('Y-m-d');
+    // Check if already absented for the selected date
+    $today = $tgl_cek;
 
-    // Get semester
-    $semester = $conn->query("SELECT id FROM semester WHERE is_active = 1 LIMIT 1");
-    if (!$semester || $semester->num_rows === 0) {
-        $semester = $conn->query("SELECT id FROM semester ORDER BY id DESC LIMIT 1");
-    }
-    $semesterId = null;
-    if ($semester && $semester->num_rows > 0) {
-        $semesterData = $semester->fetch_assoc();
-        $semesterId = $semesterData['id'];
+    // Get semester from parameter or use default
+    $semesterId = $semester_id;
+    if (!$semesterId) {
+        $semester = $conn->query("SELECT id FROM semester WHERE is_active = 1 LIMIT 1");
+        if (!$semester || $semester->num_rows === 0) {
+            $semester = $conn->query("SELECT id FROM semester ORDER BY id DESC LIMIT 1");
+        }
+        if ($semester && $semester->num_rows > 0) {
+            $semesterData = $semester->fetch_assoc();
+            $semesterId = $semesterData['id'];
+        }
     }
 
     $absenCheckSql = "SELECT * FROM absensi WHERE siswa_id = " . (int)$siswa['id'] . " AND tanggal = '$today'";

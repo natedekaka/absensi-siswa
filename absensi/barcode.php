@@ -11,6 +11,25 @@ $primaryColor = $sekolah['warna_primer'] ?? '#4f46e5';
 $secondaryColor = $sekolah['warna_sekunder'] ?? '#64748b';
 
 $title = 'Absensi Barcode - Sistem Absensi Siswa';
+
+$today = date('Y-m-d');
+$semester_aktif = conn()->query("SELECT * FROM semester WHERE is_active = 1 LIMIT 1")->fetch_assoc();
+$semester_id = $_GET['semester_id'] ?? ($semester_aktif['id'] ?? '');
+$tgl_cek = $_GET['tgl'] ?? $today;
+
+$where_semester = $semester_id ? " AND semester_id = " . (int)$semester_id : "";
+$stats_hari_ini = conn()->query("
+    SELECT status, COUNT(*) as total FROM absensi 
+    WHERE tanggal = '$tgl_cek' $where_semester 
+    GROUP BY status
+")->fetch_all(MYSQLI_ASSOC);
+
+$stats = ['Hadir' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0, 'Terlambat' => 0];
+foreach ($stats_hari_ini as $s) {
+    if (isset($stats[$s['status']])) $stats[$s['status']] = $s['total'];
+}
+
+$total_absen = array_sum($stats);
 ?>
 
 <!DOCTYPE html>
@@ -498,6 +517,41 @@ $title = 'Absensi Barcode - Sistem Absensi Siswa';
             </div>
             <h2><?= htmlspecialchars($sekolah['nama_sekolah']) ?></h2>
             <p>Absensi Siswa dengan Barcode</p>
+            
+            <div class="mt-3 p-2 bg-white bg-opacity-50 rounded">
+                <form method="GET" class="d-flex gap-2 flex-wrap justify-content-center align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-calendar"></i>
+                        <input type="date" name="tgl" class="form-control form-control-sm" value="<?= $tgl_cek ?>" style="width: 140px;">
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-school"></i>
+                        <select name="semester_id" class="form-select form-select-sm" style="width: 180px;">
+                            <option value="">Semua Semester</option>
+                            <?php
+                            $semester_list = conn()->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                            while ($row = $semester_list->fetch_assoc()):
+                            ?>
+                            <option value="<?= $row['id'] ?>" <?= ($semester_id == $row['id']) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($row['nama']) ?>
+                            </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="fas fa-filter"></i>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="mt-3 d-flex justify-content-center gap-3 flex-wrap">
+                <span class="badge bg-success">Hadir: <?= $stats['Hadir'] ?></span>
+                <span class="badge bg-warning text-dark">Sakit: <?= $stats['Sakit'] ?></span>
+                <span class="badge bg-info">Izin: <?= $stats['Izin'] ?></span>
+                <span class="badge bg-danger">Alfa: <?= $stats['Alfa'] ?></span>
+                <span class="badge bg-secondary">Terlambat: <?= $stats['Terlambat'] ?></span>
+                <span class="badge bg-dark">Total: <?= $total_absen ?></span>
+            </div>
         </div>
 
         <div class="scanner-card" id="scannerSection">
@@ -531,6 +585,43 @@ $title = 'Absensi Barcode - Sistem Absensi Siswa';
                 </div>
             </div>
         </div>
+
+        <?php
+        $riwayat = conn()->query("
+            SELECT a.tanggal, a.status, s.nama, k.nama_kelas 
+            FROM absensi a
+            JOIN siswa s ON a.siswa_id = s.id
+            LEFT JOIN kelas k ON s.kelas_id = k.id
+            WHERE a.tanggal = '$tgl_cek' $where_semester
+            ORDER BY a.id DESC LIMIT 20
+        ");
+        ?>
+        
+        <?php if ($riwayat && $riwayat->num_rows > 0): ?>
+        <div class="result-card mt-3">
+            <h5 class="mb-3"><i class="fas fa-history me-2"></i>Riwayat Scan (<?= $riwayat->num_rows ?>)</h5>
+            <div class="table-responsive" style="max-height: 200px;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="sticky-top">
+                        <tr>
+                            <th>Nama</th>
+                            <th>Kelas</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php while ($r = $riwayat->fetch_assoc()): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($r['nama']) ?></td>
+                            <td><?= htmlspecialchars($r['nama_kelas'] ?? '-') ?></td>
+                            <td><span class="badge badge-<?= strtolower($r['status']) ?>"><?= $r['status'] ?></span></td>
+                        </tr>
+                        <?php endwhile; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <?php endif; ?>
 
         <div class="result-card" id="resultSection" style="display: none;">
             <div class="siswa-info">
@@ -588,6 +679,23 @@ $title = 'Absensi Barcode - Sistem Absensi Siswa';
         let selectedStatus = 'hadir';
 
         const primaryColor = '<?= $primaryColor ?>';
+
+        function playSuccessSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
 
         document.getElementById('startScan').addEventListener('click', startScanner);
         document.getElementById('stopScan').addEventListener('click', stopScanner);
@@ -662,7 +770,11 @@ $title = 'Absensi Barcode - Sistem Absensi Siswa';
             btnAbsen.disabled = true;
             btnAbsen.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mencari...';
 
-            fetch('cari_siswa.php?barcode=' + encodeURIComponent(barcode))
+            const urlParams = new URLSearchParams(window.location.search);
+            const tgl = urlParams.get('tgl') || '<?= $tgl_cek ?>';
+            const semester_id = urlParams.get('semester_id') || '';
+
+            fetch('cari_siswa.php?barcode=' + encodeURIComponent(barcode) + '&tgl=' + tgl + '&semester_id=' + semester_id)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -741,10 +853,16 @@ $title = 'Absensi Barcode - Sistem Absensi Siswa';
             btnAbsen.disabled = true;
             btnAbsen.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menyimpan...';
 
+            const urlParams = new URLSearchParams(window.location.search);
+            const tgl = urlParams.get('tgl') || '<?= $tgl_cek ?>';
+            const semester_id = urlParams.get('semester_id') || '';
+
             const formData = new FormData();
             formData.append('siswa_id', currentSiswa.id);
             formData.append('barcode', currentSiswa.barcode);
             formData.append('status', selectedStatus);
+            formData.append('tgl', tgl);
+            formData.append('semester_id', semester_id);
 
             fetch('proses_barcode.php', {
                 method: 'POST',
@@ -753,8 +871,10 @@ $title = 'Absensi Barcode - Sistem Absensi Siswa';
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    playSuccessSound();
                     alert('Absensi berhasil disimpan!');
                     resetForm();
+                    location.reload();
                 } else {
                     alert(data.message);
                 }

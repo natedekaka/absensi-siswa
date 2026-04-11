@@ -87,7 +87,7 @@ function getSemesterDateRange($semester_num, $semester_dates, $tgl_awal, $tgl_ak
                 AND a.tanggal BETWEEN ? AND ? AND a.semester_id = ?
             WHERE s.kelas_id = ? AND (s.status = 'aktif' OR s.status IS NULL)
             GROUP BY s.id, s.nama, s.jenis_kelamin
-            ORDER BY (alfa + sakit + izin) ASC, hadir DESC, nama ASC
+            ORDER BY COALESCE(SUM(CASE WHEN a.status IN ('Alfa','Sakit','Izin') THEN 1 ELSE 0 END), 0) ASC, COALESCE(SUM(CASE WHEN a.status = 'Hadir' THEN 1 ELSE 0 END), 0) DESC, s.nama ASC
         ");
         $stmt->bind_param("ssii", $tgl_awal, $tgl_akhir, $semester_id, $kelas_id);
         $stmt->execute();

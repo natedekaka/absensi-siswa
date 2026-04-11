@@ -64,6 +64,16 @@ $sekolah = getKonfigurasiSekolah(conn());
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="<?= BASE_URL ?>siswa/barcode.php">
+                            <i class="fas fa-barcode me-2"></i>Kartu Siswa
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= BASE_URL ?>siswa/riwayat.php">
+                            <i class="fas fa-history me-2"></i>Riwayat Absensi
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>kelas/">
                             <i class="fas fa-door-open me-2"></i>Kelas
                         </a>

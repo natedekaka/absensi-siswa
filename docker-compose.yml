@@ -5,6 +5,8 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootpass
       MYSQL_DATABASE: absensi_siswa
+    volumes:
+      - db_data:/var/lib/mysql
     ports:
       - "3306:3306"
   phpmyadmin:
@@ -27,3 +29,6 @@ services:
     command: bash -c "docker-php-ext-install mysqli && apache2-foreground"
     depends_on:
       - db
+
+volumes:
+  db_data:

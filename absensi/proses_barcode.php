@@ -20,6 +20,8 @@ try {
     $siswa_id = (int)($_POST['siswa_id'] ?? 0);
     $barcode = isset($_POST['barcode']) ? $_POST['barcode'] : '';
     $status = isset($_POST['status']) ? $_POST['status'] : 'hadir';
+    $tgl = isset($_POST['tgl']) ? $_POST['tgl'] : date('Y-m-d');
+    $semester_id = isset($_POST['semester_id']) ? (int)$_POST['semester_id'] : null;
 
     if (empty($siswa_id) || empty($barcode) || empty($status)) {
         echo json_encode(['success' => false, 'message' => 'Data tidak lengkap']);
@@ -38,18 +40,11 @@ try {
         exit;
     }
 
-    $tanggal = date('Y-m-d');
+    $tanggal = $tgl;
 
-    // Get any semester
-    $semester = $conn->query("SELECT id FROM semester WHERE is_active = 1 LIMIT 1");
-    if (!$semester || $semester->num_rows === 0) {
-        $semester = $conn->query("SELECT id FROM semester ORDER BY id DESC LIMIT 1");
-    }
-    $semesterId = null;
-    if ($semester && $semester->num_rows > 0) {
-        $semesterData = $semester->fetch_assoc();
-        $semesterId = $semesterData['id'];
-    }
+    // Get semester from parameter or use default
+    $semesterId = $semester_id;
+    if (!$semesterId) {
 
     // Convert status to uppercase
     $status_map = [
