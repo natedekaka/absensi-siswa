@@ -163,6 +163,7 @@ function getSemesterDateRange($semester_num, $semester_dates, $tgl_awal, $tgl_ak
     $hari_smt1 = 0;
     $hari_smt2 = 0;
     $smt1_range = null;
+    $smt1_range = null;
     $smt2_range = null;
     $siswa_smt1 = null;
     $siswa_smt2 = null;
