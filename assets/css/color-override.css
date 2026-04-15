@@ -237,6 +237,39 @@ h1, h2, h3, h4, h5, h6,
 .modal-header .btn-close {
     filter: invert(1);
 }
+.modal-title {
+    color: #fff !important;
+}
+
+/* Page Title / Header */
+h1, h2, h3 {
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+/* Header sections */
+[style*="color: #128C7E"],
+[style*="color:#128C7E"],
+[style*="color:#25D366"],
+[style*="color: #25D366"],
+[style*="color: var(--wa-dark)"],
+[style*="color: var(--wa-green)"] {
+    color: var(--primary) !important;
+}
+
+/* Header backgrounds untuk cards */
+.card > .card-header,
+.card-header,
+[class*="card-header"] {
+    background: var(--gradient-primary) !important;
+    color: #fff !important;
+}
+
+/* Specific header styling di inline styles */
+[style*="color: #6366f1"] { color: var(--primary) !important; }
+[style*="color: #10b981"] { color: var(--success) !important; }
+[style*="color: #f59e0b"] { color: var(--warning) !important; }
+[style*="color: #ef4444"] { color: var(--danger) !important; }
 
 /* Avatar colors */
 .avatar-mini.avatar-laki {
