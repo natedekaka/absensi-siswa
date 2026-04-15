@@ -208,7 +208,6 @@ ob_start();
 .step-card {
     border: none;
     border-radius: 20px;
-    overflow: hidden;
     transition: all 0.3s ease;
     height: 100%;
 }
@@ -220,6 +219,7 @@ ob_start();
     padding: 1.25rem 1.5rem;
     color: white;
     position: relative;
+    border-radius: 20px 20px 0 0;
 }
 .step-header.step-1 { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
 .step-header.step-2 { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
@@ -227,13 +227,14 @@ ob_start();
 .step-header.step-4 { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
 .step-number {
     position: absolute;
-    top: -10px;
-    right: -10px;
-    width: 35px;
-    height: 35px;
+    top: -12px;
+    right: 15px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 8px;
     background: white;
     color: #333;
-    border-radius: 50%;
+    border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
