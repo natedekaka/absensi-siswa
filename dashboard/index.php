@@ -194,7 +194,7 @@ function toggleDateRange(value) {
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
-        <div class="card-custom p-4 text-white" style="background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);">
+        <div class="card-custom p-4 text-white" style="background: var(--gradient-primary);">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <small>Siswa</small>
@@ -216,7 +216,7 @@ function toggleDateRange(value) {
         </div>
     </div>
     <div class="col-md-3">
-        <div class="card-custom p-4 text-white" style="background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);">
+        <div class="card-custom p-4 text-white" style="background: var(--gradient-primary);">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <small>Kehadiran Hari Ini</small>
