@@ -169,6 +169,7 @@ if (!$kelas_id) {
     $siswa_smt1 = null;
     $siswa_smt2 = null;
 }
+?>
 
 <div class="rekap-page">
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
