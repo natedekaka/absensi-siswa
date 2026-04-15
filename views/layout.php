@@ -127,7 +127,7 @@ $sekolah = getKonfigurasiSekolah(conn());
 
     <footer class="footer-custom">
         <div class="container">
-            <p class="mb-0">&copy; <?= date('Y') ?> Sistem Absensi Siswa</p>
+            <p class="mb-0">&copy; <?= date('Y') ?> Sistem Absensi Siswa - by <a href="https://github.com/natedekaka" target="_blank" style="color: inherit; text-decoration: none;">Natedekaka</a></p>
         </div>
     </footer>
 
