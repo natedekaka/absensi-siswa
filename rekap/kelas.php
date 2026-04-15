@@ -154,7 +154,9 @@ function getSemesterDateRange($semester_num, $semester_dates, $tgl_awal, $tgl_ak
     
     $siswa_smt1 = $smt1_range ? getSiswaStatsByDateRange($kelas_id, $smt1_range['awal'], $smt1_range['akhir'], $smt1_range['id']) : null;
     $siswa_smt2 = $smt2_range ? getSiswaStatsByDateRange($kelas_id, $smt2_range['awal'], $smt2_range['akhir'], $smt2_range['id']) : null;
-    } else {
+}
+
+if (!$kelas_id) {
     $total_siswa = 0;
     $stats_smt1 = ['hadir'=>0,'terlambat'=>0,'sakit'=>0,'izin'=>0,'alfa'=>0,'total'=>0];
     $stats_smt2 = ['hadir'=>0,'terlambat'=>0,'sakit'=>0,'izin'=>0,'alfa'=>0,'total'=>0];
@@ -163,12 +165,10 @@ function getSemesterDateRange($semester_num, $semester_dates, $tgl_awal, $tgl_ak
     $hari_smt1 = 0;
     $hari_smt2 = 0;
     $smt1_range = null;
-    $smt1_range = null;
     $smt2_range = null;
     $siswa_smt1 = null;
     $siswa_smt2 = null;
-    }
-?>
+}
 
 <div class="rekap-page">
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
