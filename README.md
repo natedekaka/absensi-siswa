@@ -148,6 +148,109 @@ absensi-siswa/
 podman exec -i absensi-siswa_db_1 mysqldump -u root -prootpass absensi_siswa > backup_baru.sql
 ```
 
-##Lisensi
+---
+
+## Panduan Tahun Ajaran & Semester
+
+### Alur Ganti Tahun Ajaran
+
+```
+TAHUN AJARAN LAMA ──► TAHUN AJARAN BARU
+        │                      │
+        ▼                      ▼
+┌───────────────┐       ┌───────────────┐
+│ 1. Kelulusan │       │ 5. Buat TA   │
+│    Kelas 12  │       │    Baru      │
+└───────────────┘       └───────────────┘
+        │                      │
+        ▼                      ▼
+┌───────────────┐       ┌───────────────┐
+│ 2. Naik Level│       │ 6. Aktifkan │
+│  10→11,11→12│       │    Semester │
+└───────────────┘       └───────────────┘
+        │
+        ▼
+┌───────────────┐
+│ 3. Redistribusi│
+│   Kelas baru │
+└───────────────┘
+```
+
+### Ringkasan Urutan (WAJIB urutan benar)
+
+| Urutan | Proses | Menu | Keterangan |
+|--------|-------|------|----------|
+| 1 | **Kelulusan** | Kenaikan Kelas → Kelulusan | Kelas 12 → alumni |
+| 2 | **Naik Tingkat** | Kenaikan Kelas → Naik Tingkat | X→XI, XI→XII |
+| 3 | **Redistribusi** | Kenaikan Kelas → Redistribusi | Bagi ke kelas/jurusan baru |
+| 4 | **Tahun Ajaran Baru** | Tahun Ajaran → Tambah | Buat TA baru |
+| 5 | **Aktifkan Semester** | Tahun Ajaran | Aktifkan semester |
+
+---
+
+## Panduan Redistribusi Kelas
+
+Redistribusi = Memindahkan siswa ke kelas/jurusan baru.
+
+### Cara 1: Export-Edit-Import CSV (Recommended)
+
+#### Step 1: Export
+```
+Menu: Kenaikan Kelas → Export Siswa per Tingkat
+1. Pilih tingkat (10 atau 11)
+2. Klik "Export CSV"
+3. Simpan file
+```
+
+#### Step 2: Edit di Excel
+```
+1. Buka file CSV
+2. Edit kolom:
+   - Nama Kelas Baru: XI IPA 1
+   - ID Kelas Baru: 15 (lihat di menu Kelas)
+3. Format delimiter: titik koma (;)
+```
+
+Contoh CSV:
+```csv
+NIS;NISN;Nama;Kelas Lama;Nama Kelas Baru;ID Kelas Baru
+12345;0001;BUDI S;X IPA 1;XI IPA 1;15
+12346;0002;ANI W;X IPS 1;XI IPS 1;16
+```
+
+#### Step 3: Import
+```
+Menu: Kenaikan Kelas → Import Redistribusi
+1. Pilih file CSV
+2. Klik Import
+```
+
+### Cara 2: Lewat Menu Kelas
+```
+Menu: Kelas → Edit → Klik siswa → Edit → Ganti kelas
+```
+
+### Cara 3: Lewat phpMyAdmin
+```sql
+-- Lihat ID kelas
+SELECT id, nama_kelas FROM kelas;
+
+-- Pindahkan siswa
+UPDATE siswa SET kelas_id = 15 WHERE nis = '12345';
+```
+
+---
+
+## Troubleshooting
+
+| Masalah | Solusi |
+|----------|-------|
+| Can't connect DB | Tunggu 10 detik, refresh |
+| Import CSV gagal | Delimiter harus `;` |
+| ID kelas salah | Cek di menu Kelas |
+| Absensi tidak simpan | Semester harus aktif |
+| PDF export error | Semester harus di-set |
+
+## Lisensi
 
 MIT License

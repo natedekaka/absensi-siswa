@@ -15,27 +15,40 @@ $type = $_GET['type'] ?? 'pdf';
 $tgl_awal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl_awal) ? $tgl_awal : date('Y-m-01');
 $tgl_akhir = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl_akhir) ? $tgl_akhir : date('Y-m-t');
 
-$tahun_ajaran_aktif = conn()->query("SELECT id FROM tahun_ajaran WHERE is_active = 1")->fetch_assoc();
+$ta_result = conn()->query("SELECT id FROM tahun_ajaran WHERE is_active = 1 LIMIT 1");
+$tahun_ajaran_aktif = $ta_result ? $ta_result->fetch_assoc() : null;
 $ta_id = $tahun_ajaran_aktif['id'] ?? 0;
 
+$semester_dates = [];
 if ($ta_id > 0) {
     $semester = conn()->query("SELECT * FROM semester WHERE semester IN (1, 2) AND tahun_ajaran_id = $ta_id ORDER BY semester ASC");
-} else {
-    $semester = conn()->query("SELECT * FROM semester WHERE semester IN (1, 2) ORDER BY tahun_ajaran_id DESC, semester ASC LIMIT 2");
+    if ($semester) {
+        while ($s = $semester->fetch_assoc()) {
+            $semester_dates[$s['semester']] = $s;
+        }
+    }
 }
-$semester_dates = [];
-while ($s = $semester->fetch_assoc()) {
-    $semester_dates[$s['semester']] = $s;
+
+if (empty($semester_dates)) {
+    $semester = conn()->query("SELECT * FROM semester WHERE semester IN (1, 2) ORDER BY tahun_ajaran_id DESC, semester ASC LIMIT 2");
+    if ($semester) {
+        while ($s = $semester->fetch_assoc()) {
+            if (!isset($semester_dates[$s['semester']])) {
+                $semester_dates[$s['semester']] = $s;
+            }
+        }
+    }
 }
 
 if (!$kelas_id) {
     die('Kelas harus dipilih.');
 }
 
-$stmt = conn()->prepare("SELECT nama_kelas, wali_kelas FROM kelas WHERE id = ?");
+$stmt = conn()->prepare("SELECT nama_kelas,wali_kelas FROM kelas WHERE id = ?");
 $stmt->bind_param("i", $kelas_id);
 $stmt->execute();
 $kelas = $stmt->get_result()->fetch_assoc();
+$stmt->close();
 
 if (!$kelas) {
     die('Kelas tidak ditemukan.');
@@ -76,20 +89,31 @@ function getSiswaDataByDateRange($kelas_id, $tgl_awal, $tgl_akhir, $semester_id)
     ");
     $stmt->bind_param("ssii", $tgl_awal, $tgl_akhir, $semester_id, $kelas_id);
     $stmt->execute();
-    return $stmt->get_result();
+    $result = $stmt->get_result();
+    $stmt->close();
+    return $result;
 }
 
-$smt1_range = getDateRangeForSemester(1, $semester_dates, $tgl_awal, $tgl_akhir);
-$smt2_range = getDateRangeForSemester(2, $semester_dates, $tgl_awal, $tgl_akhir);
+$smt1_range = !empty($semester_dates[1]) ? getDateRangeForSemester(1, $semester_dates, $tgl_awal, $tgl_akhir) : null;
+$smt2_range = !empty($semester_dates[2]) ? getDateRangeForSemester(2, $semester_dates, $tgl_awal, $tgl_akhir) : null;
 
-$siswa_smt1 = $smt1_range ? getSiswaDataByDateRange($kelas_id, $smt1_range['awal'], $smt1_range['akhir'], $smt1_range['id']) : null;
-$siswa_smt2 = $smt2_range ? getSiswaDataByDateRange($kelas_id, $smt2_range['awal'], $smt2_range['akhir'], $smt2_range['id']) : null;
+$siswa_smt1 = null;
+$siswa_smt2 = null;
+
+if ($smt1_range) {
+    $siswa_smt1 = getSiswaDataByDateRange($kelas_id, $smt1_range['awal'], $smt1_range['akhir'], $smt1_range['id']);
+}
+
+if ($smt2_range) {
+    $siswa_smt2 = getSiswaDataByDateRange($kelas_id, $smt2_range['awal'], $smt2_range['akhir'], $smt2_range['id']);
+}
 
 $data_smt1 = [];
 if ($siswa_smt1 && $siswa_smt1->num_rows > 0) {
     while ($row = $siswa_smt1->fetch_assoc()) {
         $data_smt1[$row['id']] = $row;
     }
+    $siswa_smt1->close();
 }
 
 $data_smt2 = [];
@@ -97,6 +121,7 @@ if ($siswa_smt2 && $siswa_smt2->num_rows > 0) {
     while ($row = $siswa_smt2->fetch_assoc()) {
         $data_smt2[$row['id']] = $row;
     }
+    $siswa_smt2->close();
 }
 
 $all_siswa_stmt = conn()->prepare("SELECT id, nis, nama, jenis_kelamin FROM siswa WHERE kelas_id = ? AND (status = 'aktif' OR status IS NULL) ORDER BY nama ASC");
@@ -104,9 +129,16 @@ $all_siswa_stmt->bind_param("i", $kelas_id);
 $all_siswa_stmt->execute();
 $all_siswa = $all_siswa_stmt->get_result();
 
-$total_hari = (strtotime($tgl_akhir) - strtotime($tgl_awal)) / (60*60*24) + 1;
-$hari_smt1 = $smt1_range ? (strtotime($smt1_range['akhir']) - strtotime($smt1_range['awal'])) / (60*60*24) + 1 : 0;
-$hari_smt2 = $smt2_range ? (strtotime($smt2_range['akhir']) - strtotime($smt2_range['awal'])) / (60*60*24) + 1 : 0;
+if (!$all_siswa || $all_siswa->num_rows === 0) {
+    $all_siswa_stmt->close();
+    die('Tidak ada siswa di kelas ini.');
+}
+
+$all_siswa_stmt->close();
+
+$total_hari = max(1, (strtotime($tgl_akhir) - strtotime($tgl_awal)) / (60*60*24) + 1);
+$hari_smt1 = $smt1_range ? max(1, (strtotime($smt1_range['akhir']) - strtotime($smt1_range['awal'])) / (60*60*24) + 1) : 0;
+$hari_smt2 = $smt2_range ? max(1, (strtotime($smt2_range['akhir']) - strtotime($smt2_range['awal'])) / (60*60*24) + 1) : 0;
 
 if ($type === 'excel' || $type === 'xlsx') {
     $filename = 'rekap_absensi_' . str_replace(' ', '_', $kelas['nama_kelas']) . '_' . date('Y-m-d') . '.csv';
@@ -212,8 +244,8 @@ if ($type === 'pdf') {
                 <th rowspan="2" style="vertical-align: middle;">NIS</th>
                 <th rowspan="2" style="vertical-align: middle;">Nama Siswa</th>
                 <th rowspan="2" style="vertical-align: middle;">JK</th>
-                <th colspan="5" class="smt-header">SEMESTER 1 (<?= $hari_smt1 ?> hari)</th>
-                <th colspan="5" class="smt-header">SEMESTER 2 (<?= $hari_smt2 ?> hari)</th>
+                <th colspan="5" class="smt-header">SEMESTER 1 (<?= $hari_smt1 > 0 ? $hari_smt1 : 0 ?> hari)</th>
+                <th colspan="5" class="smt-header">SEMESTER 2 (<?= $hari_smt2 > 0 ? $hari_smt2 : 0 ?> hari)</th>
             </tr>
             <tr>
                 <th>H</th><th>T</th><th>S</th><th>I</th><th>A</th><th>%</th>
