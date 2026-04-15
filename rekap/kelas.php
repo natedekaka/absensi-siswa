@@ -375,7 +375,8 @@ if (!$kelas_id) {
                             <td class="text-center"><span class="badge-status badge-alfa"><?= $row['alfa'] ?></span></td>
                             <td class="text-center"><span class="<?= $pct_cls ?>"><?= $persen ?>%</span></td>
                         </tr>
-                        <?php endwhile; endif; ?>
+                        <?php endwhile; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -422,16 +423,16 @@ if (!$kelas_id) {
                             <td class="text-center"><span class="badge-status badge-terlambat"><?= $row['terlambat'] ?></span></td>
                             <td class="text-center"><span class="badge-status badge-sakit"><?= $row['sakit'] ?></span></td>
                             <td class="text-center"><span class="badge-status badge-izin"><?= $row['izin'] ?></span></td>
-                            <td class="text-center"><span class="badge-status badge-alfa"><?= $row['alfa'] ?></span></td>
+<td class="text-center"><span class="badge-status badge-alfa"><?= $row['alfa'] ?></span></td>
                             <td class="text-center"><span class="<?= $pct_cls ?>"><?= $persen ?>%</span></td>
                         </tr>
-                        <?php endwhile; endif; ?>
+                        <?php endwhile; ?>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-</div>
 <?php endif; ?>
 
 <!-- Charts Comparison -->
