@@ -185,10 +185,11 @@ ob_start();
     border: none;
     border-radius: 16px;
     overflow: hidden;
-    transition: transform 0.3s;
+    transition: all 0.3s ease;
 }
 .stat-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15);
 }
 .stat-icon {
     width: 60px;
@@ -203,6 +204,99 @@ ob_start();
     padding: 0.75rem 1.5rem;
     border-radius: 12px;
     font-weight: 600;
+}
+.step-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+.step-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+}
+.step-header {
+    padding: 1.25rem 1.5rem;
+    color: white;
+    position: relative;
+}
+.step-header.step-1 { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+.step-header.step-2 { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.step-header.step-3 { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.step-header.step-4 { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+.step-number {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 35px;
+    height: 35px;
+    background: white;
+    color: #333;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.step-body {
+    padding: 1.5rem;
+}
+.step-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+}
+.step-icon.bg-purple { background: rgba(99, 102, 241, 0.1); color: #6366f1; }
+.step-icon.bg-green { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+.step-icon.bg-yellow { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+.step-icon.bg-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+.kelas-ref-card {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.kelas-ref-card .card-header-custom {
+    background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);
+    color: white;
+    padding: 1rem 1.25rem;
+    border-radius: 0;
+}
+.alumni-card {
+    border: none;
+    border-radius: 16px;
+    overflow: hidden;
+}
+.alumni-card .card-header-custom {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+}
+.kelas-badge-ref {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #4338ca;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+.action-btn {
+    padding: 0.875rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
 }
 </style>
 
@@ -266,102 +360,159 @@ ob_start();
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-6">
-        <div class="card-custom">
-            <div class="card-header-custom">
-                <i class="fas fa-arrow-up me-2"></i>1. Proses Kenaikan Tingkat
+<div class="row g-4 mb-4">
+    <div class="col-lg-3 col-6">
+        <div class="stat-card shadow-sm">
+            <div class="card-body text-center">
+                <div class="step-icon bg-purple mb-2">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3 class="mb-1"><?= $siswa_x_count ?></h3>
+                <p class="text-muted mb-0 small">Kelas 10</p>
             </div>
-            <div class="card-body">
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="stat-card shadow-sm">
+            <div class="card-body text-center">
+                <div class="step-icon bg-green mb-2">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3 class="mb-1"><?= $siswa_xi_count ?></h3>
+                <p class="text-muted mb-0 small">Kelas 11</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="stat-card shadow-sm">
+            <div class="card-body text-center">
+                <div class="step-icon bg-yellow mb-2">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3 class="mb-1"><?= $siswa_xii_count ?></h3>
+                <p class="text-muted mb-0 small">Kelas 12</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="stat-card shadow-sm">
+            <div class="card-body text-center">
+                <div class="step-icon bg-red mb-2">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h3 class="mb-1"><?= $alumni->num_rows ?? 0 ?></h3>
+                <p class="text-muted mb-0 small">Alumni</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="fw-bold mb-3"><i class="fas fa-tasks me-2"></i>Langkah-Langkah</h4>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="step-card shadow-sm">
+            <div class="step-header step-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-arrow-up me-2"></i>Kenaikan Tingkat</h5>
+                    <span class="step-number">1</span>
+                </div>
+            </div>
+            <div class="step-body">
+                <p class="text-muted mb-3">Naikkan tingkat siswa (X→XI, XI→XII). Kelas belum berubah.</p>
                 <form method="POST">
                     <input type="hidden" name="action" value="naik_tingkat">
-                    
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Naikkan Tingkat</label>
-                        <select name="tingkat_dari" class="form-select" required>
-                            <option value="">Pilih tingkat</option>
+                        <select name="tingkat_dari" class="form-select form-select-custom" required>
+                            <option value="">Pilih tingkat...</option>
                             <option value="10">Kelas 10 → 11</option>
                             <option value="11">Kelas 11 → 12</option>
-                        </select>
+</select>
                         <input type="hidden" name="tingkat_ke" value="">
-                        <script>
-                            document.querySelector('select[name="tingkat_dari"]').addEventListener('change', function() {
-                                this.nextElementSibling.value = parseInt(this.value) + 1;
-                            });
-                        </script>
                     </div>
-
-                    <div class="alert alert-info bg-info bg-opacity-10 border-0 rounded-3">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Tingkat siswa akan dinaikkan (10→11, 11→12). 
-                        Kelas belum diubah - lakukan redistribusi di langkah 2 & 3.
-                    </div>
-
-                    <button type="submit" class="btn btn-wa-primary btn-action w-100">
-                        <i class="fas fa-arrow-up me-2"></i>Proses Kenaikan Tingkat
+                    <script>
+                        document.querySelector('select[name="tingkat_dari"]').addEventListener('change', function() {
+                            this.nextElementSibling.value = parseInt(this.value) + 1;
+                        });
+                    </script>
+                    <button type="submit" class="btn btn-wa-primary action-btn w-100">
+                        <i class="fas fa-arrow-up me-2"></i>Proses Kenaikan
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card-custom">
-            <div class="card-header-custom bg-success">
-                <i class="fas fa-random me-2"></i>2. Redistribusi Kelas 10 → 11
-            </div>
-            <div class="card-body text-center">
-                <div class="mb-3">
-                    <i class="fas fa-random text-success" style="font-size: 3rem;"></i>
+    <div class="col-lg-6">
+        <div class="step-card shadow-sm">
+            <div class="step-header step-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-random me-2"></i>Redistribusi Kelas</h5>
+                    <span class="step-number">2</span>
                 </div>
-                <p class="text-muted mb-3">
-                    Pindahkan siswa kelas 10 ke kelas 11 (IPA/IPS/Bahasa) dengan mudah.<br>
-                    <strong>Cocok untuk pembagian minat &amp; bakat!</strong>
-                </p>
-                <a href="redistribusi.php" class="btn btn-wa-success btn-action w-100">
-                    <i class="fas fa-random me-2"></i>Buka Redistribusi Kelas
+            </div>
+            <div class="step-body text-center">
+                <div class="step-icon bg-green mb-3">
+                    <i class="fas fa-random"></i>
+                </div>
+                <p class="text-muted mb-3">Pindahkan siswa ke kelas/jurusan baru (IPA/IPS/Bahasa)</p>
+                <a href="redistribusi.php" class="btn btn-wa-success action-btn w-100">
+                    <i class="fas fa-random me-2"></i>Buka Redistribusi
                 </a>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row g-4 mt-2">
-    <div class="col-md-6">
-        <div class="card-custom">
-            <div class="card-header-custom">
-                <i class="fas fa-file-export me-2"></i>2. Export & Import Redistribusi
+    <div class="col-lg-6">
+        <div class="step-card shadow-sm">
+            <div class="step-header step-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Kelulusan</h5>
+                    <span class="step-number">3</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <label class="form-label fw-semibold">Export Siswa per Tingkat</label>
-                    <form method="POST" class="d-flex gap-2">
-                        <input type="hidden" name="action" value="export_siswa">
-                        <select name="tingkat_export" class="form-select" required>
+            <div class="step-body text-center">
+                <div class="step-icon bg-yellow mb-3">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <p class="text-muted mb-3">Proses kelulusan siswa kelas 12 → alumni</p>
+                <a href="kelulusan.php" class="btn btn-warning action-btn w-100" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white;">
+                    <i class="fas fa-user-graduate me-2"></i>Buka Kelulusan
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="step-card shadow-sm">
+            <div class="step-header step-4">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-file-export me-2"></i>Export/Import CSV</h5>
+                    <span class="step-number">4</span>
+                </div>
+            </div>
+            <div class="step-body">
+                <form method="POST" class="mb-3">
+                    <input type="hidden" name="action" value="export_siswa">
+                    <label class="form-label fw-semibold small">Export Siswa</label>
+                    <div class="input-group">
+                        <select name="tingkat_export" class="form-select form-select-custom" required>
                             <option value="10">Kelas 10</option>
                             <option value="11">Kelas 11</option>
                         </select>
-                        <button type="submit" class="btn btn-outline-primary">
-                            <i class="fas fa-download"></i> Export CSV
+                        <button type="submit" class="btn btn-outline-dark">
+                            <i class="fas fa-download"></i>
                         </button>
-                    </form>
-                </div>
-
+                    </div>
+                </form>
                 <hr>
-
-                <label class="form-label fw-semibold">Import ke Kelas Baru</label>
                 <form method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="import_kelas">
-                    <div class="mb-2">
-                        <input type="file" name="csv_file" class="form-control" accept=".csv" required>
-                    </div>
-                    <small class="text-muted d-block mb-3">
-                        Format: NIS;NISN;Nama;Kelas Lama;Nama Kelas Baru;ID Kelas Baru<br>
-                        Isi kolom "ID Kelas Baru" (kolom F) dengan ID kelas tujuan.<br>
-                        Lihat tabel daftar kelas di bawah untuk referensi ID.
-                    </small>
-                    <button type="submit" class="btn btn-wa-primary btn-action w-100">
-                        <i class="fas fa-upload me-2"></i>Import Redistribusi
+                    <label class="form-label fw-semibold small">Import ke Kelas Baru</label>
+                    <input type="file" name="csv_file" class="form-control form-control-custom mb-2" accept=".csv" required>
+                    <small class="text-muted d-block mb-2">Format: NIS;NISN;Nama;Kelas Lama;;ID_Kelas_Baru</small>
+                    <button type="submit" class="btn btn-wa-primary action-btn w-100">
+                        <i class="fas fa-upload me-2"></i>Import CSV
                     </button>
                 </form>
             </div>
@@ -369,45 +520,64 @@ ob_start();
     </div>
 </div>
 
-<div class="row g-4 mt-2">
-    <div class="col-md-6">
-        <div class="card-custom">
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="kelas-ref-card shadow-sm">
             <div class="card-header-custom">
-                <i class="fas fa-user-graduate me-2"></i>3. Kelulusan Siswa Kelas 12
+                <i class="fas fa-building me-2"></i>Daftar Kelas (Referensi ID)
             </div>
-            <div class="card-body text-center">
-                <div class="mb-3">
-                    <i class="fas fa-user-graduate text-success" style="font-size: 3rem;"></i>
-                </div>
-                <p class="text-muted mb-3">Proses kelulusan siswa kelas 12 untuk menandai sebagai alumni</p>
-                <a href="kelulusan.php" class="btn btn-success btn-action w-100" style="background: linear-gradient(135deg, #198754 0%, #1ebe57 100%); border: none;">
-                    <i class="fas fa-graduation-cap me-2"></i>Buka Menu Kelulusan
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-6">
-        <div class="card-custom">
-            <div class="card-header-custom">
-                <i class="fas fa-list me-2"></i>Daftar Kelas (untuk Import)
-            </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive" style="max-height: 250px;">
-                    <table class="table table-sm table-hover">
-                        <thead>
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <th>ID</th>
+                                <th class="text-center" style="width: 50px;">ID</th>
                                 <th>Nama Kelas</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($kelas_options as $id => $nama): ?>
                             <tr>
-                                <td><?= $id ?></td>
+                                <td class="text-center"><span class="kelas-badge-ref"><?= $id ?></span></td>
                                 <td><?= htmlspecialchars($nama) ?></td>
                             </tr>
                             <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="alumni-card shadow-sm">
+            <div class="card-header-custom">
+                <i class="fas fa-user-graduate me-2"></i>Daftar Alumni
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 250px;">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>NIS</th>
+                                <th>Nama</th>
+                                <th class="text-center">Tahun Lulus</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $alumni = conn()->query("SELECT s.nis, s.nama, s.tahun_lulus FROM siswa s WHERE s.status = 'alumni' ORDER BY s.tahun_lulus DESC, s.nama ASC");
+                            if ($alumni && $alumni->num_rows > 0):
+                                while ($row = $alumni->fetch_assoc()):
+                            ?>
+                            <tr>
+                                <td><?= htmlspecialchars($row['nis']) ?></td>
+                                <td><?= htmlspecialchars($row['nama']) ?></td>
+                                <td class="text-center"><span class="badge bg-primary"><?= $row['tahun_lulus'] ?></span></td>
+                            </tr>
+                            <?php endwhile; else: ?>
+                            <tr><td colspan="3" class="text-center text-muted py-4">Belum ada alumni</td></tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
