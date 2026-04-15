@@ -1,9 +1,11 @@
 :root {
-    --primary: #128C7E;
-    --primary-dark: #0d6e68;
-    --primary-light: #25D366;
+    /* PRIMARY - Warna Utama (Light Blue) */
+    --primary: #3B82F6;
+    --primary-dark: #1D4ED8;
+    --primary-light: #60A5FA;
+    
     --secondary: #64748b;
-    --bg: #f8fafc;
+    --bg: #f0f9ff;
     --surface: #ffffff;
     --text: #1e293b;
     --text-muted: #64748b;
@@ -92,7 +94,7 @@ h3 { font-size: 1.25rem; }
     background: var(--primary);
     border: none;
 }
-.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); color: #fff !important; }
 .btn-success {
     background: var(--success);
     border: none;

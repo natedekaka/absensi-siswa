@@ -3,10 +3,10 @@
    ========================================================================== */
 
 :root {
-    /* PRIMARY - Warna Utama (Teal) */
-    --primary: #128C7E;
-    --primary-dark: #0D6E68;
-    --primary-light: #25D366;
+    /* PRIMARY - Warna Utama (Light Blue) */
+    --primary: #3B82F6;
+    --primary-dark: #1D4ED8;
+    --primary-light: #60A5FA;
     
     /* STATUS COLORS */
     --success: #10B981;
@@ -19,7 +19,7 @@
     --info-light: #DBEAFE;
     
     /* NEUTRAL */
-    --bg-body: #F8FAFC;
+    --bg-body: #F0F9FF;
     --surface: #FFFFFF;
     --border: #E2E8F0;
     --text: #1E293B;
@@ -41,6 +41,13 @@
 }
 
 /* HAPUSKAN WARNA INLINE - Override semua inline styles */
+
+/* Replace old teal colors with blue */
+[style*="#128C7E"], [style*="#128c7e"] { background: var(--primary) !important; }
+[style*="#0d6e68"] { background: var(--primary-dark) !important; }
+[style*="#25D366"] { background: var(--success) !important; }
+[style*="#1ebe57"] { background: var(--success) !important; }
+[style*="#0d6e67"] { background: var(--primary-dark) !important; }
 
 /* Background overrides */
 [style*="background:"], [style*="background:"] {
@@ -254,22 +261,16 @@ h1, h2, h3 {
 [style*="color: #25D366"],
 [style*="color: var(--wa-dark)"],
 [style*="color: var(--wa-green)"] {
-    color: var(--primary) !important;
+color: var(--primary) !important;
 }
-
-/* Header backgrounds untuk cards */
-.card > .card-header,
-.card-header,
-[class*="card-header"] {
-    background: var(--gradient-primary) !important;
-    color: #fff !important;
-}
-
-/* Specific header styling di inline styles */
 [style*="color: #6366f1"] { color: var(--primary) !important; }
 [style*="color: #10b981"] { color: var(--success) !important; }
 [style*="color: #f59e0b"] { color: var(--warning) !important; }
 [style*="color: #ef4444"] { color: var(--danger) !important; }
+[style*="color: #128C7E"] { color: var(--primary) !important; }
+[style*="color:#128C7E"] { color: var(--primary) !important; }
+[style*="color: #25D366"] { color: var(--primary) !important; }
+[style*="color:#25D366"] { color: var(--primary) !important; }
 
 /* Avatar colors */
 .avatar-mini.avatar-laki {
