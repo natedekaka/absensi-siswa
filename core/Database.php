@@ -12,7 +12,7 @@ class Database {
 
     private function __construct() {
         $host = DB_HOST;
-        $port = DB_PORT;
+        $port = (int) DB_PORT;
         
         if ($host === 'localhost') {
             $host = '127.0.0.1';
