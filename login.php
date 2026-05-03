@@ -1,5 +1,6 @@
 <?php
 session_start();
+
 if (isset($_SESSION['user'])) {
     header("Location: dashboard/");
     exit;
@@ -7,6 +8,41 @@ if (isset($_SESSION['user'])) {
 
 require_once 'core/init.php';
 require_once 'core/Database.php';
+
+$secret = defined('APP_SECRET') ? APP_SECRET : 'default_secret_change_me';
+
+if (isset($_COOKIE['remember_user'])) {
+    list($user_id, $token) = explode(':', $_COOKIE['remember_user'], 2);
+    
+    $stmt = conn()->prepare("SELECT * FROM users WHERE id = ? AND remember_token IS NOT NULL AND remember_expires > NOW()");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows > 0) {
+        $user = $result->fetch_assoc();
+        
+        if (password_verify($token, $user['remember_token'])) {
+            $_SESSION['user'] = $user;
+            $_SESSION['login_time'] = time();
+            
+            $new_token = bin2hex(random_bytes(32));
+            $hashed_token = password_hash($new_token, PASSWORD_DEFAULT);
+            $expires = date('Y-m-d H:i:s', time() + 60*60*24*30);
+            
+            $update_stmt = conn()->prepare("UPDATE users SET remember_token = ?, remember_expires = ? WHERE id = ?");
+            $update_stmt->bind_param("ssi", $hashed_token, $expires, $user['id']);
+            $update_stmt->execute();
+            
+            setcookie('remember_user', $user['id'] . ':' . $new_token, time() + 60*60*24*30, '/', '', false, true);
+            
+            header('Location: ' . BASE_URL . 'dashboard/');
+            exit;
+        }
+    }
+    
+    setcookie('remember_user', '', time() - 3600, '/');
+}
 
 initKonfigurasiSekolah(conn());
 $sekolah = getKonfigurasiSekolah(conn());
@@ -397,6 +433,13 @@ ob_start();
                         </div>
                     </div>
                     
+                    <div class="form-check mb-4" style="color: rgba(255,255,255,0.9);">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember" style="border-radius: 4px;">
+                        <label class="form-check-label" for="remember" style="font-size: 0.9rem;">
+                            <i class="fas fa-clock me-1"></i>Ingat saya (30 hari)
+                        </label>
+                    </div>
+
                     <button type="submit" class="btn-login">
                         <i class="fas fa-sign-in-alt"></i>
                         Masuk
@@ -405,6 +448,10 @@ ob_start();
                 
                 <p class="footer-text">
                     &copy; <?= date('Y') ?> Absensi Siswa
+                    <br>
+                    <a href="<?= BASE_URL ?>forgot_password.php" style="color: rgba(255,255,255,0.8); text-decoration: underline;">
+                        <i class="fas fa-question-circle"></i> Lupa Password?
+                    </a>
                 </p>
             </div>
         </div>

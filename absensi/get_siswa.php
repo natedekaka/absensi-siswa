@@ -130,11 +130,11 @@ if ($result && $result->num_rows > 0):
         font-size: 0.75rem;
         color: white;
     }
-    .status-hadir { background: var(--wa-green); }
-    .status-terlambat { background: #ffb142; }
-    .status-sakit { background: #778ca3; }
-    .status-izin { background: #2ed573; }
-    .status-alfa { background: #ff5252; }
+    .status-hadir { background: #10b981; color: #ffffff; font-weight: 600; }
+    .status-terlambat { background: #f59e0b; color: #000000; font-weight: 600; }
+    .status-sakit { background: #6b7280; color: #ffffff; font-weight: 600; }
+    .status-izin { background: #3b82f6; color: #ffffff; font-weight: 600; }
+    .status-alfa { background: #ef4444; color: #ffffff; font-weight: 600; }
     .status-kosong { background: #aaa; }
     .attendance-radio input {
         width: 18px;

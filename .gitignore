@@ -1,0 +1,31 @@
+# Environment
+.env
+
+# Uploads (keep directory, ignore files)
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+# Database backups (keep migrations, ignore others)
+*.sql
+!migrations/*.sql
+absensi_siswa_backup_*.sql
+absensi_siswa_latest.sql
+
+# Dependencies
+vendor/
+node_modules/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+error_log

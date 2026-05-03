@@ -1,0 +1,287 @@
+/* ==========================================================================
+   GLOBAL COLOR OVERRIDE - Untuk aplikasi yang seragam
+   ========================================================================== */
+
+:root {
+    /* PRIMARY - Warna Utama (Light Blue) */
+    --primary: #3B82F6;
+    --primary-dark: #1D4ED8;
+    --primary-light: #60A5FA;
+    
+    /* STATUS COLORS */
+    --success: #10B981;
+    --success-light: #D1FAE5;
+    --warning: #F59E0B;
+    --warning-light: #FEF3C7;
+    --danger: #EF4444;
+    --danger-light: #FEE2E2;
+    --info: #3B82F6;
+    --info-light: #DBEAFE;
+    
+    /* NEUTRAL */
+    --bg-body: #F0F9FF;
+    --surface: #FFFFFF;
+    --border: #E2E8F0;
+    --text: #1E293B;
+    --text-muted: #64748B;
+    
+    /* GRADIENTS */
+    --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    --gradient-success: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    --gradient-warning: linear-gradient(135deg, var(--warning) 0%, #D97706 100%);
+    --gradient-danger: linear-gradient(135deg, var(--danger) 0%, #DC2626 100%);
+    
+    /* SHADOW */
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+    
+    --radius: 12px;
+    --radius-sm: 8px;
+}
+
+/* HAPUSKAN WARNA INLINE - Override semua inline styles */
+
+/* Replace old teal colors with blue */
+[style*="#128C7E"], [style*="#128c7e"] { background: var(--primary) !important; }
+[style*="#0d6e68"] { background: var(--primary-dark) !important; }
+[style*="#25D366"] { background: var(--success) !important; }
+[style*="#1ebe57"] { background: var(--success) !important; }
+[style*="#0d6e67"] { background: var(--primary-dark) !important; }
+
+/* Background overrides */
+[style*="background:"], [style*="background:"] {
+    --bg-override: 1;
+}
+
+/* Gradient cards */
+[style*="linear-gradient(135deg, #"] {
+    background: var(--gradient-primary) !important;
+}
+[style*="linear-gradient(135deg, #10b981"],
+[style*="linear-gradient(135deg, var(--wa-green)"] {
+    background: var(--gradient-success) !important;
+}
+[style*="linear-gradient(135deg, #f59e0b"],
+[style*="linear-gradient(135deg, #F59E0B"] {
+    background: var(--gradient-warning) !important;
+}
+[style*="linear-gradient(135deg, #ef4444"] {
+    background: var(--gradient-danger) !important;
+}
+
+/* Card header gradients */
+.card-header-custom,
+[style*="background: linear-gradient(135deg, var(--wa-dark)"] {
+    background: var(--gradient-primary) !important;
+}
+[style*="background: linear-gradient(135deg, var(--wa-green)"] {
+    background: var(--gradient-success) !important;
+}
+
+/* Headers dengan warna berbeda */
+h1, h2, h3, h4, h5, h6,
+.text-primary, .text-wa-dark {
+    color: var(--primary) !important;
+}
+
+/* Navbar */
+.navbar-custom,
+.navbar-custom[style] {
+    background: var(--gradient-primary) !important;
+}
+
+/* Button color overrides */
+.btn-primary,
+.btn-wa-primary,
+[style*="background: #128C7E"],
+[style*="background:#128C7E"] {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+.btn-success,
+.btn-wa-success,
+[style*="background: #25D366"] {
+    background: var(--success) !important;
+    border-color: var(--success) !important;
+}
+.btn-warning,
+[style*="background: #F59E0B"],
+[style*="background:#F59E0B"] {
+    background: var(--warning) !important;
+    border-color: var(--warning) !important;
+    color: #000 !important;
+}
+.btn-danger,
+[style*="background: #EF4444"] {
+    background: var(--danger) !important;
+    border-color: var(--danger) !important;
+}
+
+/* Badge overrides - ensure text contrast */
+.badge, .badge.bg-success { background: var(--success) !important; color: #fff !important; }
+.badge.bg-warning { background: var(--warning) !important; color: #000 !important; }
+.badge.bg-danger { background: var(--danger) !important; color: #fff !important; }
+.badge.bg-info { background: var(--info) !important; color: #fff !important; }
+.badge.bg-primary { background: var(--primary) !important; color: #fff !important; }
+.badge.bg-secondary { background: var(--text-muted) !important; color: #fff !important; }
+
+/* Alert overrides */
+.alert-success, .alert-success-custom {
+    background: var(--success-light) !important;
+    color: #065F46 !important;
+    border-color: var(--success) !important;
+}
+.alert-danger, .alert-danger-custom {
+    background: var(--danger-light) !important;
+    color: #991B1B !important;
+    border-color: var(--danger) !important;
+}
+.alert-warning {
+    background: var(--warning-light) !important;
+    color: #92400E !important;
+    border-color: var(--warning) !important;
+}
+.alert-info {
+    background: var(--info-light) !important;
+    color: #1E40AF !important;
+    border-color: var(--info) !important;
+}
+
+/* Table headers override */
+.table thead th,
+[style*="background: linear-gradient(135deg, #25D366"],
+[style*="background: #128C7E"] {
+    background: var(--primary) !important;
+    color: #fff !important;
+}
+.table-custom thead {
+    background: var(--primary) !important;
+    color: #fff !important;
+}
+
+/* Stat cards */
+.stat-card,
+[style*="background: linear-gradient(135deg, #128C7E"],
+[style*="background: linear-gradient(135deg, var(--wa-dark)"] {
+    background: var(--gradient-primary) !important;
+}
+.stat-card.success,
+.stat-card[style*="background: linear-gradient(135deg, #25D366"] {
+    background: var(--gradient-success) !important;
+}
+
+/* Form inputs */
+.form-control, .form-select {
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-sm) !important;
+}
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(18,140,126,0.15) !important;
+}
+
+/* Card border-left colors */
+[style*="border-left: 4px solid"] {
+    border-left: 4px solid var(--primary) !important;
+}
+[style*="border-left: 4px solid #28a745"] { border-left-color: var(--success) !important; }
+[style*="border-left: 4px solid #ffc107"] { border-left-color: var(--warning) !important; }
+[style*="border-left: 4px solid #17a2b8"] { border-left-color: var(--info) !important; }
+[style*="border-left: 4px solid #dc3545"] { border-left-color: var(--danger) !important; }
+
+/* Chart colors override */
+[style*="borderColor"], [style*="backgroundColor"] {
+    --chart-override: 1;
+}
+
+/* Custom classes untuk page headers */
+.page-header-gradient {
+    background: var(--gradient-primary) !important;
+    color: #fff !important;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* Progress bars */
+.progress-custom .progress-bar,
+.progress-bar-gradient {
+    background: var(--gradient-primary) !important;
+}
+
+/* Footer */
+.footer-custom {
+    background: var(--gradient-primary) !important;
+}
+
+/* Login header */
+.login-header {
+    background: var(--gradient-primary) !important;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    background: var(--primary-dark) !important;
+    border: none;
+    border-radius: var(--radius-sm);
+}
+.dropdown-item {
+    color: rgba(255,255,255,0.9) !important;
+}
+.dropdown-item:hover {
+    background: rgba(255,255,255,0.15) !important;
+    color: #fff !important;
+}
+.dropdown-item[style*="color"] {
+    color: #fff !important;
+}
+
+/* Modal header */
+.modal-header {
+    background: var(--gradient-primary) !important;
+    color: #fff !important;
+}
+.modal-header .btn-close {
+    filter: invert(1);
+}
+.modal-title {
+    color: #fff !important;
+}
+
+/* Page Title / Header */
+h1, h2, h3 {
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+/* Header sections */
+[style*="color: #128C7E"],
+[style*="color:#128C7E"],
+[style*="color:#25D366"],
+[style*="color: #25D366"],
+[style*="color: var(--wa-dark)"],
+[style*="color: var(--wa-green)"] {
+color: var(--primary) !important;
+}
+[style*="color: #6366f1"] { color: var(--primary) !important; }
+[style*="color: #10b981"] { color: var(--success) !important; }
+[style*="color: #f59e0b"] { color: var(--warning) !important; }
+[style*="color: #ef4444"] { color: var(--danger) !important; }
+[style*="color: #128C7E"] { color: var(--primary) !important; }
+[style*="color:#128C7E"] { color: var(--primary) !important; }
+[style*="color: #25D366"] { color: var(--primary) !important; }
+[style*="color:#25D366"] { color: var(--primary) !important; }
+
+/* Avatar colors */
+.avatar-mini.avatar-laki {
+    background: var(--gradient-primary) !important;
+}
+.avatar-mini.avatar-perempuan {
+    background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+}
+
+/* Icon colors */
+.fa-check-circle { color: var(--success) !important; }
+.fa-exclamation-circle { color: var(--danger) !important; }
+.fa-info-circle { color: var(--info) !important; }
+.fa-warning { color: var(--warning) !important; }

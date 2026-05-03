@@ -1,16 +1,24 @@
 <?php
 
+require_once __DIR__ . '/config.php';
+
 class Database {
     private static $instance = null;
     private $connection;
 
-    private $host = 'db:3306';
-    private $user = 'root';
-    private $pass = 'rootpass';
-    private $db = 'absensi_siswa';
+    private $user = DB_USER;
+    private $pass = DB_PASS;
+    private $db = DB_NAME;
 
     private function __construct() {
-        $this->connection = new mysqli($this->host, $this->user, $this->pass, $this->db);
+        $host = DB_HOST;
+        $port = (int) DB_PORT;
+        
+        if ($host === 'localhost') {
+            $host = '127.0.0.1';
+        }
+        
+        $this->connection = new mysqli($host, $this->user, $this->pass, $this->db, $port);
         
         if ($this->connection->connect_error) {
             die("Koneksi gagal: " . $this->connection->connect_error);
