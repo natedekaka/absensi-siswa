@@ -257,6 +257,17 @@ new Chart(document.getElementById('chartTren'), {
 </script>
 <?php endif; ?>
 
+<style>
+/* Fix TomSelect dropdown z-index on desktop */
+.ts-wrapper {
+    z-index: 9999 !important;
+}
+.ts-wrapper .ts-dropdown {
+    z-index: 10000 !important;
+    position: absolute;
+}
+</style>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof TomSelect !== 'undefined') {
@@ -266,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
             placeholder: 'Ketik nama siswa...',
             maxOptions: 100,
             allowEmptyOption: true,
+            dropdownParent: 'body',
             onChange: function(value) {
                 if (value) {
                     this.wrapper.closest('form').submit();
