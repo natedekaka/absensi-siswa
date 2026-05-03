@@ -64,9 +64,19 @@ if ($siswa_id > 0) {
     <h2 class="fw-bold text-wa-dark mb-0">
         <i class="fas fa-history me-2"></i>Riwayat Absensi
     </h2>
-    <a href="index.php" class="btn btn-outline-secondary">
-        <i class="fas fa-arrow-left me-2"></i>Kembali
-    </a>
+    <div class="d-flex gap-2">
+        <?php if ($siswa_id > 0): ?>
+        <a href="export_riwayat.php?siswa_id=<?= $siswa_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&format=excel" class="btn btn-success">
+            <i class="fas fa-file-excel me-2"></i>Excel
+        </a>
+        <a href="export_riwayat.php?siswa_id=<?= $siswa_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&format=pdf" class="btn btn-danger" target="_blank">
+            <i class="fas fa-file-pdf me-2"></i>PDF
+        </a>
+        <?php endif; ?>
+        <a href="index.php" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Kembali
+        </a>
+    </div>
 </div>
 
 <form method="GET" class="card-custom p-3 mb-4">
