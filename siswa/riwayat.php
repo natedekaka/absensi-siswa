@@ -10,7 +10,11 @@ require_once '../core/Database.php';
 
 $title = 'Riwayat Absensi - Sistem Absensi Siswa';
 
-$scripts = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>';
+$scripts = '
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+';
 
 ob_start();
 
@@ -69,16 +73,16 @@ if ($siswa_id > 0) {
     <div class="row g-3 align-items-end">
         <div class="col-md-4">
             <label class="form-label fw-semibold text-wa-dark">
-                <i class="fas fa-user me-2"></i>Pilih Siswa
+                <i class="fas fa-user me-2"></i>Cari Siswa
             </label>
-            <select name="siswa_id" class="form-select form-select-custom" required onchange="this.form.submit()">
-                <option value="">-- Pilih Siswa --</option>
+            <select name="siswa_id" id="selectSiswa" class="form-select form-select-custom" required>
+                <option value="">-- Ketik nama siswa --</option>
                 <?php
-                $siswa_list = conn()->query("SELECT id, nama, kelas_id FROM siswa WHERE status = 'aktif' OR status IS NULL ORDER BY nama");
+                $siswa_list = conn()->query("SELECT s.id, s.nama, k.nama_kelas FROM siswa s LEFT JOIN kelas k ON s.kelas_id = k.id WHERE s.status = 'aktif' OR s.status IS NULL ORDER BY s.nama");
                 while ($row = $siswa_list->fetch_assoc()):
                 ?>
                 <option value="<?= $row['id'] ?>" <?= ($siswa_id == $row['id']) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($row['nama']) ?>
+                    <?= htmlspecialchars($row['nama'] . ' (' . ($row['nama_kelas'] ?? 'No Kelas') . ')') ?>
                 </option>
                 <?php endwhile; ?>
             </select>
@@ -252,6 +256,25 @@ new Chart(document.getElementById('chartTren'), {
 });
 </script>
 <?php endif; ?>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof TomSelect !== 'undefined') {
+        new TomSelect('#selectSiswa', {
+            create: false,
+            sortField: { field: 'text', direction: 'asc' },
+            placeholder: 'Ketik nama siswa...',
+            maxOptions: 100,
+            allowEmptyOption: true,
+            onChange: function(value) {
+                if (value) {
+                    this.wrapper.closest('form').submit();
+                }
+            }
+        });
+    }
+});
+</script>
 
 <?php
 $content = ob_get_clean();
