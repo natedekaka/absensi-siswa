@@ -1,256 +1,353 @@
-# Aplikasi Absensi Siswa
+# 🎓 Sistem Absensi Siswa
 
-Sistem absensi siswa berbasis web untuk mengelola kehadiran siswa secara digital.
+Aplikasi web berbasis PHP untuk mencatat dan mengelola absensi siswa harian. Dilengkapi dengan fitur ekspor, visualisasi data, dan antarmuka yang responsif.
 
-## Fitur
+![PHP Version](https://img.shields.io/badge/PHP-8.2-blue.svg)
+![MySQL](https://img.shields.io/badge/Database-MySQL-orange.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
-### Manajemen Data
-- **Manajemen Siswa**: Tambah, edit, hapus, import/export data siswa
-- **Manajemen Kelas**: Kelola data kelas dan distribusi siswa
-- **Manajemen Tahun Ajaran**: Kelola tahun ajaran dan semester
-- **Kenaikan Kelas**: Fitur kenaikan kelas dan kelulusan
-- **Profil Sekolah**: Konfigurasi nama sekolah dan logo
+---
 
-### Absensi
-- **Input Absensi**: Catat kehadiran siswa (Hadir, Sakit, Alfa, Izin, Terlambat)
-- **Absensi Barcode/QR**: Scan barcode atau QR code kartu siswa
-  - Filter tanggal & semester
-  - Notifikasi suara saat absensi berhasil
-  - Counter jumlah absensi hari ini
-  - Riwayat scan harian
+## 📋 Daftar Isi
 
-### Laporan & Export
-- **Dashboard Statistik**: Grafik kehadiran (line, pie, bar)
-  - Filter periode (7/30/90 hari atau custom)
-  - Filter semester
-- **Rekap Absensi**: Laporan per kelas dengan Export PDF/Excel
-- **Riwayat Absensi**: Riwayat kehadiran per siswa
+- [Fitur](#fitur)
+- [Teknologi](#teknologi)
+- [Persyaratan](#persyaratan)
+- [Instalasi](#instalasi)
+- [Konfigurasi](#konfigurasi)
+- [Cara Menggunakan](#cara-menggunakan)
+- [Struktur Folder](#struktur-folder)
+- [Migrasi Database](#migrasi-database)
+- [Kontribusi](#kontribusi)
+- [Lisensi](#lisensi)
 
-### Generate Kartu
-- **Generate Barcode/QR**: Buat barcode atau QR code kartu siswa
-  - Print kartu siswa massal
+---
 
-## Tech Stack
+## ✨ Fitur
 
-- **Backend**: PHP native
-- **Database**: MySQL/MariaDB
-- **Frontend**: Bootstrap, Chart.js, vanilla JS
-- **Scanner**: html5-qrcode (scan barcode/QR via kamera)
-- **Server**: Apache (PHP Built-in untuk development)
+### 1. **Manajemen Absensi**
+   - Input absensi harian (Hadir, Terlambat, Sakit, Izin, Alfa)
+   - Scan barcode untuk input cepat
+   - Filter berdasarkan kelas, semester, dan tanggal
 
-## Requirements
+### 2. **Rekap & Laporan**
+   - Rekap absensi per kelas/semester
+   - Riwayat absensi per siswa
+   - **Progress Bar** kehadiran dengan kode warna
+   - **Calendar Heatmap** visualisasi GitHub-style
+   - Export ke **Excel (CSV)** dan **PDF**
 
-- PHP 8.2+
-- MySQL/MariaDB 10+
-- Podman/Docker (untuk container)
+### 3. **Searchable Dropdown**
+   - Pencarian siswa real-time dengan TomSelect
+   - Menampilkan nama siswa + kelas
 
-## Cara Install
+### 4. **Filter Semester**
+   - Pilihan semester dengan auto-set tanggal
+   - Periode semester otomatis terisi
 
-### 1. Clone Repository
+### 5. **Bulk Delete**
+   - Hapus masal data absensi dengan checkbox
+   - Konfirmasi sebelum menghapus
 
-```bash
-git clone https://github.com/natedekaka/absensi-siswa.git
-cd absensi-siswa
-```
+### 6. **Autentikasi & Keamanan**
+   - Login dengan Remember Me
+   - Forgot Password dengan token reset
+   - CSRF Protection pada semua form
+   - Password hashing dengan bcrypt
 
-### 2. Menggunakan Docker/Podman
+### 7. **UI/UX Modern**
+   - Dark Mode toggle
+   - Responsive (Mobile & Desktop)
+   - PWA Support (Progressive Web App)
+   - Stat cards dengan gradient
 
-```bash
-# Jalankan container
-podman-compose up -d
+---
 
-# Import database
-podman exec -i absensi-siswa_db_1 mysql -u root -prootpass absensi_siswa < absensi_siswa_backup_20260411.sql
-```
+## 🛠️ Teknologi
 
-**Catatan**: Gunakan `podman-compose up -d` (bukan down) agar data database tersimpan.
+| Komponen | Teknologi |
+|-----------|-------------|
+| **Backend** | PHP 8.2, MySQLi (PDO Wrapper) |
+| **Frontend** | HTML5, CSS3, JavaScript (ES6+) |
+| **CSS Framework** | Bootstrap 5.3 |
+| **Libraries** | TomSelect, Chart.js, Font Awesome |
+| **Database** | MySQL/MariaDB |
+| **PWA** | Service Worker, Manifest.json |
 
-### 3. Tanpa Docker
+---
 
-1. Install PHP dan MySQL/MariaDB
-2. Buat database: `CREATE DATABASE absensi_siswa;`
-3. Import `absensi_siswa_backup_20260411.sql`
-4. Edit `core/Database.php` sesuai konfigurasi lokal
-5. Jalankan: `php -S localhost:8080`
+## 📝 Persyaratan
 
-## Konfigurasi Database
+- PHP >= 8.0
+- MySQL >= 5.7 atau MariaDB >= 10.3
+- Web Server (Apache/Nginx) atau PHP built-in server
+- Docker (opsional, untuk development)
 
-Edit file `core/Database.php`:
+---
 
-```php
-private $host = 'localhost';        // host database
-private $user = 'root';             // username
-private $pass = '';                 // password
-private $db = 'absensi_siswa';      // nama database
-```
+## 🚀 Instalasi
 
-## Akses Aplikasi
+### Metode 1: Local Development
 
-- **Web**: http://localhost:8080
-- **phpMyAdmin**: http://localhost:8081
-  - Server: `db`
-  - Username: `root`
-  - Password: `rootpass`
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/username/absensi-siswa.git
+   cd absensi-siswa
+   ```
 
-## Default Login
+2. **Setup Database:**
+   ```bash
+   # Login ke MySQL
+   mysql -u root -p
+   
+   # Buat database
+   CREATE DATABASE absensi_siswa;
+   EXIT;
+   ```
 
-- **Username**: admin
-- **Password**: (cek di database tabel `users`)
+3. **Copy file environment:**
+   ```bash
+   cp .env.example .env
+   ```
 
-## Port
+4. **Edit konfigurasi `.env`:**
+   ```env
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_NAME=absensi_siswa
+   DB_USER=root
+   DB_PASS=
+   BASE_URL=/
+   APP_ENV=development
+   APP_SECRET=your_random_secret_key_here
+   ```
 
-| Service        | Port |
-|----------------|------|
-| Web App        | 8080 |
-| phpMyAdmin     | 8081 |
-| Database (ext) | 3306 |
+5. **Jalankan migrasi:**
+   ```bash
+   php migrate.php
+   ```
 
-## Struktur Folder
+6. **Start web server:**
+   ```bash
+   php -S localhost:8000
+   ```
+
+7. **Akses aplikasi:**
+   - Buka browser: `http://localhost:8000`
+
+---
+
+### Metode 2: Docker (Rekomendasi)
+
+1. **Pastikan Docker terinstal**
+
+2. **Jalankan dengan docker-compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **Akses aplikasi:**
+   - Web: `http://localhost:8080`
+   - phpMyAdmin: `http://localhost:8081`
+
+**Catatan:** Docker otomatis menjalankan migrasi saat container pertama kali dinyalakan.
+
+---
+
+## ⚙️ Konfigurasi
+
+### Environment Variables (`.env`)
+
+| Variabel | Deskripsi | Default |
+|-----------|-------------|---------|
+| `DB_HOST` | Host database | `127.0.0.1` |
+| `DB_PORT` | Port database | `3306` |
+| `DB_NAME` | Nama database | `absensi_siswa` |
+| `DB_USER` | Username database | `root` |
+| `DB_PASS` | Password database | (kosong) |
+| `BASE_URL` | Base URL aplikasi | `/` |
+| `APP_ENV` | Environment (`development`/`production`/`docker`) | `development` |
+| `APP_SECRET` | Secret key untuk CSRF & session | (wajib diubah) |
+| `UPLOAD_MAX_SIZE` | Maksimal ukuran upload | `2M` |
+| `ALLOWED_EXTENSIONS` | Ekstensi file yang diizinkan | `jpg,jpeg,png,pdf` |
+
+---
+
+## 📖 Cara Menggunakan
+
+### 1. **Login**
+   - Akses `http://localhost:8080/login.php`
+   - Default: Admin perlu dibuat manual via phpMyAdmin
+   - Fitur "Remember Me" tersedia
+   - Lupa pasword? Klik "Lupa Pasword" → cek email (konfigurasi SMTP diperlukan)
+
+### 2. **Input Absensi Harian**
+   - Masuk ke menu **Absensi > Input Absensi**
+   - Pilih **Semester** dan **Kelas**
+   - Pilih **Tanggal**
+   - Klik siswa → pilih status (Hadir/Terlambat/Sakit/Izin/Alfa)
+   - Klik **Simpan Absensi**
+
+### 3. **Scan Barcode**
+   - Masuk ke menu **Absensi > Scan Barcode**
+   - Izinkan akses kamera
+   - Arahkan ke barcode siswa
+   - Pilih status → **Simpan**
+
+### 4. **Rekap Absensi**
+   - Masuk ke menu **Rekap**
+   - Pilih **Kelas** dan **Periode Tanggal**
+   - Klik **Filter**
+   - Lihat statistik per kelas
+
+### 5. **Riwayat Siswa (Fitur Baru!)**
+   - Masuk ke menu **Siswa > Riwayat**
+   - **Cari siswa** dengan kotak pencarian (TomSelect)
+   - Pilih **Semester** → tanggal otomatis terisi
+   - Lihat:
+     - **Progress Bar** kehadiran (%)
+     - **Calendar Heatmap** (Hijau=Hadir, Kuning=Terlambat, Biru=Sakit/Izin, Merah=Alfa)
+     - **Grafik Tren** kehadiran
+     - **Tabel Detail** dengan fitur **Hapus Masal**
+   - **Export** ke Excel atau PDF
+
+### 6. **Manajemen Siswa**
+   - Tambah siswa baru (individu atau import CSV)
+   - Edit data siswa
+   - Hapus siswa
+
+### 7. **Konfigurasi Sekolah**
+   - Atur nama sekolah
+   - Upload logo
+   - Pilih warna tema (Primary & Sekunder)
+
+---
+
+## 📂 Struktur Folder
 
 ```
 absensi-siswa/
-├── absensi/          # Modul absensi (termasuk barcode scanner)
-├── assets/           # CSS, uploads, assets lain
-├── core/             # Konfigurasi core (Database, init)
-├── dashboard/        # Halaman dashboard dengan statistik
-├── kelas/            # Modul manajemen kelas
-├── siswa/            # Modul manajemen siswa (termasuk generate barcode)
-├── rekap/            # Laporan rekap absensi & export
-├── views/            # Template/layout
-├── migrations/       # SQL migrations
-├── absensi_siswa_backup_20260411.sql  # Backup database
-└── docker-compose.yml
+├── core/
+│   ├── init.php              # Inisialisasi (CSRF, helper functions)
+│   ├── config.php            # Konfigurasi environment
+│   ├── Database.php         # MySQLi wrapper (singleton)
+│   ├── DatabasePDO.php      # PDO wrapper (optional)
+│   └── App.php               # Router & helper functions
+├── controllers/
+│   ├── HomeController.php
+│   ├── SiswaController.php
+│   └── AbsensiController.php
+├── views/
+│   ├── layout.php           # Main layout (navbar, sidebar, footer)
+│   ├── login.php
+│   └── dashboard.php
+├── siswa/
+│   ├── index.php           # List siswa
+│   ├── tambah.php         # Form tambah siswa
+│   ├── edit.php            # Form edit siswa
+│   ├── import.php         # Import CSV
+│   ├── export.php         # Export CSV
+│   ├── hapus.php          # Hapus siswa
+│   ├── hapus_batch.php    # Hapus masal siswa
+│   ├── barcode.php        # Barcode generator
+│   └── riwayat.php       # Riwayat absensi ( heatmap, progress bar)
+├── absensi/
+│   ├── index.php           # Input absensi
+│   ├── proses.php         # Proses simpan absensi
+│   ├── barcode.php        # Scan barcode
+│   ├── get_siswa.php     # AJAX get siswa by kelas
+│   └── proses_barcode.php # Proses simpan dari barcode
+├── rekap/
+│   ├── kelas.php          # Rekap per kelas
+│   ├── siswa.php         # Rekap per siswa
+│   └── export.php        # Export rekap
+├── kelas/
+│   ├── index.php           # List kelas
+│   ├── tambah.php
+│   └── edit.php
+├── migrations/
+│   ├── add_konfigurasi_sekolah.sql
+│   ├── add_kolom_siswa.sql
+│   ├── add_barcode_siswa.sql
+│   ├── add_indexes.sql
+│   └── add_remember_token.sql
+├── assets/
+│   ├── css/
+│   │   ├── style.css              # Main stylesheet
+│   │   └── color-override.css     # Dark mode overrides
+│   ├── js/
+│   ├── img/
+│   └── uploads/
+├── dashboard/
+│   └── index.php            # Dashboard dengan statistik
+├── forgot_password.php
+├── reset_password.php
+├── migrate.php              # CLI migration tool
+├── manifest.json            # PWA manifest
+├── service-worker.js        # PWA service worker
+├── docker-compose.yml      # Docker configuration
+├── .env.example            # Contoh file environment
+└── README.md               # Dokumentasi ini
 ```
 
-## Cara Penggunaan
+---
 
-### Absensi Manual
-1. Buka menu Absensi
-2. Pilih tanggal & semester
-3. Pilih kelas
-4. Klik nama siswa & pilih status kehadiran
+## 🗃️ Migrasi Database
 
-### Absensi Barcode/QR
-1. Buka menu Absensi Barcode
-2. Klik "Mulai Scan" untuk scan kamera, atau input manual NIS
-3. Pilih status kehadiran
-4. Klik "Simpan Absensi"
-
-### Generate Kartu Siswa
-1. Buka menu Kartu Siswa
-2. Pilih jenis (Barcode/QR Code)
-3. Filter kelas jika perlu
-4. Klik "Print Semua" untuk print kartu
-
-## Backup Database
+Jalankan migrasi untuk membuat tabel database:
 
 ```bash
-podman exec -i absensi-siswa_db_1 mysqldump -u root -prootpass absensi_siswa > backup_baru.sql
+# Jalankan semua migrasi
+php migrate.php
+
+# Jalankan ulang dari awal (hati-hati, akan menghapus semua tabel!)
+php migrate.php --fresh
 ```
+
+**Tabel yang dibuat:**
+- `siswa` - Data siswa
+- `kelas` - Data kelas
+- `semester` - Data semester
+- `tahun_ajaran` - Data tahun ajaran
+- `absensi` - Data absensi
+- `users` - Data pengguna (admin)
+- `konfigurasi_sekolah` - Pengaturan sekolah
 
 ---
 
-## Panduan Tahun Ajaran & Semester
+## 🤝 Kontribusi
 
-### Alur Ganti Tahun Ajaran
+Kontribusi sangat diterima!
 
-```
-TAHUN AJARAN LAMA ──► TAHUN AJARAN BARU
-        │                      │
-        ▼                      ▼
-┌───────────────┐       ┌───────────────┐
-│ 1. Kelulusan │       │ 5. Buat TA   │
-│    Kelas 12  │       │    Baru      │
-└───────────────┘       └───────────────┘
-        │                      │
-        ▼                      ▼
-┌───────────────┐       ┌───────────────┐
-│ 2. Naik Level│       │ 6. Aktifkan │
-│  10→11,11→12│       │    Semester │
-└───────────────┘       └───────────────┘
-        │
-        ▼
-┌───────────────┐
-│ 3. Redistribusi│
-│   Kelas baru │
-└───────────────┘
-```
-
-### Ringkasan Urutan (WAJIB urutan benar)
-
-| Urutan | Proses | Menu | Keterangan |
-|--------|-------|------|----------|
-| 1 | **Kelulusan** | Kenaikan Kelas → Kelulusan | Kelas 12 → alumni |
-| 2 | **Naik Tingkat** | Kenaikan Kelas → Naik Tingkat | X→XI, XI→XII |
-| 3 | **Redistribusi** | Kenaikan Kelas → Redistribusi | Bagi ke kelas/jurusan baru |
-| 4 | **Tahun Ajaran Baru** | Tahun Ajaran → Tambah | Buat TA baru |
-| 5 | **Aktifkan Semester** | Tahun Ajaran | Aktifkan semester |
+1. Fork repository ini
+2. Buat branch fitur (`git checkout -b fitur/AmazingFeature`)
+3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
+4. Push ke branch (`git push origin fitur/AmazingFeature`)
+5. Buat Pull Request
 
 ---
 
-## Panduan Redistribusi Kelas
+## 📄 Lisensi
 
-Redistribusi = Memindahkan siswa ke kelas/jurusan baru.
-
-### Cara 1: Export-Edit-Import CSV (Recommended)
-
-#### Step 1: Export
-```
-Menu: Kenaikan Kelas → Export Siswa per Tingkat
-1. Pilih tingkat (10 atau 11)
-2. Klik "Export CSV"
-3. Simpan file
-```
-
-#### Step 2: Edit di Excel
-```
-1. Buka file CSV
-2. Edit kolom:
-   - Nama Kelas Baru: XI IPA 1
-   - ID Kelas Baru: 15 (lihat di menu Kelas)
-3. Format delimiter: titik koma (;)
-```
-
-Contoh CSV:
-```csv
-NIS;NISN;Nama;Kelas Lama;Nama Kelas Baru;ID Kelas Baru
-12345;0001;BUDI S;X IPA 1;XI IPA 1;15
-12346;0002;ANI W;X IPS 1;XI IPS 1;16
-```
-
-#### Step 3: Import
-```
-Menu: Kenaikan Kelas → Import Redistribusi
-1. Pilih file CSV
-2. Klik Import
-```
-
-### Cara 2: Lewat Menu Kelas
-```
-Menu: Kelas → Edit → Klik siswa → Edit → Ganti kelas
-```
-
-### Cara 3: Lewat phpMyAdmin
-```sql
--- Lihat ID kelas
-SELECT id, nama_kelas FROM kelas;
-
--- Pindahkan siswa
-UPDATE siswa SET kelas_id = 15 WHERE nis = '12345';
-```
+Proyek ini dilisensi di bawah **MIT License** - lihat file `LICENSE` untuk detail.
 
 ---
 
-## Troubleshooting
+## 📧️ Support & Kontak
 
-| Masalah | Solusi |
-|----------|-------|
-| Can't connect DB | Tunggu 10 detik, refresh |
-| Import CSV gagal | Delimiter harus `;` |
-| ID kelas salah | Cek di menu Kelas |
-| Absensi tidak simpan | Semester harus aktif |
-| PDF export error | Semester harus di-set |
+- **Issues:** Gunakan [GitHub Issues](https://github.com/username/absensi-siswa/issues) untuk bug reports
+- **Diskusi:** Gunakan [GitHub Discussions](https://github.com/username/absensi-siswa/discussions)
 
-## Lisensi
+---
 
-MIT License
+## 🙏 Acknovledgments
+
+- **Bootstrap** - CSS Framework
+- **TomSelect** - Searchable dropdown
+- **Chart.js** - Data visualization
+- **Font Awesome** - Icons
+- **Docker** - Containerization
+
+---
+
+**Dibuat dengan ❤️ oleh Tim Pengembang Absensi Siswa**
