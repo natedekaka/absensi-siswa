@@ -26,7 +26,7 @@ function loadEnv($filePath = null) {
         ];
     } elseif ($isLocal) {
         $defaults = [
-            'DB_HOST' => 'localhost',
+            'DB_HOST' => '127.0.0.1',
             'DB_PORT' => '3306',
             'DB_NAME' => 'absensi_siswa',
             'DB_USER' => 'root',
