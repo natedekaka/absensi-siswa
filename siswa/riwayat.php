@@ -246,6 +246,47 @@ document.addEventListener('DOMContentLoaded', function() {
     html += '</div>';
     heatmapGrid.innerHTML = html;
 });
+function toggleCheckAll(masterCheckbox) {
+    const checkboxes = document.querySelectorAll('.row-checkbox');
+    checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+    updateBulkDeleteButton();
+}
+
+function toggleSelectAll() {
+    const checkAll = document.getElementById('checkAll');
+    if (checkAll) checkAll.checked = !checkAll.checked;
+    toggleCheckAll(checkAll);
+}
+
+function updateBulkDeleteButton() {
+    const checked = document.querySelectorAll('.row-checkbox:checked');
+    const btn = document.getElementById('btnBulkDelete');
+    const countSpan = document.getElementById('selectedCount');
+    
+    if (btn && countSpan) {
+        countSpan.textContent = checked.length;
+        btn.style.display = checked.length > 0 ? 'inline-block' : 'none';
+    }
+    
+    // Update selected IDs
+    const form = document.getElementById('formBulkDelete');
+    const container = document.getElementById('selectedIds');
+    if (form && container) {
+        container.innerHTML = '';
+        checked.forEach(cb => {
+            container.innerHTML += `<input type="hidden" name="ids[]" value="${cb.value}">`;
+        });
+    }
+}
+
+function confirmBulkDelete() {
+    const checked = document.querySelectorAll('.row-checkbox:checked');
+    if (checked.length === 0) return;
+    
+    if (confirm(`Hapus ${checked.length} record absensi yang dipilih?`)) {
+        document.getElementById('formBulkDelete').submit();
+    }
+}
 </script>
 
 <?php if ($siswa_id && $siswa): ?>
@@ -357,45 +398,64 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<div class="card-custom">
-    <div class="card-header-custom">
-        <i class="fas fa-list me-2"></i>Detail Absensi
+    <div class="card-custom">
+        <div class="card-header-custom d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-list me-2"></i>Detail Absensi
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-danger" id="btnBulkDelete" style="display: none;" onclick="confirmBulkDelete()">
+                    <i class="fas fa-trash me-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">
+                    <i class="fas fa-check-square me-1"></i>Pilih Semua
+                </button>
+            </div>
+        </div>
+        <form id="formBulkDelete" action="bulk_delete.php" method="POST" style="display: none;">
+            <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+            <input type="hidden" name="siswa_id" value="<?= $siswa_id ?>">
+            <input type="hidden" name="tgl_awal" value="<?= $tgl_awal ?>">
+            <input type="hidden" name="tgl_akhir" value="<?= $tgl_akhir ?>">
+            <div id="selectedIds"></div>
+        </form>
+        <div class="table-responsive" style="max-height: 400px;">
+            <table class="table table-hover mb-0">
+                <thead class="sticky-top">
+                    <tr>
+                        <th width="40"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)"></th>
+                        <th>No</th>
+                        <th>Tanggal</th>
+                        <th>Hari</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $no = 1;
+                    $days = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
+                    if ($absensi && $absensi->num_rows > 0):
+                        while ($row = $absensi->fetch_assoc()):
+                            $hari = $days[date('l', strtotime($row['tanggal']))];
+                    ?>
+                    <tr>
+                        <td><input type="checkbox" class="row-checkbox" value="<?= $row['id'] ?>" onchange="updateBulkDeleteButton()"></td>
+                        <td><?= $no++ ?></td>
+                        <td><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
+                        <td><?= $hari ?></td>
+                        <td>
+                            <span class="badge badge-<?= strtolower($row['status']) ?>">
+                                <?= $row['status'] ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endwhile; else: ?>
+                    <tr><td colspan="5" class="text-center text-muted">Tidak ada data absensi</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="table-responsive" style="max-height: 400px;">
-        <table class="table table-hover mb-0">
-            <thead class="sticky-top">
-                <tr>
-                    <th>No</th>
-                    <th>Tanggal</th>
-                    <th>Hari</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $no = 1;
-                $days = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
-                if ($absensi && $absensi->num_rows > 0):
-                    while ($row = $absensi->fetch_assoc()):
-                        $hari = $days[date('l', strtotime($row['tanggal']))];
-                ?>
-                <tr>
-                    <td><?= $no++ ?></td>
-                    <td><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
-                    <td><?= $hari ?></td>
-                    <td>
-                        <span class="badge badge-<?= strtolower($row['status']) ?>">
-                            <?= $row['status'] ?>
-                        </span>
-                    </td>
-                </tr>
-                <?php endwhile; else: ?>
-                <tr><td colspan="4" class="text-center text-muted">Tidak ada data absensi</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-</div>
 
 <script>
 const dates = [];
