@@ -1,13 +1,15 @@
 <?php
 
+require_once __DIR__ . '/config.php';
+
 class Database {
     private static $instance = null;
     private $connection;
 
-    private $host = 'db:3306';
-    private $user = 'root';
-    private $pass = 'rootpass';
-    private $db = 'absensi_siswa';
+    private $host = DB_HOST . ':' . DB_PORT;
+    private $user = DB_USER;
+    private $pass = DB_PASS;
+    private $db = DB_NAME;
 
     private function __construct() {
         $this->connection = new mysqli($this->host, $this->user, $this->pass, $this->db);

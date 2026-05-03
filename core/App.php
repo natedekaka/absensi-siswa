@@ -8,11 +8,6 @@ class App {
     public function __construct() {
         $url = $this->parseUrl();
         
-        if (file_exists("../controllers/" . ucfirst($url[0]) . "Controller.php")) {
-            $this->controller = ucfirst($url[0]) . "Controller";
-            unset($url[0]);
-        }
-
         require_once "../controllers/" . $this->controller . ".php";
         $this->controller = new $this->controller;
 

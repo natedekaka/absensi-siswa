@@ -1,5 +1,7 @@
 <?php
-define('BASE_URL', '/');
+require_once __DIR__ . '/config.php';
+
+// BASE_URL is now defined in config.php
 
 function asset($path) {
     return BASE_URL . 'assets/' . ltrim($path, '/');

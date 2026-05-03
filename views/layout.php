@@ -11,6 +11,9 @@ $sekolah = getKonfigurasiSekolah(conn());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="<?= $sekolah['warna_primer'] ?? '#4f46e5' ?>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="<?= BASE_URL ?>manifest.json">
     <title><?= $title ?? 'Sistem Absensi Siswa' ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -24,6 +27,28 @@ $sekolah = getKonfigurasiSekolah(conn());
         }
         .navbar-custom {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%) !important;
+        }
+        .dark-mode {
+            --bg-primary: #1a1a2e;
+            --text-primary: #e0e0e0;
+            --card-bg: #16213e;
+        }
+        .dark-mode body {
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+        }
+        .dark-mode .card,
+        .dark-mode .card-custom {
+            background-color: #16213e;
+            color: #e0e0e0;
+        }
+        .dark-mode .table {
+            color: #e0e0e0;
+        }
+        .dark-mode .form-control {
+            background-color: #0f3460;
+            border-color: #16213e;
+            color: #e0e0e0;
         }
     </style>
 </head>
@@ -91,6 +116,9 @@ $sekolah = getKonfigurasiSekolah(conn());
                         </ul>
                     </li>
                 </ul>
+                <button id="darkModeToggle" class="btn btn-link nav-link text-white" title="Toggle Dark Mode" style="text-decoration: none;">
+                    <i class="fas fa-moon"></i>
+                </button>
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-white">
                         <i class="fas fa-user-circle me-1"></i>
@@ -133,6 +161,47 @@ $sekolah = getKonfigurasiSekolah(conn());
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const root = document.documentElement;
+        
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', () => {
+                root.classList.toggle('dark-mode');
+                const isDark = root.classList.contains('dark-mode');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+                
+                const icon = darkModeToggle.querySelector('i');
+                if (isDark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                }
+            });
+        }
+        
+        // On load: check localStorage, then system preference
+        const savedTheme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+            root.classList.add('dark-mode');
+            const icon = darkModeToggle?.querySelector('i');
+            if (icon) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+        }
+        
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('<?= BASE_URL ?>service-worker.js')
+                .then(() => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed'));
+        }
+    </script>
     <?= $scripts ?? '' ?>
 </body>
 </html>
