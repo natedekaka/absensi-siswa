@@ -19,14 +19,30 @@ $scripts = '
 ob_start();
 
 $siswa_id = isset($_GET['siswa_id']) ? (int)$_GET['siswa_id'] : 0;
-$tgl_awal = $_GET['tgl_awal'] ?? date('Y-m-01');
-$tgl_akhir = $_GET['tgl_akhir'] ?? date('Y-m-t');
+$semester_selected = isset($_GET['semester_id']) ? (int)$_GET['semester_id'] : 0;
+
+// Auto-set date range if semester selected
+if ($semester_selected > 0) {
+    $semester_data = conn()->query("SELECT tgl_mulai, tgl_selesai FROM semester WHERE id = $semester_selected")->fetch_assoc();
+    if ($semester_data) {
+        $tgl_awal = $_GET['tgl_awal'] ?? $semester_data['tgl_mulai'];
+        $tgl_akhir = $_GET['tgl_akhir'] ?? $semester_data['tgl_selesai'];
+    }
+} else {
+    $tgl_awal = $_GET['tgl_awal'] ?? date('Y-m-01');
+    $tgl_akhir = $_GET['tgl_akhir'] ?? date('Y-m-t');
+}
 
 if ($siswa_id > 0) {
     $siswa = conn()->query("SELECT s.*, k.nama_kelas FROM siswa s LEFT JOIN kelas k ON s.kelas_id = k.id WHERE s.id = $siswa_id")->fetch_assoc();
     
-    $semester_aktif = conn()->query("SELECT id FROM semester WHERE is_active = 1 LIMIT 1")->fetch_assoc();
-    $semester_id = $semester_aktif['id'] ?? null;
+    // Use semester_id from GET if provided, otherwise use active semester
+    if ($semester_selected > 0) {
+        $semester_id = $semester_selected;
+    } else {
+        $semester_aktif = conn()->query("SELECT id FROM semester WHERE is_active = 1 LIMIT 1")->fetch_assoc();
+        $semester_id = $semester_aktif['id'] ?? null;
+    }
     $where_semester = $semester_id ? " AND semester_id = " . (int)$semester_id : "";
     
     $absensi = conn()->query("
@@ -85,7 +101,7 @@ if ($siswa_id > 0) {
 
 <form method="GET" class="card-custom p-3 mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label fw-semibold text-wa-dark">
                 <i class="fas fa-user me-2"></i>Cari Siswa
             </label>
@@ -97,6 +113,23 @@ if ($siswa_id > 0) {
                 ?>
                 <option value="<?= $row['id'] ?>" <?= ($siswa_id == $row['id']) ? 'selected' : '' ?>>
                     <?= htmlspecialchars($row['nama'] . ' (' . ($row['nama_kelas'] ?? 'No Kelas') . ')') ?>
+                </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold text-wa-dark">
+                <i class="fas fa-calendar me-2"></i>Semester
+            </label>
+            <select name="semester_id" id="selectSemester" class="form-select form-select-custom" onchange="updateDateRange(this.value)">
+                <option value="0">-- Pilih Semester --</option>
+                <?php
+                $semester_list = conn()->query("SELECT * FROM semester ORDER BY tahun_ajaran_id DESC, semester ASC");
+                while ($s = $semester_list->fetch_assoc()):
+                ?>
+                <option value="<?= $s['id'] ?>" <?= ($semester_selected == $s['id']) ? 'selected' : '' ?>
+                        data-mulai="<?= $s['tgl_mulai'] ?>" data-selesai="<?= $s['tgl_selesai'] ?>">
+                    <?= htmlspecialchars($s['nama']) ?>
                 </option>
                 <?php endwhile; ?>
             </select>
@@ -120,6 +153,21 @@ if ($siswa_id > 0) {
         </div>
     </div>
 </form>
+
+<script>
+function updateDateRange(semesterId) {
+    if (!semesterId || semesterId == '0') return;
+    
+    const selectedOption = document.querySelector(`#selectSemester option[value="${semesterId}"]`);
+    if (selectedOption) {
+        const tglMulai = selectedOption.dataset.mulai;
+        const tglSelesai = selectedOption.dataset.selesai;
+        
+        if (tglMulai) document.querySelector('input[name="tgl_awal"]').value = tglMulai;
+        if (tglSelesai) document.querySelector('input[name="tgl_akhir"]').value = tglSelesai;
+    }
+}
+</script>
 
 <?php if ($siswa_id && $siswa): ?>
 <div class="row g-3 mb-4">
