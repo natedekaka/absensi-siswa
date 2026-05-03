@@ -167,6 +167,85 @@ function updateDateRange(semesterId) {
         if (tglSelesai) document.querySelector('input[name="tgl_akhir"]').value = tglSelesai;
     }
 }
+
+// Heatmap rendering
+document.addEventListener('DOMContentLoaded', function() {
+    const heatmapGrid = document.getElementById('heatmapGrid');
+    if (!heatmapGrid) return;
+    
+    const dailyData = <?= json_encode($daily_data) ?>;
+    const tglAwal = '<?= $tgl_awal ?>';
+    const tglAkhir = '<?= $tgl_akhir ?>';
+    
+    if (!tglAwal || !tglAkhir) return;
+    
+    const startDate = new Date(tglAwal);
+    const endDate = new Date(tglAkhir);
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const dayShort = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    
+    // Color mapping
+    function getColor(status) {
+        if (!status) return '#e5e7eb';
+        const s = status.toLowerCase();
+        if (s === 'hadir') return '#10b981';
+        if (s === 'terlambat') return '#f59e0b';
+        if (s === 'sakit' || s === 'izin') return '#3b82f6';
+        if (s === 'alfa') return '#ef4444';
+        return '#e5e7eb';
+    }
+    
+    function getStatusText(status) {
+        if (!status) return 'Tidak ada data';
+        return status;
+    }
+    
+    // Create heatmap grid
+    // Layout: rows = days of week, columns = weeks
+    const startDateAdjusted = new Date(startDate);
+    const dayOfWeek = startDateAdjusted.getDay(); // 0=Sunday
+    startDateAdjusted.setDate(startDateAdjusted.getDate() - dayOfWeek); // Go to Sunday of that week
+    
+    const totalDays = Math.ceil((endDate - startDateAdjusted) / (1000*60*60*24)) + 1;
+    const weeks = Math.ceil(totalDays / 7);
+    
+    // Create container
+    let html = '<div style="display: flex; gap: 5px;">';
+    
+    // Day labels on left
+    html += '<div style="display: flex; flex-direction: column; gap: 3px; margin-right: 8px;">';
+    for (let i = 0; i < 7; i++) {
+        html += `<div style="height: 13px; font-size: 0.7rem; color: #6b7280; text-align: right; padding-right: 5px;">${dayShort[i]}</div>`;
+    }
+    html += '</div>';
+    
+    // Weeks columns
+    for (let week = 0; week < weeks; week++) {
+        html += '<div style="display: flex; flex-direction: column; gap: 3px;">';
+        
+        for (let day = 0; day < 7; day++) {
+            const currentDate = new Date(startDateAdjusted);
+            currentDate.setDate(startDateAdjusted.getDate() + (week * 7) + day);
+            
+            const dateStr = currentDate.toISOString().split('T')[0];
+            const status = dailyData[dateStr] || null;
+            const color = getColor(status);
+            
+            const isInRange = currentDate >= startDate && currentDate <= endDate;
+            const display = isInRange ? 'block' : 'none';
+            
+            html += `<div title="${days[day]}, ${dateStr}: ${getStatusText(status)}" 
+                        style="width: 13px; height: 13px; background: ${color}; border-radius: 2px; cursor: pointer; display: ${display};"
+                        onmouseover="this.style.outline='2px solid #000'" 
+                        onmouseout="this.style.outline='none'"></div>`;
+        }
+        
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    heatmapGrid.innerHTML = html;
+});
 </script>
 
 <?php if ($siswa_id && $siswa): ?>
@@ -231,6 +310,36 @@ function updateDateRange(semesterId) {
             <small class="text-muted mt-2 d-block">
                 Berdasarkan <?= $total_days ?> hari periode (Hadir + 50% Terlambat)
             </small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-12">
+        <div class="card-custom p-4">
+            <h6 class="fw-bold text-wa-dark mb-3">
+                <i class="fas fa-calendar-alt me-2"></i>Kalender Kehadiran
+            </h6>
+            <div id="heatmapContainer" style="overflow-x: auto;">
+                <div id="heatmapLegend" style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 0.85rem;">
+                    <span style="display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 12px; height: 12px; background: #10b981; border-radius: 2px;"></div> Hadir
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 2px;"></div> Terlambat
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 12px; height: 12px; background: #3b82f6; border-radius: 2px;"></div> Sakit/Izin
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 12px; height: 12px; background: #ef4444; border-radius: 2px;"></div> Alfa
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 12px; height: 12px; background: #e5e7eb; border-radius: 2px;"></div> Tidak Ada Data
+                    </span>
+                </div>
+                <div id="heatmapGrid" style="display: inline-block;"></div>
+            </div>
         </div>
     </div>
 </div>
