@@ -26,6 +26,8 @@ services:
       - .:/var/www/html
     ports:
       - "8080:80"
+    environment:
+      DOCKER_CONTAINER: 1
     command: bash -c "docker-php-ext-install mysqli && apache2-foreground"
     depends_on:
       - db

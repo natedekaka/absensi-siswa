@@ -7,7 +7,7 @@ function loadEnv($filePath = null) {
     
     $config = [];
     
-    $isDocker = getenv('DOCKER_CONTAINER') || file_exists('/.dockerenv');
+    $isDocker = getenv('DOCKER_CONTAINER') || file_exists('/.dockerenv') || (getenv('HOSTNAME') && strpos(getenv('HOSTNAME'), 'docker') !== false);
     $isLocal = isset($_SERVER['SERVER_NAME']) && (strpos($_SERVER['SERVER_NAME'], 'local') !== false || $_SERVER['SERVER_ADDR'] === '127.0.0.1');
     
     if ($isDocker) {
