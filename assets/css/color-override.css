@@ -118,13 +118,13 @@ h1, h2, h3, h4, h5, h6,
     border-color: var(--danger) !important;
 }
 
-/* Badge overrides */
-.badge, .badge.bg-success { background: var(--success) !important; }
+/* Badge overrides - ensure text contrast */
+.badge, .badge.bg-success { background: var(--success) !important; color: #fff !important; }
 .badge.bg-warning { background: var(--warning) !important; color: #000 !important; }
-.badge.bg-danger { background: var(--danger) !important; }
-.badge.bg-info { background: var(--info) !important; }
-.badge.bg-primary { background: var(--primary) !important; }
-.badge.bg-secondary { background: var(--text-muted) !important; }
+.badge.bg-danger { background: var(--danger) !important; color: #fff !important; }
+.badge.bg-info { background: var(--info) !important; color: #fff !important; }
+.badge.bg-primary { background: var(--primary) !important; color: #fff !important; }
+.badge.bg-secondary { background: var(--text-muted) !important; color: #fff !important; }
 
 /* Alert overrides */
 .alert-success, .alert-success-custom {

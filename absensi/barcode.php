@@ -323,18 +323,21 @@ $total_absen = array_sum($stats);
         }
 
         .result-card .status-badge.hadir {
-            background: #d1fae5;
-            color: #065f46;
+            background: #10b981;
+            color: #ffffff;
+            font-weight: 600;
         }
-
+        
         .result-card .status-badge.sudah {
-            background: #fef3c7;
-            color: #92400e;
+            background: #f59e0b;
+            color: #000000;
+            font-weight: 600;
         }
-
+        
         .result-card .status-badge.error {
-            background: #fee2e2;
-            color: #991b1b;
+            background: #ef4444;
+            color: #ffffff;
+            font-weight: 600;
         }
 
         .result-card .btn-action {
@@ -396,7 +399,24 @@ $total_absen = array_sum($stats);
         }
 
         .status-btn.hadir {
-            color: #10b981;
+            background: #10b981;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .status-btn.sakit {
+            background: #6b7280;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .status-btn.izin {
+            background: #3b82f6;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .status-btn.alfa {
+            background: #ef4444;
+            color: #ffffff;
+            font-weight: 600;
         }
 
         .status-btn.sakit {
