@@ -57,6 +57,10 @@ if ($siswa_id > 0) {
     while ($c = $chart_data->fetch_assoc()) {
         $daily_data[$c['tanggal']] = $c['status'];
     }
+    
+    $total_days = (int)((strtotime($tgl_akhir) - strtotime($tgl_awal)) / (60*60*24)) + 1;
+    $hadir_count = ($stats['hadir'] ?? 0) + ($stats['terlambat'] ?? 0) * 0.5;
+    $kehadiran_persen = $total_days > 0 ? round(($hadir_count / $total_days) * 100, 1) : 0;
 }
 ?>
 
@@ -160,6 +164,25 @@ if ($siswa_id > 0) {
                     <small class="text-muted">Alfa</small>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-12">
+        <div class="card-custom p-4">
+            <h6 class="fw-bold text-wa-dark mb-3">
+                <i class="fas fa-chart-pie me-2"></i>Progress Kehadiran
+            </h6>
+            <div class="progress" style="height: 25px; border-radius: 12px; background: #f1f5f9;">
+                <div class="progress-bar <?= $kehadiran_persen >= 80 ? 'bg-success' : ($kehadiran_persen >= 60 ? 'bg-warning' : 'bg-danger') ?>" 
+                     style="width: <?= $kehadiran_persen ?>%; border-radius: 12px; transition: width 0.5s ease; font-weight: 600;">
+                    <?= $kehadiran_persen ?>%
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">
+                Berdasarkan <?= $total_days ?> hari periode (Hadir + 50% Terlambat)
+            </small>
         </div>
     </div>
 </div>
