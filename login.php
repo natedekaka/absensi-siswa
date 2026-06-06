@@ -61,402 +61,93 @@ ob_start();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $title ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="<?= asset('css/app.css') ?>">
     <style>
-        :root {
-            --primary: <?= $primaryColor ?>;
-            --secondary: <?= $secondaryColor ?>;
-            --glass-bg: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            min-height: 100vh;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bg-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 0;
-        }
-
-        .shape {
-            position: absolute;
-            border-radius: 50%;
-            opacity: 0.4;
-            animation: float 20s infinite ease-in-out;
-        }
-
-        .shape-1 {
-            width: 300px;
-            height: 300px;
-            background: rgba(255, 255, 255, 0.1);
-            top: -100px;
-            left: -100px;
-            animation-delay: 0s;
-        }
-
-        .shape-2 {
-            width: 200px;
-            height: 200px;
-            background: rgba(255, 255, 255, 0.08);
-            bottom: 10%;
-            right: 5%;
-            animation-delay: -5s;
-        }
-
-        .shape-3 {
-            width: 150px;
-            height: 150px;
-            background: rgba(255, 255, 255, 0.12);
-            top: 40%;
-            right: 15%;
-            animation-delay: -10s;
-        }
-
-        .shape-4 {
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.06);
-            bottom: 20%;
-            left: 10%;
-            animation-delay: -15s;
-        }
-
-        @keyframes float {
-            0%, 100% {
-                transform: translate(0, 0) rotate(0deg);
-            }
-            25% {
-                transform: translate(20px, -30px) rotate(5deg);
-            }
-            50% {
-                transform: translate(-10px, 20px) rotate(-5deg);
-            }
-            75% {
-                transform: translate(30px, 10px) rotate(3deg);
-            }
-        }
-
-        .login-wrapper {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .login-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 0;
-            max-width: 420px;
-            width: 100%;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            animation: slideUp 0.8s ease-out;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .login-header {
-            padding: 40px 40px 30px;
-            text-align: center;
-            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-        }
-
-        .logo-container {
-            width: 90px;
-            height: 90px;
-            margin: 0 auto 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            animation: pulse 3s infinite ease-in-out;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                transform: scale(1);
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            }
-            50% {
-                transform: scale(1.05);
-                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-            }
-        }
-
-        .logo-container img {
-            width: 60px;
-            height: 60px;
-            object-fit: contain;
-            border-radius: 16px;
-        }
-
-        .logo-container i {
-            font-size: 32px;
-            color: white;
-        }
-
-        .login-header h2 {
-            color: white;
-            font-weight: 700;
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .login-header p {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 0.95rem;
-            font-weight: 400;
-        }
-
-        .login-body {
-            padding: 20px 40px 40px;
-        }
-
-        .form-floating {
-            margin-bottom: 20px;
-        }
-
-        .form-floating > .form-control {
-            background: rgba(255, 255, 255, 0.9);
-            border: 2px solid transparent;
-            border-radius: 14px;
-            padding: 16px 16px 16px 50px;
-            height: auto;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-floating > .form-control:focus {
-            background: white;
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15);
-            outline: none;
-        }
-
-        .form-floating > label {
-            padding: 16px 16px 16px 50px;
-            color: #6b7280;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary);
-            font-size: 1.1rem;
-            z-index: 10;
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            background: white;
-            color: var(--primary);
-            border: none;
-            border-radius: 14px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            background: #f8fafc;
-        }
-
-        .btn-login:active {
-            transform: translateY(0);
-        }
-
-        .btn-login i {
-            font-size: 1.1rem;
-        }
-
-        .footer-text {
-            text-align: center;
-            margin-top: 25px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.85rem;
-        }
-
-        .alert {
-            border-radius: 14px;
-            padding: 14px 18px;
-            margin-bottom: 20px;
-            border: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: shake 0.5s ease-in-out;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-
-        .alert-danger {
-            background: rgba(239, 68, 68, 0.9);
-            color: white;
-        }
-
-        .alert-danger i {
-            font-size: 1.1rem;
-        }
-
-        .btn-close {
-            filter: brightness(0) invert(1);
-        }
-
-        @media (max-width: 480px) {
-            .login-card {
-                margin: 10px;
-            }
-            
-            .login-header {
-                padding: 30px 25px 20px;
-            }
-            
-            .login-body {
-                padding: 20px 25px 30px;
-            }
-            
-            .logo-container {
-                width: 75px;
-                height: 75px;
-            }
-            
-            .login-header h2 {
-                font-size: 1.3rem;
-            }
-        }
+        :root { --login-primary: <?= $primaryColor ?>; --login-secondary: <?= $secondaryColor ?>; }
+        .login-bg { background: linear-gradient(135deg, var(--login-primary) 0%, var(--login-secondary) 100%); }
+        .login-card { background: rgba(255,255,255,0.12); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.18); }
+        .login-input { background: rgba(255,255,255,0.9); border: 2px solid transparent; }
+        .login-input:focus { background: white; border-color: rgba(255,255,255,0.5); box-shadow: 0 0 0 4px rgba(255,255,255,0.15); }
+        .login-btn { background: white; color: var(--login-primary); }
+        .login-btn:hover { background: #f8fafc; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        @keyframes float { 0%,100% { transform: translate(0,0) rotate(0deg); } 25% { transform: translate(20px,-30px) rotate(5deg); } 50% { transform: translate(-10px,20px) rotate(-5deg); } 75% { transform: translate(30px,10px) rotate(3deg); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .shape { position: absolute; border-radius: 50%; opacity: 0.35; animation: float 20s infinite ease-in-out; }
     </style>
 </head>
-<body>
-    <div class="bg-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-        <div class="shape shape-4"></div>
+<body class="login-bg min-h-screen flex items-center justify-center p-5 overflow-hidden font-[Plus_Jakarta_Sans]">
+
+    <!-- Background shapes -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="shape" style="width:300px;height:300px;background:rgba(255,255,255,0.1);top:-100px;left:-100px;animation-delay:0s;"></div>
+        <div class="shape" style="width:200px;height:200px;background:rgba(255,255,255,0.08);bottom:10%;right:5%;animation-delay:-5s;"></div>
+        <div class="shape" style="width:150px;height:150px;background:rgba(255,255,255,0.12);top:40%;right:15%;animation-delay:-10s;"></div>
+        <div class="shape" style="width:100px;height:100px;background:rgba(255,255,255,0.06);bottom:20%;left:10%;animation-delay:-15s;"></div>
     </div>
 
-    <div class="login-wrapper">
-        <div class="login-card">
-            <div class="login-header">
-                <div class="logo-container">
-                    <?php if ($sekolah['logo'] && file_exists(__DIR__ . '/assets/uploads/' . $sekolah['logo'])): ?>
-                        <img src="<?= asset('uploads/' . $sekolah['logo']) ?>" alt="Logo">
-                    <?php else: ?>
-                        <i class="fas fa-graduation-cap"></i>
-                    <?php endif; ?>
-                </div>
-                <h2><?= htmlspecialchars($sekolah['nama_sekolah']) ?></h2>
-                <p>Sistem Absensi Siswa</p>
-            </div>
-            
-            <div class="login-body">
-                <?php if(isset($_SESSION['error'])): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <?= $_SESSION['error'] ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    <?php unset($_SESSION['error']); ?>
+    <!-- Login Card -->
+    <div class="login-card rounded-[24px] max-w-[420px] w-full overflow-hidden shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] animate-[slideUp_0.8s_ease-out]">
+        <div class="px-10 pt-10 pb-8 text-center" style="background:linear-gradient(180deg,rgba(255,255,255,0.1) 0%,transparent 100%)">
+            <div class="w-[90px] h-[90px] mx-auto mb-5 rounded-[24px] flex items-center justify-center shadow-[0_8px_32px_rgba(0,0,0,0.1)] animate-[pulse_3s_ease-in-out_infinite]" style="background:rgba(255,255,255,0.2);">
+                <?php if ($sekolah['logo'] && file_exists(__DIR__ . '/assets/uploads/' . $sekolah['logo'])): ?>
+                    <img src="<?= asset('uploads/' . $sekolah['logo']) ?>" alt="Logo" class="w-[60px] h-[60px] object-contain rounded-[16px]">
+                <?php else: ?>
+                    <i class="fas fa-graduation-cap text-white text-3xl"></i>
                 <?php endif; ?>
-
-                <form action="proses_login.php" method="POST">
-                    <?= csrf_field() ?>
-                    
-                    <div class="input-wrapper mb-4">
-                        <i class="fas fa-user input-icon"></i>
-                        <div class="form-floating">
-                            <input type="text" class="form-control" id="username" name="username" placeholder="Username" required>
-                            <label for="username">Username</label>
-                        </div>
-                    </div>
-                    
-                    <div class="input-wrapper mb-4">
-                        <i class="fas fa-lock input-icon"></i>
-                        <div class="form-floating">
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
-                            <label for="password">Password</label>
-                        </div>
-                    </div>
-                    
-                    <div class="form-check mb-4" style="color: rgba(255,255,255,0.9);">
-                        <input type="checkbox" class="form-check-input" id="remember" name="remember" style="border-radius: 4px;">
-                        <label class="form-check-label" for="remember" style="font-size: 0.9rem;">
-                            <i class="fas fa-clock me-1"></i>Ingat saya (30 hari)
-                        </label>
-                    </div>
-
-                    <button type="submit" class="btn-login">
-                        <i class="fas fa-sign-in-alt"></i>
-                        Masuk
-                    </button>
-                </form>
-                
-                <p class="footer-text">
-                    &copy; <?= date('Y') ?> Absensi Siswa
-                    <br>
-                    <a href="<?= BASE_URL ?>forgot_password.php" style="color: rgba(255,255,255,0.8); text-decoration: underline;">
-                        <i class="fas fa-question-circle"></i> Lupa Password?
-                    </a>
-                </p>
             </div>
+            <h2 class="text-white font-bold text-xl mb-1" style="text-shadow:0 2px 4px rgba(0,0,0,0.1);"><?= htmlspecialchars($sekolah['nama_sekolah']) ?></h2>
+            <p class="text-white/70 text-sm">Sistem Absensi Siswa</p>
+        </div>
+
+        <div class="px-10 pb-10">
+            <?php if(isset($_SESSION['error'])): ?>
+                <div class="flex items-center gap-3 px-4 py-3.5 mb-5 rounded-[14px] text-white" style="background:rgba(239,68,68,0.9);">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span class="text-sm flex-1"><?= $_SESSION['error'] ?></span>
+                    <button onclick="this.parentElement.remove()" class="text-white/70 hover:text-white">&times;</button>
+                </div>
+                <?php unset($_SESSION['error']); ?>
+            <?php endif; ?>
+
+            <form action="proses_login.php" method="POST">
+                <?= csrf_field() ?>
+                
+                <div class="relative mb-5">
+                    <i class="fas fa-user absolute left-[18px] top-1/2 -translate-y-1/2 z-10" style="color:var(--login-primary);"></i>
+                    <input type="text" name="username" id="username" required placeholder="Username"
+                        class="login-input w-full pl-[50px] pr-4 py-4 rounded-[14px] text-base outline-none transition-all duration-300 font-[Plus_Jakarta_Sans]">
+                </div>
+                
+                <div class="relative mb-5">
+                    <i class="fas fa-lock absolute left-[18px] top-1/2 -translate-y-1/2 z-10" style="color:var(--login-primary);"></i>
+                    <input type="password" name="password" id="password" required placeholder="Password"
+                        class="login-input w-full pl-[50px] pr-4 py-4 rounded-[14px] text-base outline-none transition-all duration-300 font-[Plus_Jakarta_Sans]">
+                </div>
+                
+                <label class="flex items-center gap-2 mb-6 text-white/80 text-sm cursor-pointer">
+                    <input type="checkbox" name="remember" class="w-4 h-4 rounded accent-[var(--login-primary)]">
+                    <i class="fas fa-clock text-xs"></i> Ingat saya (30 hari)
+                </label>
+
+                <button type="submit" class="login-btn w-full py-4 rounded-[14px] text-base font-semibold flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.1)] cursor-pointer border-none font-[Plus_Jakarta_Sans]">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
+            </form>
+            
+            <p class="text-center mt-8 text-white/60 text-xs">
+                &copy; <?= date('Y') ?> Absensi Siswa
+                <br>
+                <a href="<?= BASE_URL ?>forgot_password.php" class="text-white/70 hover:text-white underline text-sm inline-block mt-1">
+                    <i class="fas fa-question-circle"></i> Lupa Password?
+                </a>
+            </p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
