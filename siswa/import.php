@@ -110,219 +110,133 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ob_start();
 ?>
 
-<div class="d-flex align-items-center mb-4">
-    <a href="index.php" class="btn btn-outline-secondary me-3">
+<div class="flex items-center gap-4 mb-6">
+    <a href="index.php" class="btn-modern btn-neutral-modern">
         <i class="fas fa-arrow-left"></i>
     </a>
-    <h2 class="fw-bold text-wa-dark mb-0">
-        <i class="fas fa-file-import me-2"></i>Import Siswa
+    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+        <i class="fas fa-file-import mr-3 text-primary"></i>Import Siswa
     </h2>
 </div>
 
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card-custom">
-            <div class="card-header-custom d-flex align-items-center">
-                <i class="fas fa-upload me-2"></i>
-                <span>Unggah Data Siswa</span>
+<div class="max-w-4xl mx-auto">
+    <div class="card-modern">
+        <div class="card-modern-body">
+            <?php if ($success): ?>
+            <div class="alert-modern alert-success-modern mb-4 flex items-center gap-3">
+                <i class="fas fa-check-circle text-lg"></i><span><?= $success ?></span>
+                <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
             </div>
-            <div class="card-body p-4">
-                <?php if ($success): ?>
-                    <div class="alert alert-success-custom alert-custom d-flex align-items-center">
-                        <i class="fas fa-check-circle fs-4 me-3"></i>
-                        <div><?= $success ?></div>
-                    </div>
-                <?php endif; ?>
+            <?php endif; ?>
+            <?php if ($error): ?>
+            <div class="alert-modern alert-danger-modern mb-4 flex items-center gap-3">
+                <i class="fas fa-exclamation-circle text-lg"></i><span><?= $error ?></span>
+                <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
+            </div>
+            <?php endif; ?>
 
-                <?php if ($error): ?>
-                    <div class="alert alert-danger-custom alert-custom d-flex align-items-center">
-                        <i class="fas fa-exclamation-circle fs-4 me-3"></i>
-                        <div><?= $error ?></div>
-                    </div>
-                <?php endif; ?>
+            <!-- Upload Zone -->
+            <div class="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center mb-6 cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all" id="dropZone">
+                <div class="text-4xl text-teal-700 mb-3"><i class="fas fa-cloud-upload-alt"></i></div>
+                <h5 class="font-semibold text-gray-800 dark:text-white">Unggah File CSV</h5>
+                <p class="text-sm text-gray-400 mb-4">Seret file ke sini atau klik untuk memilih</p>
+                <input type="file" name="csv_file" id="csv_file" class="hidden" accept=".csv" required>
+                <button type="button" class="btn-modern btn-primary-modern" onclick="document.getElementById('csv_file').click()">
+                    <i class="fas fa-folder-open mr-2"></i>Pilih File
+                </button>
+                <p class="mt-3 text-xs text-gray-400" id="fileName">
+                    <i class="fas fa-info-circle mr-1"></i>Format yang didukung: .CSV
+                </p>
+            </div>
 
-                <div class="upload-zone p-5 text-center mb-4" id="dropZone">
-                    <div class="upload-icon mb-3">
-                        <i class="fas fa-cloud-upload-alt"></i>
+            <!-- Template Info -->
+            <div class="p-4 mb-6 rounded-2xl bg-gradient-to-r from-emerald-50 to-green-50 border-l-4 border-emerald-500">
+                <div class="flex items-start gap-4">
+                    <div class="w-[50px] h-[50px] rounded-xl flex items-center justify-center text-white shrink-0" style="background:var(--wa-green,#10b981)">
+                        <i class="fas fa-file-csv text-xl"></i>
                     </div>
-                    <h5 class="fw-semibold text-wa-dark">Unggah File CSV</h5>
-                    <p class="text-muted mb-3">Seret file ke sini atau klik untuk memilih</p>
-                    <input type="file" name="csv_file" id="csv_file" class="form-control d-none" accept=".csv" required>
-                    <button type="button" class="btn btn-wa-primary" onclick="document.getElementById('csv_file').click()">
-                        <i class="fas fa-folder-open me-2"></i>Pilih File
-                    </button>
-                    <p class="mt-3 mb-0 text-muted small" id="fileName">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Format yang didukung: .CSV
-                    </p>
-                </div>
-
-                <div class="template-info p-4 mb-4">
-                    <div class="d-flex align-items-start">
-                        <div class="template-icon me-3">
-                            <i class="fas fa-file-csv"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h6 class="fw-bold text-wa-dark mb-2">
-                                <i class="fas fa-download me-2"></i>Unduh Format Template
-                            </h6>
-                            <p class="text-muted small mb-3">
-                                Unduh file template di bawah untuk melihat format yang benar dalam menginput data siswa.
-                            </p>
-                            <a href="?download=template" class="btn btn-wa-success btn-sm">
-                                <i class="fas fa-file-download me-2"></i>Unduh Template CSV
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="format-info p-4">
-                    <h6 class="fw-bold text-wa-dark mb-3">
-                        <i class="fas fa-info-circle me-2"></i>Petunjuk Pengisian
-                    </h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="format-item mb-3">
-                                <span class="format-badge">Kolom 1</span>
-                                <span class="fw-semibold">NIS</span>
-                                <p class="text-muted small mb-0">Nomor Induk Siswa (wajib)</p>
-                            </div>
-                            <div class="format-item mb-3">
-                                <span class="format-badge">Kolom 2</span>
-                                <span class="fw-semibold">NISN</span>
-                                <p class="text-muted small mb-0">Nomor Induk Siswa Nasional (wajib)</p>
-                            </div>
-                            <div class="format-item mb-3">
-                                <span class="format-badge">Kolom 3</span>
-                                <span class="fw-semibold">Nama</span>
-                                <p class="text-muted small mb-0">Nama lengkap siswa (wajib)</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="format-item mb-3">
-                                <span class="format-badge">Kolom 4</span>
-                                <span class="fw-semibold">Kelas ID</span>
-                                <p class="text-muted small mb-0">ID kelas dari tabel kelas (wajib)</p>
-                            </div>
-                            <div class="format-item mb-3">
-                                <span class="format-badge">Kolom 5</span>
-                                <span class="fw-semibold">Jenis Kelamin</span>
-                                <p class="text-muted small mb-0">Laki-laki atau Perempuan</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <?php if (!empty($kelas_list)): ?>
-                <div class="kelas-info p-4 mt-4">
-                    <h6 class="fw-bold text-wa-dark mb-3">
-                        <i class="fas fa-door-open me-2"></i>Referensi Kelas ID
-                    </h6>
-                    <p class="text-muted small mb-3">Gunakan ID kelas berikut untuk mengisi Kolom 4 pada file CSV:</p>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm kelas-table">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th class="text-center">ID Kelas</th>
-                                    <th>Nama Kelas</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($kelas_list as $kelas): ?>
-                                <tr>
-                                    <td class="text-center"><span class="badge bg-primary"><?= $kelas['id'] ?></span></td>
-                                    <td><?= htmlspecialchars($kelas['nama_kelas']) ?></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <?php endif; ?>
-
-                <form method="POST" enctype="multipart/form-data" id="importForm">
-                    <input type="file" name="csv_file" id="csv_file_hidden" class="d-none" accept=".csv" required>
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-wa-primary" id="submitBtn" disabled>
-                            <i class="fas fa-upload me-2"></i>Import Data
-                        </button>
-                        <a href="index.php" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Kembali
+                    <div class="flex-1">
+                        <h6 class="font-bold text-gray-800 dark:text-white mb-2">
+                            <i class="fas fa-download mr-2 text-emerald-600"></i>Unduh Format Template
+                        </h6>
+                        <p class="text-sm text-gray-500 mb-3">Unduh file template di bawah untuk melihat format yang benar.</p>
+                        <a href="?download=template" class="btn-modern btn-success-modern text-sm">
+                            <i class="fas fa-file-download mr-2"></i>Unduh Template CSV
                         </a>
                     </div>
-                </form>
+                </div>
             </div>
+
+            <!-- Format Info -->
+            <div class="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-5 mb-6">
+                <h6 class="font-bold text-gray-800 dark:text-white mb-4">
+                    <i class="fas fa-info-circle mr-2 text-primary"></i>Petunjuk Pengisian
+                </h6>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="mb-3">
+                            <span class="inline-block bg-teal-700 text-white px-2 py-0.5 rounded text-xs mr-2">Kolom 1</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">NIS</span>
+                            <p class="text-xs text-gray-400 mt-0.5">Nomor Induk Siswa (wajib)</p>
+                        </div>
+                        <div class="mb-3">
+                            <span class="inline-block bg-teal-700 text-white px-2 py-0.5 rounded text-xs mr-2">Kolom 2</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">NISN</span>
+                            <p class="text-xs text-gray-400 mt-0.5">Nomor Induk Siswa Nasional (wajib)</p>
+                        </div>
+                        <div class="mb-3">
+                            <span class="inline-block bg-teal-700 text-white px-2 py-0.5 rounded text-xs mr-2">Kolom 3</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">Nama</span>
+                            <p class="text-xs text-gray-400 mt-0.5">Nama lengkap siswa (wajib)</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-3">
+                            <span class="inline-block bg-teal-700 text-white px-2 py-0.5 rounded text-xs mr-2">Kolom 4</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">Kelas ID</span>
+                            <p class="text-xs text-gray-400 mt-0.5">ID kelas dari tabel kelas (wajib)</p>
+                        </div>
+                        <div class="mb-3">
+                            <span class="inline-block bg-teal-700 text-white px-2 py-0.5 rounded text-xs mr-2">Kolom 5</span>
+                            <span class="font-semibold text-gray-700 dark:text-gray-200">Jenis Kelamin</span>
+                            <p class="text-xs text-gray-400 mt-0.5">Laki-laki atau Perempuan</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Referensi Kelas -->
+            <?php if (!empty($kelas_list)): ?>
+            <div class="p-4 mb-6 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500">
+                <h6 class="font-bold text-gray-800 dark:text-white mb-3">
+                    <i class="fas fa-door-open mr-2 text-blue-600"></i>Referensi Kelas ID
+                </h6>
+                <p class="text-xs text-gray-500 mb-3">Gunakan ID kelas berikut untuk mengisi Kolom 4 pada file CSV:</p>
+                <table class="table-modern w-full text-sm">
+                    <thead><tr><th class="text-center">ID Kelas</th><th>Nama Kelas</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($kelas_list as $kelas): ?>
+                        <tr><td class="text-center"><span class="badge-modern badge-primary-modern"><?= $kelas['id'] ?></span></td><td><?= htmlspecialchars($kelas['nama_kelas']) ?></td></tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+
+            <form method="POST" enctype="multipart/form-data" id="importForm">
+                <input type="file" name="csv_file" id="csv_file_hidden" class="hidden" accept=".csv" required>
+                <div class="flex gap-3 mt-4">
+                    <button type="submit" class="btn-modern btn-primary-modern" id="submitBtn" disabled>
+                        <i class="fas fa-upload mr-2"></i>Import Data
+                    </button>
+                    <a href="index.php" class="btn-modern btn-neutral-modern">
+                        <i class="fas fa-arrow-left mr-2"></i>Kembali
+                    </a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-
-<style>
-.upload-zone {
-    border: 2px dashed #ccc;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    transition: all 0.3s ease;
-}
-.upload-zone:hover {
-    border-color: var(--wa-green);
-    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-}
-.upload-zone.dragover {
-    border-color: var(--wa-green);
-    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-    transform: scale(1.02);
-}
-.upload-icon {
-    font-size: 3rem;
-    color: var(--wa-dark);
-}
-.template-info {
-    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-    border-radius: 12px;
-    border-left: 4px solid var(--wa-green);
-}
-.template-icon {
-    width: 50px;
-    height: 50px;
-    background: var(--wa-green);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-}
-.format-info {
-    background: #f8f9fa;
-    border-radius: 12px;
-}
-.format-badge {
-    display: inline-block;
-    background: var(--wa-dark);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    margin-right: 8px;
-}
-.kelas-info {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-radius: 12px;
-    border-left: 4px solid #2196F3;
-}
-.kelas-table {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-}
-.kelas-table thead {
-    background: var(--wa-dark);
-    color: white;
-}
-.kelas-table td {
-    vertical-align: middle;
-}
-</style>
 
 <script>
 const dropZone = document.getElementById('dropZone');
@@ -332,38 +246,25 @@ const submitBtn = document.getElementById('submitBtn');
 const fileName = document.getElementById('fileName');
 
 dropZone.addEventListener('click', () => fileInput.click());
-
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('dragover');
-});
-
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('dragover');
-});
-
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('border-emerald-500','bg-emerald-50/50'); });
+dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('border-emerald-500','bg-emerald-50/50'); });
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropZone.classList.remove('dragover');
+    dropZone.classList.remove('border-emerald-500','bg-emerald-50/50');
     if (e.dataTransfer.files.length) {
         fileInput.files = e.dataTransfer.files;
         handleFileSelect(e.dataTransfer.files[0]);
     }
 });
-
-fileInput.addEventListener('change', (e) => {
-    if (e.target.files.length) {
-        handleFileSelect(e.target.files[0]);
-    }
-});
+fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleFileSelect(e.target.files[0]); });
 
 function handleFileSelect(file) {
     if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
         fileInputHidden.files = fileInput.files;
-        fileName.innerHTML = '<i class="fas fa-check-circle text-success me-1"></i> File dipilih: <strong>' + file.name + '</strong>';
+        fileName.innerHTML = '<i class="fas fa-check-circle text-emerald-500 mr-1"></i>File: <strong>' + file.name + '</strong>';
         submitBtn.disabled = false;
     } else {
-        fileName.innerHTML = '<i class="fas fa-exclamation-circle text-danger me-1"></i> Format file tidak valid. Silakan pilih file CSV.';
+        fileName.innerHTML = '<i class="fas fa-exclamation-circle text-red-500 mr-1"></i>Format file tidak valid. Pilih file CSV.';
         submitBtn.disabled = true;
     }
 }
