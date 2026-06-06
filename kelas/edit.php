@@ -58,124 +58,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ob_start();
 ?>
 
-<style>
-.form-page {
-    min-height: calc(100vh - 200px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.form-card {
-    border: none;
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-    max-width: 500px;
-    width: 100%;
-}
-.form-card-header {
-    background: linear-gradient(135deg, #ffb142 0%, #ff8c00 100%);
-    padding: 2rem;
-    text-align: center;
-}
-.form-card-header h3 {
-    color: white;
-    font-weight: 600;
-    margin: 0;
-}
-.form-card-header .icon-circle {
-    width: 70px;
-    height: 70px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-}
-.form-card-header .icon-circle i {
-    font-size: 1.75rem;
-    color: white;
-}
-.form-card-body {
-    padding: 2rem;
-}
-.form-control, .form-select {
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 0.75rem 1rem;
-    transition: all 0.3s;
-}
-.form-control:focus, .form-select:focus {
-    border-color: var(--wa-green);
-    box-shadow: 0 0 0 4px rgba(37,211,102,0.15);
-}
-.btn-back {
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    color: #666;
-    transition: all 0.3s;
-}
-.btn-back:hover {
-    background: #f8f9fa;
-    border-color: #ccc;
-}
-</style>
+<div class="max-w-lg mx-auto my-12">
+    <div class="card-modern overflow-hidden text-center">
+        <div class="gradient-header orange text-center">
+            <div class="w-[70px] h-[70px] rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(255,255,255,0.2)">
+                <i class="fas fa-edit text-2xl text-white"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-white">Edit Kelas</h3>
+            <p class="mt-1 opacity-75 text-sm">Perbarui informasi kelas</p>
+        </div>
+        <div class="p-6">
+            <?php if (!empty($error)): ?>
+                <div class="alert-modern alert-danger-modern mb-4 flex items-center gap-3">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span><?= $error ?></span>
+                </div>
+            <?php endif; ?>
 
-<div class="form-page">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="form-card">
-                    <div class="form-card-header">
-                        <div class="icon-circle">
-                            <i class="fas fa-edit"></i>
-                        </div>
-                        <h3>Edit Kelas</h3>
-                        <p class="mb-0 opacity-75">Perbarui informasi kelas</p>
-                    </div>
-                    <div class="form-card-body">
-                        <?php if (!empty($error)): ?>
-                            <div class="alert alert-danger bg-danger text-white border-0 rounded-3 mb-4">
-                                <i class="fas fa-exclamation-circle me-2"></i><?= $error ?>
-                            </div>
-                        <?php endif; ?>
-
-                        <form method="POST">
-                            <input type="hidden" name="id" value="<?= $kelas['id'] ?>">
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-dark">Nama Kelas</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0">
-                                        <i class="fas fa-door-closed text-muted"></i>
-                                    </span>
-                                    <input type="text" name="nama_kelas" class="form-control" 
-                                           value="<?= htmlspecialchars($kelas['nama_kelas']) ?>" required>
-                                </div>
-                            </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold text-dark">Wali Kelas</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-0">
-                                        <i class="fas fa-user-tie text-muted"></i>
-                                    </span>
-                                    <input type="text" name="wali_kelas" class="form-control" 
-                                           value="<?= htmlspecialchars($kelas['wali_kelas'] ?? '') ?>">
-                                </div>
-                            </div>
-                            <div class="d-flex gap-3">
-                                <a href="index.php" class="btn btn-back flex-fill">
-                                    <i class="fas fa-arrow-left me-2"></i>Batal
-                                </a>
-                                <button type="submit" class="btn btn-warning text-dark flex-fill">
-                                    <i class="fas fa-save me-2"></i>Simpan
-                                </button>
-                            </div>
-                        </form>
+            <form method="POST" class="text-left">
+                <input type="hidden" name="id" value="<?= $kelas['id'] ?>">
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Nama Kelas</label>
+                    <div class="relative">
+                        <i class="fas fa-door-closed absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" name="nama_kelas" class="form-input-modern w-full pl-10" 
+                               value="<?= htmlspecialchars($kelas['nama_kelas']) ?>" required>
                     </div>
                 </div>
-            </div>
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Wali Kelas</label>
+                    <div class="relative">
+                        <i class="fas fa-user-tie absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" name="wali_kelas" class="form-input-modern w-full pl-10" 
+                               value="<?= htmlspecialchars($kelas['wali_kelas'] ?? '') ?>">
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <a href="index.php" class="btn-modern btn-neutral-modern flex-1 justify-center">
+                        <i class="fas fa-arrow-left mr-2"></i>Batal
+                    </a>
+                    <button type="submit" class="btn-modern btn-warning-modern flex-1 justify-center">
+                        <i class="fas fa-save mr-2"></i>Simpan
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
