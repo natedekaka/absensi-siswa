@@ -21,7 +21,7 @@ while ($s = $semester->fetch_assoc()) {
     $semester_dates[$s['semester']] = $s;
 }
 
-$title = 'Rekap Absensi - Sistem Absensi Siswa';
+$title = 'Rekap Absensi';
 
 ob_start();
 
@@ -33,15 +33,11 @@ $tgl_awal = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl_awal) ? $tgl_awal : date('Y
 $tgl_akhir = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tgl_akhir) ? $tgl_akhir : date('Y-m-t');
 
 function getSemesterDateRange($semester_num, $semester_dates, $tgl_awal, $tgl_akhir) {
-    if (!isset($semester_dates[$semester_num])) {
-        return null;
-    }
+    if (!isset($semester_dates[$semester_num])) return null;
     $s = $semester_dates[$semester_num];
     $range_awal = max($tgl_awal, $s['tgl_mulai']);
     $range_akhir = min($tgl_akhir, $s['tgl_selesai']);
-    if ($range_awal > $range_akhir) {
-        return null;
-    }
+    if ($range_awal > $range_akhir) return null;
     return ['awal' => $range_awal, 'akhir' => $range_akhir, 'nama' => $s['nama'], 'id' => $s['id']];
 }
 
@@ -122,134 +118,150 @@ if ($kelas_id) {
 }
 ?>
 
-<div class="p-4">
-    <h2 class="mb-4"><i class="fas fa-chart-bar me-2"></i>Rekap Absensi</h2>
-    
-    <form method="GET" class="card mb-4 p-3">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Pilih Kelas</label>
-                <select name="kelas_id" class="form-control" onchange="this.form.submit()">
-                    <option value="">-- Pilih Kelas --</option>
-                    <?php
-                    $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
-                    while ($row = $kelas_list->fetch_assoc()):
-                    ?>
-                    <option value="<?= $row['id'] ?>" <?= ($kelas_id == $row['id']) ? 'selected' : '' ?>><?= htmlspecialchars($row['nama_kelas']) ?></option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Tanggal Awal</label>
-                <input type="date" name="tgl_awal" class="form-control" value="<?= htmlspecialchars($tgl_awal) ?>">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Tanggal Akhir</label>
-                <input type="date" name="tgl_akhir" class="form-control" value="<?= htmlspecialchars($tgl_akhir) ?>">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">&nbsp;</label>
-                <button type="submit" class="btn btn-primary w-100">Filter</button>
-            </div>
-        </div>
-    </form>
-
-    <?php if (!$kelas_id): ?>
-    <div class="alert alert-info">Silakan pilih kelas untuk melihat rekap absensi.</div>
-    <?php else: ?>
-    
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">Semester 1 - <?= $kehadiran_smt1 ?>% Kehadiran</div>
-                <div class="card-body">
-                    <p class="mb-2"><?= $hari_smt1 ?> hari belajar</p>
-                    <div class="row text-center">
-                        <div class="col-3"><strong><?= $stats_smt1['hadir'] ?></strong><br><small>Hadir</small></div>
-                        <div class="col-3"><strong><?= $stats_smt1['terlambat'] ?></strong><br><small>Telat</small></div>
-                        <div class="col-3"><strong><?= $stats_smt1['sakit'] ?></strong><br><small>Sakit</small></div>
-                        <div class="col-3"><strong><?= $stats_smt1['alfa'] ?></strong><br><small>Alfa</small></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">Semester 2 - <?= $kehadiran_smt2 ?>% Kehadiran</div>
-                <div class="card-body">
-                    <p class="mb-2"><?= $hari_smt2 ?> hari belajar</p>
-                    <div class="row text-center">
-                        <div class="col-3"><strong><?= $stats_smt2['hadir'] ?></strong><br><small>Hadir</small></div>
-                        <div class="col-3"><strong><?= $stats_smt2['terlambat'] ?></strong><br><small>Telat</small></div>
-                        <div class="col-3"><strong><?= $stats_smt2['sakit'] ?></strong><br><small>Sakit</small></div>
-                        <div class="col-3"><strong><?= $stats_smt2['alfa'] ?></strong><br><small>Alfa</small></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header bg-success text-white">Semester 1</div>
-                <div class="table-responsive" style="max-height: 400px;">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead><tr><th>#</th><th>Siswa</th><th>H</th><th>T</th><th>S</th><th>I</th><th>A</th><th>%</th></tr></thead>
-                        <tbody>
-                            <?php 
-                            $no = 1;
-                            if ($siswa_smt1): while ($row = $siswa_smt1->fetch_assoc()):
-                                $persen = $hari_smt1 > 0 ? round(($row['hadir'] / $hari_smt1) * 100, 1) : 0;
-                            ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= htmlspecialchars($row['nama']) ?></td>
-                                <td><?= $row['hadir'] ?></td>
-                                <td><?= $row['terlambat'] ?></td>
-                                <td><?= $row['sakit'] ?></td>
-                                <td><?= $row['izin'] ?></td>
-                                <td><?= $row['alfa'] ?></td>
-                                <td><strong><?= $persen ?>%</strong></td>
-                            </tr>
-                            <?php endwhile; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">Semester 2</div>
-                <div class="table-responsive" style="max-height: 400px;">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead><tr><th>#</th><th>Siswa</th><th>H</th><th>T</th><th>S</th><th>I</th><th>A</th><th>%</th></tr></thead>
-                        <tbody>
-                            <?php 
-                            $no = 1;
-                            if ($siswa_smt2): while ($row = $siswa_smt2->fetch_assoc()):
-                                $persen = $hari_smt2 > 0 ? round(($row['hadir'] / $hari_smt2) * 100, 1) : 0;
-                            ?>
-                            <tr>
-                                <td><?= $no++ ?></td>
-                                <td><?= htmlspecialchars($row['nama']) ?></td>
-                                <td><?= $row['hadir'] ?></td>
-                                <td><?= $row['terlambat'] ?></td>
-                                <td><?= $row['sakit'] ?></td>
-                                <td><?= $row['izin'] ?></td>
-                                <td><?= $row['alfa'] ?></td>
-                                <td><strong><?= $persen ?>%</strong></td>
-                            </tr>
-                            <?php endwhile; endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <?php endif; ?>
+<div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800">
+        <i class="fas fa-chart-bar mr-3 text-primary"></i>Rekap Absensi
+    </h2>
 </div>
+
+<form method="GET" class="filter-card mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Pilih Kelas</label>
+            <select name="kelas_id" class="form-select-modern" onchange="this.form.submit()">
+                <option value="">-- Pilih Kelas --</option>
+                <?php
+                $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
+                while ($row = $kelas_list->fetch_assoc()):
+                ?>
+                <option value="<?= $row['id'] ?>" <?= ($kelas_id == $row['id']) ? 'selected' : '' ?>><?= htmlspecialchars($row['nama_kelas']) ?></option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Tanggal Awal</label>
+            <input type="date" name="tgl_awal" class="form-input-modern" value="<?= htmlspecialchars($tgl_awal) ?>">
+        </div>
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Tanggal Akhir</label>
+            <input type="date" name="tgl_akhir" class="form-input-modern" value="<?= htmlspecialchars($tgl_akhir) ?>">
+        </div>
+        <div class="flex items-end">
+            <button type="submit" class="btn-modern btn-primary-modern w-full">
+                <i class="fas fa-filter mr-2"></i>Filter
+            </button>
+        </div>
+    </div>
+</form>
+
+<?php if (!$kelas_id): ?>
+<div class="alert-modern alert-info-modern">
+    <i class="fas fa-info-circle text-lg"></i>
+    <span>Silakan pilih kelas untuk melihat rekap absensi.</span>
+</div>
+<?php else: ?>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <div class="card-modern">
+        <div class="card-modern-header text-white font-semibold" style="background:#10B981;">
+            Semester 1 — <?= $kehadiran_smt1 ?>% Kehadiran
+        </div>
+        <div class="card-modern-body">
+            <p class="text-sm text-gray-500 mb-3"><?= $hari_smt1 ?> hari belajar</p>
+            <div class="grid grid-cols-4 gap-2 text-center text-sm">
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt1['hadir'] ?></strong><br><span class="text-gray-400 text-xs">Hadir</span></div>
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt1['terlambat'] ?></strong><br><span class="text-gray-400 text-xs">Telat</span></div>
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt1['sakit'] ?></strong><br><span class="text-gray-400 text-xs">Sakit</span></div>
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt1['alfa'] ?></strong><br><span class="text-gray-400 text-xs">Alfa</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="card-modern">
+        <div class="card-modern-header text-white font-semibold" style="background:#3B82F6;">
+            Semester 2 — <?= $kehadiran_smt2 ?>% Kehadiran
+        </div>
+        <div class="card-modern-body">
+            <p class="text-sm text-gray-500 mb-3"><?= $hari_smt2 ?> hari belajar</p>
+            <div class="grid grid-cols-4 gap-2 text-center text-sm">
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt2['hadir'] ?></strong><br><span class="text-gray-400 text-xs">Hadir</span></div>
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt2['terlambat'] ?></strong><br><span class="text-gray-400 text-xs">Telat</span></div>
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt2['sakit'] ?></strong><br><span class="text-gray-400 text-xs">Sakit</span></div>
+                <div><strong class="text-lg text-gray-800"><?= $stats_smt2['alfa'] ?></strong><br><span class="text-gray-400 text-xs">Alfa</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card-modern">
+        <div class="card-modern-header font-semibold text-white" style="background:#10B981;">
+            Semester 1
+        </div>
+        <div class="overflow-x-auto" style="max-height:400px;">
+            <table class="table-modern text-sm">
+                <thead class="sticky top-0 z-10">
+                    <tr>
+                        <th>#</th><th>Siswa</th><th class="text-center">H</th><th class="text-center">T</th>
+                        <th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th class="text-center">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $no = 1;
+                    if ($siswa_smt1): while ($row = $siswa_smt1->fetch_assoc()):
+                        $persen = $hari_smt1 > 0 ? round(($row['hadir'] / $hari_smt1) * 100, 1) : 0;
+                    ?>
+                    <tr>
+                        <td class="text-gray-500"><?= $no++ ?></td>
+                        <td class="font-medium"><?= htmlspecialchars($row['nama']) ?></td>
+                        <td class="text-center"><?= $row['hadir'] ?></td>
+                        <td class="text-center"><?= $row['terlambat'] ?></td>
+                        <td class="text-center"><?= $row['sakit'] ?></td>
+                        <td class="text-center"><?= $row['izin'] ?></td>
+                        <td class="text-center"><?= $row['alfa'] ?></td>
+                        <td class="text-center font-semibold"><?= $persen ?>%</td>
+                    </tr>
+                    <?php endwhile; endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-modern">
+        <div class="card-modern-header font-semibold text-white" style="background:#3B82F6;">
+            Semester 2
+        </div>
+        <div class="overflow-x-auto" style="max-height:400px;">
+            <table class="table-modern text-sm">
+                <thead class="sticky top-0 z-10">
+                    <tr>
+                        <th>#</th><th>Siswa</th><th class="text-center">H</th><th class="text-center">T</th>
+                        <th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th class="text-center">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $no = 1;
+                    if ($siswa_smt2): while ($row = $siswa_smt2->fetch_assoc()):
+                        $persen = $hari_smt2 > 0 ? round(($row['hadir'] / $hari_smt2) * 100, 1) : 0;
+                    ?>
+                    <tr>
+                        <td class="text-gray-500"><?= $no++ ?></td>
+                        <td class="font-medium"><?= htmlspecialchars($row['nama']) ?></td>
+                        <td class="text-center"><?= $row['hadir'] ?></td>
+                        <td class="text-center"><?= $row['terlambat'] ?></td>
+                        <td class="text-center"><?= $row['sakit'] ?></td>
+                        <td class="text-center"><?= $row['izin'] ?></td>
+                        <td class="text-center"><?= $row['alfa'] ?></td>
+                        <td class="text-center font-semibold"><?= $persen ?>%</td>
+                    </tr>
+                    <?php endwhile; endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<?php endif; ?>
 
 <?php
 $content = ob_get_clean();
