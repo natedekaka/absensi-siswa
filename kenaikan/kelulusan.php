@@ -58,206 +58,100 @@ ob_start();
 ?>
 
 <style>
-.kelulusan-page {
-    padding: 2rem 0;
-}
-.kelulusan-card {
-    border: none;
-    border-radius: 24px;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-}
-.kelu-header {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    padding: 2rem;
-    color: white;
-    text-align: center;
-    position: relative;
-}
-.kelu-header h3 {
-    font-weight: 600;
-    margin: 0;
-}
-.kelu-header p {
-    color: rgba(255,255,255,0.85);
-    margin-top: 0.5rem;
-}
-.kelu-icon {
-    width: 80px;
-    height: 80px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    font-size: 2rem;
-}
-.kelu-body {
-    padding: 2rem;
-}
-.stat-box {
-    border-radius: 16px;
-    padding: 1.5rem;
-    text-align: center;
-}
-.stat-box h2 {
-    font-size: 2.5rem;
-    font-weight: 700;
-}
-.stat-box h2.text-primary { color: #6366f1; }
-.stat-box h2.text-success { color: #10b981; }
-.stat-box p {
-    margin: 0;
-    font-size: 0.9rem;
-}
-.info-box {
-    border-radius: 16px;
-    padding: 1.25rem;
-    background: #fef3c7;
-    border: 1px solid #fcd34d;
-}
-.info-box i { color: #d97706; }
-.btn-kelu {
-    border-radius: 14px;
-    padding: 0.875rem 1.5rem;
-    font-weight: 600;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-.btn-kelu:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(245, 158, 11, 0.4);
-}
-.siswa-item {
-    border: 2px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 0.875rem 1rem;
-    margin-bottom: 0.5rem;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-.siswa-item:hover {
-    border-color: #f59e0b;
-    background: #fffbeb;
-}
-.kelas-section {
-    margin-bottom: 2rem;
-}
-.kelas-section h5 {
-    color: #d97706;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    background: #fef3c7;
-    border-radius: 10px;
-    display: inline-block;
-}
+.siswa-item { border:2px solid #e5e7eb; border-radius:14px; padding:.875rem 1rem; margin-bottom:.5rem; transition:all .3s; display:flex; align-items:center; justify-content:space-between; }
+.siswa-item:hover { border-color:#f59e0b; background:#fffbeb; }
+.kelas-section { margin-bottom:2rem; }
+.kelas-section h5 { color:#d97706; font-weight:600; padding:.5rem 1rem; background:#fef3c7; border-radius:10px; display:inline-block; }
 </style>
 
-<div class="kelulusan-page">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="kelulusan-card">
-                    <div class="kelu-header">
-                        <div class="kelu-icon">
-                            <i class="fas fa-user-graduate"></i>
-                        </div>
-                        <h3>Proses Kelulusan</h3>
-                        <p class="mb-0">Tandai siswa kelas 12 sebagai alumni</p>
-                    </div>
-                    <div class="kelu-body">
-                        <?php if ($success): ?>
-                            <div class="alert alert-success bg-success text-white border-0 mb-4" style="border-radius: 12px;">
-                                <i class="fas fa-check-circle me-2"></i><?= $success ?>
-                            </div>
-                        <?php endif; ?>
+<div class="max-w-4xl mx-auto my-8">
+    <div class="card-modern overflow-hidden">
+        <div class="gradient-header orange text-center">
+            <div class="w-[80px] h-[80px] rounded-full flex items-center justify-center mx-auto mb-4" style="background:rgba(255,255,255,0.2)">
+                <i class="fas fa-user-graduate text-3xl text-white"></i>
+            </div>
+            <h3 class="text-xl font-semibold text-white">Proses Kelulusan</h3>
+            <p class="mt-1 opacity-85 text-sm">Tandai siswa kelas 12 sebagai alumni</p>
+        </div>
+        <div class="p-6">
+            <?php if ($success): ?>
+            <div class="alert-modern alert-success-modern mb-4 flex items-center gap-3">
+                <i class="fas fa-check-circle text-lg"></i><span><?= $success ?></span>
+                <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
+            </div>
+            <?php endif; ?>
+            <?php if ($error): ?>
+            <div class="alert-modern alert-danger-modern mb-4 flex items-center gap-3">
+                <i class="fas fa-exclamation-circle text-lg"></i><span><?= $error ?></span>
+                <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
+            </div>
+            <?php endif; ?>
 
-                        <?php if ($error): ?>
-                            <div class="alert alert-danger bg-danger text-white border-0 mb-4" style="border-radius: 12px;">
-                                <i class="fas fa-exclamation-circle me-2"></i><?= $error ?>
-                            </div>
-                        <?php endif; ?>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">
-                                <div class="stat-box bg-light">
-                                    <h2 class="text-primary"><?= $siswa_xii_count ?></h2>
-                                    <p class="text-muted">Siswa Kelas 12 Aktif</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <form method="POST">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">Tahun Lulus</label>
-                                        <select name="tahun_lulus" class="form-control" required>
-                                            <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
-                                            <option value="<?= date('Y') + 1 ?>"><?= date('Y') + 1 ?></option>
-                                        </select>
-                                    </div>
-
-                                    <div class="info-box mb-3">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        <strong>Perhatian!</strong>
-                                        <ul class="mb-0 mt-2 ps-3">
-                                            <li>Status jadi <strong>ALUMNI</li>
-                                            <li>Tidak di absensi</li>
-                                            <li>Di riwayat alumni</li>
-                                        </ul>
-                                    </div>
-
-                                    <button type="submit" class="btn btn-kelu w-100" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white;">
-                                        <i class="fas fa-graduation-cap me-2"></i>Proses Kelulusan
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-
-                        <?php if ($siswa_xii_count > 0): ?>
-                        <hr>
-                        <h5 class="fw-bold mb-3"><i class="fas fa-users me-2"></i>Daftar Siswa Kelas 12</h5>
-                        <div class="row g-3" style="max-height: 350px; overflow-y: auto;">
-                            <?php 
-                            $current_kelas = '';
-                            $col_num = 0;
-                            while ($row = $siswa_xii_list->fetch_assoc()): 
-                                if ($current_kelas != $row['nama_kelas']):
-                                    $current_kelas = $row['nama_kelas'];
-                                    $col_num = 0;
-                            ?>
-                            <div class="col-12">
-                                <div class="kelas-section">
-                                    <h5><i class="fas fa-door-open me-2"></i><?= htmlspecialchars($current_kelas) ?></h5>
-                                </div>
-                            </div>
-                            <?php endif; ?>
-                            <div class="col-md-6">
-                                <div class="siswa-item">
-                                    <div>
-                                        <div class="fw-semibold"><?= htmlspecialchars($row['nama']) ?></div>
-                                        <small class="text-muted"><?= htmlspecialchars($row['nis']) ?></small>
-                                    </div>
-                                    <span class="badge bg-warning text-dark">Aktif</span>
-                                </div>
-                            </div>
-                            <?php endwhile; ?>
-                        </div>
-                        <?php else: ?>
-                        <div class="text-center py-4">
-                            <i class="fas fa-user-slash text-muted fa-2x mb-2"></i>
-                            <p class="text-muted mb-0">Belum ada siswa kelas 12</p>
-                        </div>
-                        <?php endif; ?>
-
-                        <div class="text-center mt-4">
-                            <a href="index.php" class="btn btn-outline-dark">
-                                <i class="fas fa-arrow-left me-2"></i>Kembali
-                            </a>
-                        </div>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6 text-center">
+                    <h2 class="text-4xl font-bold text-indigo-500"><?= $siswa_xii_count ?></h2>
+                    <p class="text-sm text-gray-400">Siswa Kelas 12 Aktif</p>
                 </div>
+                <div>
+                    <form method="POST">
+                        <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Tahun Lulus</label>
+                        <select name="tahun_lulus" class="form-input-modern w-full mb-3" required>
+                            <option value="<?= date('Y') ?>"><?= date('Y') ?></option>
+                            <option value="<?= date('Y') + 1 ?>"><?= date('Y') + 1 ?></option>
+                        </select>
+                        <div class="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 mb-3 text-sm text-amber-800 dark:text-amber-200">
+                            <i class="fas fa-exclamation-triangle mr-2 text-amber-500"></i>
+                            <strong>Perhatian!</strong>
+                            <ul class="mt-2 mb-0 ps-3">
+                                <li>Status jadi <strong>ALUMNI</strong></li>
+                                <li>Tidak muncul di absensi</li>
+                                <li>Muncul di riwayat alumni</li>
+                            </ul>
+                        </div>
+                        <button type="submit" class="btn-modern btn-warning-modern w-full justify-center">
+                            <i class="fas fa-graduation-cap mr-2"></i>Proses Kelulusan
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <?php if ($siswa_xii_count > 0): ?>
+            <hr class="border-gray-200 dark:border-gray-700 my-6">
+            <h5 class="font-bold text-gray-800 dark:text-white mb-4"><i class="fas fa-users mr-2 text-primary"></i>Daftar Siswa Kelas 12</h5>
+            <div class="space-y-3" style="max-height:350px;overflow-y:auto">
+                <?php 
+                $current_kelas = '';
+                while ($row = $siswa_xii_list->fetch_assoc()): 
+                    if ($current_kelas != $row['nama_kelas']):
+                        $current_kelas = $row['nama_kelas'];
+                ?>
+                <div class="kelas-section">
+                    <h5><i class="fas fa-door-open mr-2"></i><?= htmlspecialchars($current_kelas) ?></h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <?php endif; ?>
+                    <div class="siswa-item">
+                        <div>
+                            <div class="font-semibold text-gray-800 dark:text-white"><?= htmlspecialchars($row['nama']) ?></div>
+                            <small class="text-gray-400"><?= htmlspecialchars($row['nis']) ?></small>
+                        </div>
+                        <span class="badge-modern badge-warning-modern">Aktif</span>
+                    </div>
+                    <?php if ($current_kelas != ($siswa_xii_count > 0 ? '' : '')): ?>
+                    </div></div>
+                    <?php endif; ?>
+                <?php endwhile; ?>
+            </div>
+            <?php else: ?>
+            <div class="text-center py-6">
+                <i class="fas fa-user-slash text-gray-300 text-3xl mb-2"></i>
+                <p class="text-gray-400">Belum ada siswa kelas 12</p>
+            </div>
+            <?php endif; ?>
+
+            <div class="text-center mt-6">
+                <a href="index.php" class="btn-modern btn-neutral-modern justify-center">
+                    <i class="fas fa-arrow-left mr-2"></i>Kembali
+                </a>
             </div>
         </div>
     </div>
