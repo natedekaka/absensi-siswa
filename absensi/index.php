@@ -13,9 +13,9 @@ $title = 'Input Absensi - Sistem Absensi Siswa';
 ob_start();
 ?>
 
-<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="fw-bold text-wa-dark mb-0">
-        <i class="fas fa-clipboard-check me-2"></i>Input Absensi Harian
+<div class="flex items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">
+        <i class="fas fa-clipboard-check mr-3 text-primary"></i>Input Absensi Harian
     </h2>
 </div>
 
@@ -24,73 +24,65 @@ ob_start();
     <input type="hidden" name="kelas_id" id="kelas_id">
     <input type="hidden" name="semester_id" id="semester_id">
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card-custom p-3 h-100">
-                <label class="form-label fw-semibold mb-2 text-wa-dark">
-                    <i class="fas fa-calendar-alt me-2"></i>Tanggal
-                </label>
-                <input type="date" name="tanggal" id="tanggal" class="form-control form-select-custom" 
-                       value="<?= date('Y-m-d') ?>" required>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card-modern p-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
+                <i class="fas fa-calendar-alt mr-2"></i>Tanggal
+            </label>
+            <input type="date" name="tanggal" id="tanggal" class="form-input-modern" 
+                   value="<?= date('Y-m-d') ?>" required>
         </div>
-        <div class="col-md-4">
-            <div class="card-custom p-3 h-100">
-                <label class="form-label fw-semibold mb-2 text-wa-dark">
-                    <i class="fas fa-graduation-cap me-2"></i>Semester
-                </label>
-                <select id="semester" name="semester_id" class="form-select form-select-custom" required>
-                    <option value="">Pilih Semester</option>
-                    <?php
-                    $semester = conn()->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
-                    while ($row = $semester->fetch_assoc()):
-                        $selected = $row['is_active'] ? 'selected' : '';
-                    ?>
-                    <option value="<?= $row['id'] ?>" <?= $selected ?>><?= htmlspecialchars($row['nama']) ?></option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
+        <div class="card-modern p-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
+                <i class="fas fa-graduation-cap mr-2"></i>Semester
+            </label>
+            <select id="semester" name="semester_id" class="form-select-modern" required>
+                <option value="">Pilih Semester</option>
+                <?php
+                $semester = conn()->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                while ($row = $semester->fetch_assoc()):
+                    $selected = $row['is_active'] ? 'selected' : '';
+                ?>
+                <option value="<?= $row['id'] ?>" <?= $selected ?>><?= htmlspecialchars($row['nama']) ?></option>
+                <?php endwhile; ?>
+            </select>
         </div>
-        <div class="col-md-4">
-            <div class="card-custom p-3 h-100">
-                <label class="form-label fw-semibold mb-2 text-wa-dark">
-                    <i class="fas fa-door-open me-2"></i>Kelas
-                </label>
-                <select id="kelas" class="form-select form-select-custom" required>
-                    <option value="">Pilih Kelas</option>
-                    <option value="all">Semua Kelas</option>
-                    <?php
-                    $kelas = conn()->query("SELECT * FROM kelas ORDER BY nama_kelas");
-                    while ($row = $kelas->fetch_assoc()):
-                    ?>
-                    <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
+        <div class="card-modern p-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
+                <i class="fas fa-door-open mr-2"></i>Kelas
+            </label>
+            <select id="kelas" class="form-select-modern" required>
+                <option value="">Pilih Kelas</option>
+                <option value="all">Semua Kelas</option>
+                <?php
+                $kelas = conn()->query("SELECT * FROM kelas ORDER BY nama_kelas");
+                while ($row = $kelas->fetch_assoc()):
+                ?>
+                <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
+                <?php endwhile; ?>
+            </select>
         </div>
     </div>
 
-    <div class="row mb-4" id="searchContainer" style="display: none;">
-        <div class="col-md-6">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search_nama" class="form-control form-control-custom" 
-                       placeholder="Cari nama siswa...">
-            </div>
+    <div class="mb-6 hidden" id="searchContainer" style="display: none;">
+        <div class="relative max-w-md">
+            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="search_nama" class="form-input-modern pl-10" 
+                   placeholder="Cari nama siswa...">
         </div>
     </div>
 
-    <div id="tombolSimpanAtas" class="mb-4" style="display: none;">
-        <button type="submit" class="btn btn-wa-primary">
-            <i class="fas fa-save me-2"></i>Simpan Absensi
+    <div id="tombolSimpanAtas" class="mb-6 hidden" style="display: none;">
+        <button type="submit" class="btn-modern btn-primary-modern">
+            <i class="fas fa-save mr-2"></i>Simpan Absensi
         </button>
     </div>
 
-    <div id="siswa-container" class="mb-4"></div>
+    <div id="siswa-container" class="mb-6"></div>
 
-    <div id="tombolSimpanBawah" class="text-center" style="display: none;">
-        <button type="submit" class="btn btn-wa-primary btn-lg px-5">
-            <i class="fas fa-save me-2"></i>Simpan Semua Absensi
+    <div id="tombolSimpanBawah" class="text-center hidden" style="display: none;">
+        <button type="submit" class="btn-modern btn-primary-modern btn-lg-modern px-8">
+            <i class="fas fa-save mr-2"></i>Simpan Semua Absensi
         </button>
     </div>
 </form>

@@ -203,7 +203,7 @@ if ($type === 'pdf') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rekap Absensi - <?= htmlspecialchars($kelas['nama_kelas']) ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../assets/css/app.css" rel="stylesheet">
     <style>
         @media print {
             .no-print { display: none !important; }
@@ -218,16 +218,16 @@ if ($type === 'pdf') {
         th { background-color: #128C7E; color: white; }
         .smt-header { background-color: #25D366; color: white; font-weight: bold; }
         tr:nth-child(even) { background-color: #f9f9f9; }
-        .btn-print { position: fixed; top: 20px; right: 20px; }
+        .btn-print { position: fixed; top: 20px; right: 20px; display:flex; gap:8px; }
     </style>
 </head>
 <body>
     <div class="no-print btn-print">
-        <button class="btn btn-primary" onclick="window.print()">
-            <i class="fas fa-print"></i> Cetak / Save as PDF
+        <button class="btn-modern btn-primary-modern" onclick="window.print()">
+            <i class="fas fa-print mr-1"></i> Cetak / Save as PDF
         </button>
-        <a href="?kelas_id=<?= $kelas_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&type=excel" class="btn btn-success">
-            <i class="fas fa-file-excel"></i> Export Excel
+        <a href="?kelas_id=<?= $kelas_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&type=excel" class="btn-modern btn-success-modern">
+            <i class="fas fa-file-excel mr-1"></i> Export Excel
         </a>
     </div>
     

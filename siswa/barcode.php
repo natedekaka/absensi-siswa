@@ -69,46 +69,48 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
 }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="fw-bold text-wa-dark mb-0">
-        <i class="fas fa-barcode me-2"></i>Generate Kartu Siswa (Barcode/QR)
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+        <i class="fas fa-barcode mr-3 text-primary"></i>Generate Kartu Siswa (Barcode/QR)
     </h2>
-    <button class="btn btn-primary no-print" onclick="window.print()">
-        <i class="fas fa-print me-2"></i>Print Semua
+    <button class="btn-modern btn-primary-modern no-print" onclick="window.print()">
+        <i class="fas fa-print mr-2"></i>Print Semua
     </button>
 </div>
 
-<form method="GET" class="card-custom p-3 mb-4 no-print">
-    <div class="row g-3 align-items-center">
-        <div class="col-md-2">
-            <label class="form-label fw-semibold">Jenis:</label>
-            <select name="jenis" class="form-select" onchange="this.form.submit()">
-                <option value="barcode" <?= ($jenis === 'barcode') ? 'selected' : '' ?>>Barcode (Kotak)</option>
-                <option value="qrcode" <?= ($jenis === 'qrcode') ? 'selected' : '' ?>>QR Code (Kotak)</option>
+<form method="GET" class="card-modern p-4 mb-6 no-print">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 items-end">
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Jenis:</label>
+            <select name="jenis" class="form-input-modern w-full" onchange="this.form.submit()">
+                <option value="barcode" <?= ($jenis === 'barcode') ? 'selected' : '' ?>>Barcode</option>
+                <option value="qrcode" <?= ($jenis === 'qrcode') ? 'selected' : '' ?>>QR Code</option>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">Filter Kelas:</label>
-            <select name="kelas_id" class="form-select" onchange="this.form.submit()">
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Filter Kelas:</label>
+            <select name="kelas_id" class="form-input-modern w-full" onchange="this.form.submit()">
                 <option value="">Semua Kelas</option>
-                <?php while ($k = $kelas_list->fetch_assoc()): ?>
+                <?php 
+                $kelas_list->data_seek(0);
+                while ($k = $kelas_list->fetch_assoc()): ?>
                 <option value="<?= $k['id'] ?>" <?= ($kelas_id == $k['id']) ? 'selected' : '' ?>>
                     <?= htmlspecialchars($k['nama_kelas']) ?>
                 </option>
                 <?php endwhile; ?>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold">Cari Nama:</label>
-            <input type="text" name="cari" class="form-control" placeholder="Cari siswa..." value="<?= htmlspecialchars($keyword) ?>">
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Cari Nama:</label>
+            <input type="text" name="cari" class="form-input-modern w-full" placeholder="Cari siswa..." value="<?= htmlspecialchars($keyword) ?>">
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-wa-primary w-100">
-                <i class="fas fa-search me-1"></i>Filter
+        <div>
+            <button type="submit" class="btn-modern btn-primary-modern w-full justify-center">
+                <i class="fas fa-search mr-1"></i>Filter
             </button>
         </div>
-        <div class="col-md-2">
-            <a href="barcode.php" class="btn btn-outline-secondary w-100">Reset</a>
+        <div>
+            <a href="barcode.php" class="btn-modern btn-neutral-modern w-full justify-center">Reset</a>
         </div>
     </div>
 </form>

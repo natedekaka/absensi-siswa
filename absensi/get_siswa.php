@@ -84,13 +84,13 @@ if ($result && $result->num_rows > 0):
 
 <style>
     .table-absensi {
-        background: var(--wa-white);
+        background: #ffffff;
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .table-absensi thead {
-        background: var(--wa-dark);
+        background: #1E293B;
         color: white;
     }
     .table-absensi th, .table-absensi td {
@@ -100,7 +100,7 @@ if ($result && $result->num_rows > 0):
     }
     .table-absensi td:first-child { text-align: center; }
     .table-absensi td:nth-child(3) { text-align: left; }
-    .table-absensi tbody tr:hover { background: var(--wa-light); }
+    .table-absensi tbody tr:hover { background: #F1F5F9; }
     .table-absensi th.col-hadir, .table-absensi td.col-hadir { width: 60px; min-width: 60px; }
     .table-absensi th.col-status, .table-absensi td.col-status { width: 50px; min-width: 50px; }
     .table-absensi th.col-rekap, .table-absensi td.col-rekap { min-width: 180px; white-space: nowrap; }
@@ -139,12 +139,12 @@ if ($result && $result->num_rows > 0):
     .attendance-radio input {
         width: 18px;
         height: 18px;
-        accent-color: var(--wa-green);
+        accent-color: #10b981;
         cursor: pointer;
     }
 </style>
 
-<table class="table table-absensi table-hover">
+<table class="table-absensi">
     <thead>
         <tr>
             <?php if ($kelas_id === 'all'): ?>
@@ -181,7 +181,7 @@ if ($result && $result->num_rows > 0):
         ?>
         <tr>
             <?php if ($kelas_id === 'all'): ?>
-            <td class="fw-bold text-secondary"><?= htmlspecialchars($row['nama_kelas']) ?></td>
+            <td class="font-semibold text-gray-500 dark:text-gray-400"><?= htmlspecialchars($row['nama_kelas']) ?></td>
             <?php endif; ?>
             <td><?= $no++ ?></td>
             <td class="text-start">
