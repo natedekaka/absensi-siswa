@@ -17,7 +17,7 @@ services:
       PMA_USER: root
       PMA_PASSWORD: rootpass
     ports:
-      - "8081:80"
+      - "8083:80"
     depends_on:
       - db
   web:
@@ -25,7 +25,7 @@ services:
     volumes:
       - .:/var/www/html
     ports:
-      - "8080:80"
+      - "8082:80"
     environment:
       DOCKER_CONTAINER: 1
     command: bash -c "docker-php-ext-install mysqli && apache2-foreground"
