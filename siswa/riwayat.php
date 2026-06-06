@@ -11,7 +11,7 @@ require_once '../core/Database.php';
 $title = 'Riwayat Absensi - Sistem Absensi Siswa';
 
 $scripts = '
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.default.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 ';
@@ -20,6 +20,9 @@ ob_start();
 
 $siswa_id = isset($_GET['siswa_id']) ? (int)$_GET['siswa_id'] : 0;
 $semester_selected = isset($_GET['semester_id']) ? (int)$_GET['semester_id'] : 0;
+
+$siswa_list = conn()->query("SELECT s.id, s.nama, k.nama_kelas FROM siswa s LEFT JOIN kelas k ON s.kelas_id = k.id WHERE s.status = 'aktif' OR s.status IS NULL ORDER BY s.nama ASC");
+$semester_list = conn()->query("SELECT id, nama, tgl_mulai, tgl_selesai FROM semester ORDER BY tgl_mulai DESC");
 
 // Auto-set date range if semester selected
 if ($semester_selected > 0) {
@@ -80,35 +83,35 @@ if ($siswa_id > 0) {
 }
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="fw-bold text-wa-dark mb-0">
-        <i class="fas fa-history me-2"></i>Riwayat Absensi
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h2 class="text-xl font-bold text-gray-800 dark:text-white">
+        <i class="fas fa-history mr-3 text-primary"></i>Riwayat Absensi
     </h2>
-    <div class="d-flex gap-2">
+    <div class="flex gap-2">
         <?php if ($siswa_id > 0): ?>
-        <a href="export_riwayat.php?siswa_id=<?= $siswa_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&format=excel" class="btn btn-success">
-            <i class="fas fa-file-excel me-2"></i>Excel
+        <a href="export_riwayat.php?siswa_id=<?= $siswa_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&format=excel" class="btn-modern btn-success-modern text-sm">
+            <i class="fas fa-file-excel mr-1"></i>Excel
         </a>
-        <a href="export_riwayat.php?siswa_id=<?= $siswa_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&format=pdf" class="btn btn-danger" target="_blank">
-            <i class="fas fa-file-pdf me-2"></i>PDF
+        <a href="export_riwayat.php?siswa_id=<?= $siswa_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&format=pdf" class="btn-modern bg-red-500 hover:bg-red-600 text-white rounded-xl px-4 py-2 text-sm font-semibold transition-all" target="_blank">
+            <i class="fas fa-file-pdf mr-1"></i>PDF
         </a>
         <?php endif; ?>
-        <a href="index.php" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Kembali
+        <a href="index.php" class="btn-modern btn-neutral-modern text-sm">
+            <i class="fas fa-arrow-left mr-1"></i>Kembali
         </a>
     </div>
 </div>
 
-<form method="GET" class="card-custom p-3 mb-4">
-    <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label fw-semibold text-wa-dark">
-                <i class="fas fa-user me-2"></i>Cari Siswa
+<form method="GET" class="card-modern p-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
+        <div class="md:col-span-1">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">
+                <i class="fas fa-user mr-2"></i>Cari Siswa
             </label>
-            <select name="siswa_id" id="selectSiswa" class="form-select form-select-custom" required>
+            <select name="siswa_id" id="selectSiswa" class="form-input-modern w-full" required>
                 <option value="">-- Ketik nama siswa --</option>
                 <?php
-                $siswa_list = conn()->query("SELECT s.id, s.nama, k.nama_kelas FROM siswa s LEFT JOIN kelas k ON s.kelas_id = k.id WHERE s.status = 'aktif' OR s.status IS NULL ORDER BY s.nama");
+                $siswa_list->data_seek(0);
                 while ($row = $siswa_list->fetch_assoc()):
                 ?>
                 <option value="<?= $row['id'] ?>" <?= ($siswa_id == $row['id']) ? 'selected' : '' ?>>
@@ -117,14 +120,14 @@ if ($siswa_id > 0) {
                 <?php endwhile; ?>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold text-wa-dark">
-                <i class="fas fa-calendar me-2"></i>Semester
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">
+                <i class="fas fa-calendar mr-2"></i>Semester
             </label>
-            <select name="semester_id" id="selectSemester" class="form-select form-select-custom" onchange="updateDateRange(this.value)">
+            <select name="semester_id" id="selectSemester" class="form-input-modern w-full" onchange="updateDateRange(this.value)">
                 <option value="0">-- Pilih Semester --</option>
                 <?php
-                $semester_list = conn()->query("SELECT * FROM semester ORDER BY tahun_ajaran_id DESC, semester ASC");
+                $semester_list->data_seek(0);
                 while ($s = $semester_list->fetch_assoc()):
                 ?>
                 <option value="<?= $s['id'] ?>" <?= ($semester_selected == $s['id']) ? 'selected' : '' ?>
@@ -134,21 +137,21 @@ if ($siswa_id > 0) {
                 <?php endwhile; ?>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold text-wa-dark">
-                <i class="fas fa-calendar-alt me-2"></i>Tanggal Awal
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">
+                <i class="fas fa-calendar-alt mr-2"></i>Tanggal Awal
             </label>
-            <input type="date" name="tgl_awal" class="form-control" value="<?= $tgl_awal ?>">
+            <input type="date" name="tgl_awal" class="form-input-modern w-full" value="<?= $tgl_awal ?>">
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold text-wa-dark">
-                <i class="fas fa-calendar-alt me-2"></i>Tanggal Akhir
+        <div>
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">
+                <i class="fas fa-calendar-alt mr-2"></i>Tanggal Akhir
             </label>
-            <input type="date" name="tgl_akhir" class="form-control" value="<?= $tgl_akhir ?>">
+            <input type="date" name="tgl_akhir" class="form-input-modern w-full" value="<?= $tgl_akhir ?>">
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-wa-primary w-100">
-                <i class="fas fa-search me-1"></i>Filter
+        <div class="md:col-span-4">
+            <button type="submit" class="btn-modern btn-primary-modern w-full justify-center">
+                <i class="fas fa-search mr-1"></i>Filter
             </button>
         </div>
     </div>
@@ -290,125 +293,109 @@ function confirmBulkDelete() {
 </script>
 
 <?php if ($siswa_id && $siswa): ?>
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card-custom p-4">
-            <div class="d-flex align-items-center">
-                <div class="siswa-avatar <?= ($siswa['jenis_kelamin'] ?? '') === 'Laki-laki' ? 'avatar-laki' : 'avatar-perempuan' ?> me-3">
-                    <?= strtoupper(substr($siswa['nama'], 0, 1)) ?>
-                </div>
-                <div>
-                    <h5 class="mb-1"><?= htmlspecialchars($siswa['nama']) ?></h5>
-                    <small class="text-muted">
-                        <i class="fas fa-door-open me-1"></i><?= htmlspecialchars($siswa['nama_kelas'] ?? 'Tidak ada kelas') ?>
-                    </small>
-                </div>
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+    <div class="md:col-span-4">
+        <div class="card-modern p-4 flex items-center gap-4">
+            <div class="avatar-modern <?= ($siswa['jenis_kelamin'] ?? '') === 'Laki-laki' ? 'avatar-laki' : 'avatar-perempuan' ?> w-12 h-12 text-base shrink-0">
+                <?= strtoupper(substr($siswa['nama'], 0, 1)) ?>
             </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="row g-3">
-            <div class="col-6 col-md-3">
-                <div class="card-custom p-3 text-center" style="border-left: 4px solid #28a745;">
-                    <h4 class="mb-0 text-success"><?= $stats['hadir'] ?? 0 ?></h4>
-                    <small class="text-muted">Hadir</small>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card-custom p-3 text-center" style="border-left: 4px solid #ffc107;">
-                    <h4 class="mb-0 text-warning"><?= $stats['terlambat'] ?? 0 ?></h4>
-                    <small class="text-muted">Terlambat</small>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card-custom p-3 text-center" style="border-left: 4px solid #17a2b8;">
-                    <h4 class="mb-0 text-info"><?= ($stats['sakit'] ?? 0) + ($stats['izin'] ?? 0) ?></h4>
-                    <small class="text-muted">Sakit/Izin</small>
-                </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card-custom p-3 text-center" style="border-left: 4px solid #dc3545;">
-                    <h4 class="mb-0 text-danger"><?= $stats['alfa'] ?? 0 ?></h4>
-                    <small class="text-muted">Alfa</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-md-12">
-        <div class="card-custom p-4">
-            <h6 class="fw-bold text-wa-dark mb-3">
-                <i class="fas fa-chart-pie me-2"></i>Progress Kehadiran
-            </h6>
-            <div class="progress" style="height: 25px; border-radius: 12px; background: #f1f5f9;">
-                <div class="progress-bar <?= $kehadiran_persen >= 80 ? 'bg-success' : ($kehadiran_persen >= 60 ? 'bg-warning' : 'bg-danger') ?>" 
-                     style="width: <?= $kehadiran_persen ?>%; border-radius: 12px; transition: width 0.5s ease; font-weight: 600;">
-                    <?= $kehadiran_persen ?>%
-                </div>
-            </div>
-            <small class="text-muted mt-2 d-block">
-                Berdasarkan <?= $total_days ?> hari periode (Hadir + 50% Terlambat)
-            </small>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-md-12">
-        <div class="card-custom p-4">
-            <h6 class="fw-bold text-wa-dark mb-3">
-                <i class="fas fa-calendar-alt me-2"></i>Kalender Kehadiran
-            </h6>
-            <div id="heatmapContainer" style="overflow-x: auto;">
-                <div id="heatmapLegend" style="display: flex; gap: 15px; margin-bottom: 15px; font-size: 0.85rem;">
-                    <span style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: #10b981; border-radius: 2px;"></div> Hadir
-                    </span>
-                    <span style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 2px;"></div> Terlambat
-                    </span>
-                    <span style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: #3b82f6; border-radius: 2px;"></div> Sakit/Izin
-                    </span>
-                    <span style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: #ef4444; border-radius: 2px;"></div> Alfa
-                    </span>
-                    <span style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: #e5e7eb; border-radius: 2px;"></div> Tidak Ada Data
-                    </span>
-                </div>
-                <div id="heatmapGrid" style="display: inline-block;"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3 mb-4">
-    <div class="col-md-12">
-        <div class="card-custom">
-            <div class="card-header-custom">
-                <i class="fas fa-chart-line me-2"></i>Tren Kehadiran
-            </div>
-            <div class="card-body">
-                <canvas id="chartTren" height="80"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-    <div class="card-custom">
-        <div class="card-header-custom d-flex justify-content-between align-items-center">
             <div>
-                <i class="fas fa-list me-2"></i>Detail Absensi
+                <h5 class="font-bold text-gray-800 dark:text-white"><?= htmlspecialchars($siswa['nama']) ?></h5>
+                <small class="text-gray-400">
+                    <i class="fas fa-door-open mr-1"></i><?= htmlspecialchars($siswa['nama_kelas'] ?? 'Tidak ada kelas') ?>
+                </small>
             </div>
-            <div class="d-flex gap-2">
-                <button type="button" class="btn btn-sm btn-outline-danger" id="btnBulkDelete" style="display: none;" onclick="confirmBulkDelete()">
-                    <i class="fas fa-trash me-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
+        </div>
+    </div>
+    <div class="md:col-span-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="card-modern p-3 text-center" style="border-left: 4px solid #10b981;">
+                <h4 class="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-0"><?= $stats['hadir'] ?? 0 ?></h4>
+                <small class="text-gray-400">Hadir</small>
+            </div>
+            <div class="card-modern p-3 text-center" style="border-left: 4px solid #f59e0b;">
+                <h4 class="text-lg font-bold text-amber-500 dark:text-amber-400 mb-0"><?= $stats['terlambat'] ?? 0 ?></h4>
+                <small class="text-gray-400">Terlambat</small>
+            </div>
+            <div class="card-modern p-3 text-center" style="border-left: 4px solid #3b82f6;">
+                <h4 class="text-lg font-bold text-blue-500 dark:text-blue-400 mb-0"><?= ($stats['sakit'] ?? 0) + ($stats['izin'] ?? 0) ?></h4>
+                <small class="text-gray-400">Sakit/Izin</small>
+            </div>
+            <div class="card-modern p-3 text-center" style="border-left: 4px solid #ef4444;">
+                <h4 class="text-lg font-bold text-red-500 dark:text-red-400 mb-0"><?= $stats['alfa'] ?? 0 ?></h4>
+                <small class="text-gray-400">Alfa</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <div class="card-modern p-4">
+        <h6 class="font-bold text-gray-700 dark:text-white mb-3">
+            <i class="fas fa-chart-pie mr-2"></i>Progress Kehadiran
+        </h6>
+        <div class="progress-modern" style="height: 25px; background: #f1f5f9; border-radius: 12px; overflow: hidden;">
+            <div class="flex items-center justify-end pr-2 text-white text-xs font-semibold"
+                 style="height: 100%; width: <?= $kehadiran_persen ?>%; border-radius: 12px; <?= $kehadiran_persen >= 80 ? 'background: #10b981;' : ($kehadiran_persen >= 60 ? 'background: #f59e0b;' : 'background: #ef4444;') ?>">
+                <?= $kehadiran_persen ?>%
+            </div>
+        </div>
+        <small class="text-gray-400 mt-2 block">
+            Berdasarkan <?= $total_days ?> hari periode (Hadir + 50% Terlambat)
+        </small>
+    </div>
+</div>
+
+<div class="mb-4">
+    <div class="card-modern p-4">
+        <h6 class="font-bold text-gray-700 dark:text-white mb-3">
+            <i class="fas fa-calendar-alt mr-2"></i>Kalender Kehadiran
+        </h6>
+        <div class="overflow-x-auto">
+            <div class="flex gap-4 mb-4 text-sm" id="heatmapLegend">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm" style="background:#10b981"></span> Hadir
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm" style="background:#f59e0b"></span> Terlambat
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm" style="background:#3b82f6"></span> Sakit/Izin
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm" style="background:#ef4444"></span> Alfa
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded-sm" style="background:#e5e7eb"></span> Tidak Ada Data
+                </span>
+            </div>
+            <div id="heatmapGrid" class="inline-block"></div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-4">
+    <div class="card-modern">
+        <div class="card-modern-header">
+            <i class="fas fa-chart-line mr-2"></i>Tren Kehadiran
+        </div>
+        <div class="card-modern-body">
+            <canvas id="chartTren" height="80"></canvas>
+        </div>
+    </div>
+</div>
+
+    <div class="card-modern overflow-hidden">
+        <div class="card-modern-header flex items-center justify-between">
+            <div class="font-semibold">
+                <i class="fas fa-list mr-2"></i>Detail Absensi
+            </div>
+            <div class="flex gap-2">
+                <button type="button" class="btn-modern bg-red-50 text-red-600 hover:bg-red-100 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all" id="btnBulkDelete" style="display:none" onclick="confirmBulkDelete()">
+                    <i class="fas fa-trash mr-1"></i>Hapus Terpilih (<span id="selectedCount">0</span>)
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleSelectAll()">
-                    <i class="fas fa-check-square me-1"></i>Pilih Semua
+                <button type="button" class="btn-modern bg-gray-100 text-gray-600 hover:bg-gray-200 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all" onclick="toggleSelectAll()">
+                    <i class="fas fa-check-square mr-1"></i>Pilih Semua
                 </button>
             </div>
         </div>
@@ -419,15 +406,15 @@ function confirmBulkDelete() {
             <input type="hidden" name="tgl_akhir" value="<?= $tgl_akhir ?>">
             <div id="selectedIds"></div>
         </form>
-        <div class="table-responsive" style="max-height: 400px;">
-            <table class="table table-hover mb-0">
-                <thead class="sticky-top">
+        <div class="overflow-x-auto" style="max-height: 400px;">
+            <table class="table-modern text-sm">
+                <thead class="sticky top-0 z-10">
                     <tr>
-                        <th width="40"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)"></th>
-                        <th>No</th>
+                        <th class="text-center w-[40px]"><input type="checkbox" id="checkAll" onchange="toggleCheckAll(this)" class="accent-primary"></th>
+                        <th class="text-center w-[60px]">No</th>
                         <th>Tanggal</th>
-                        <th>Hari</th>
-                        <th>Status</th>
+                        <th class="text-center">Hari</th>
+                        <th class="text-center">Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -439,18 +426,18 @@ function confirmBulkDelete() {
                             $hari = $days[date('l', strtotime($row['tanggal']))];
                     ?>
                     <tr>
-                        <td><input type="checkbox" class="row-checkbox" value="<?= $row['id'] ?>" onchange="updateBulkDeleteButton()"></td>
-                        <td><?= $no++ ?></td>
+                        <td class="text-center"><input type="checkbox" class="row-checkbox" value="<?= $row['id'] ?>" onchange="updateBulkDeleteButton()"></td>
+                        <td class="text-center text-gray-400"><?= $no++ ?></td>
                         <td><?= date('d/m/Y', strtotime($row['tanggal'])) ?></td>
-                        <td><?= $hari ?></td>
-                        <td>
-                            <span class="badge badge-<?= strtolower($row['status']) ?>">
+                        <td class="text-center"><?= $hari ?></td>
+                        <td class="text-center">
+                            <span class="badge-modern badge-<?= strtolower($row['status']) ?> text-xs px-3 py-1">
                                 <?= $row['status'] ?>
                             </span>
                         </td>
                     </tr>
                     <?php endwhile; else: ?>
-                    <tr><td colspan="5" class="text-center text-muted">Tidak ada data absensi</td></tr>
+                    <tr><td colspan="5" class="text-center text-gray-400 py-8">Tidak ada data absensi</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
