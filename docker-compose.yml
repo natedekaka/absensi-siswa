@@ -22,13 +22,15 @@ services:
       - db
   web:
     image: docker.io/library/php:8.2-apache
-    volumes:
-      - .:/var/www/html
     ports:
       - "8082:80"
     environment:
       DOCKER_CONTAINER: 1
-    command: bash -c "docker-php-ext-install mysqli && apache2-foreground"
+    volumes:
+      - .:/var/www/html
+      - ./docker/apache-performance.conf:/etc/apache2/conf-enabled/performance.conf
+      - ./docker/php-performance.ini:/usr/local/etc/php/conf.d/performance.ini
+    command: bash -c "docker-php-ext-install mysqli && a2enmod expires headers && apache2-foreground"
     depends_on:
       - db
 

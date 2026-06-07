@@ -64,28 +64,70 @@ if ($status_query) {
 $kehadiran_persen = $stats['siswa'] > 0 ? round(($today_status['Hadir'] / $stats['siswa']) * 100, 1) : 0;
 
 $num_days = (int)((strtotime($tgl_akhir) - strtotime($tgl_awal)) / (60*60*24)) + 1;
+
+// Limit daily chart to max 31 titik data, aggregate weekly for longer periods
+$use_weekly = $num_days > 31;
 $days = []; $hadir_data = []; $sakit_data = []; $izin_data = []; $alfa_data = [];
 
-for ($i = $num_days - 1; $i >= 0; $i--) {
-    $tgl = date('Y-m-d', strtotime("+$i days", strtotime($tgl_awal)));
-    $days[] = date('d/M', strtotime($tgl));
+// Single query — ganti N query per hari jadi 1 query
+$chart_raw = [];
+if ($use_weekly) {
+    // Aggregasi per minggu
     $q = conn()->query("
-        SELECT LOWER(a.status) as status, COUNT(*) as total 
+        SELECT YEARWEEK(a.tanggal, 1) as week_key,
+               MIN(a.tanggal) as week_start,
+               LOWER(a.status) as status,
+               COUNT(*) as total
         FROM absensi a JOIN siswa s ON a.siswa_id = s.id
-        WHERE a.tanggal = '$tgl' $where_semester $kelas_filter
-        GROUP BY LOWER(a.status)
+        WHERE a.tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester $kelas_filter
+        GROUP BY YEARWEEK(a.tanggal, 1), LOWER(a.status)
+        ORDER BY week_key ASC
     ");
-    $data = ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alfa' => 0];
     if ($q) {
         while ($r = $q->fetch_assoc()) {
-            $s = strtolower($r['status']);
-            if (isset($data[$s])) $data[$s] = (int)$r['total'];
+            $week = $r['week_key'];
+            $st = strtolower($r['status']);
+            if (!isset($chart_raw[$week])) {
+                $chart_raw[$week] = ['label' => date('d/M', strtotime($r['week_start'])), 'hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alfa' => 0];
+            }
+            if (isset($chart_raw[$week][$st])) $chart_raw[$week][$st] = (int)$r['total'];
         }
     }
-    $hadir_data[] = $data['hadir'];
-    $sakit_data[] = $data['sakit'];
-    $izin_data[] = $data['izin'];
-    $alfa_data[] = $data['alfa'];
+    foreach ($chart_raw as $w) {
+        $days[] = $w['label'];
+        $hadir_data[] = $w['hadir'];
+        $sakit_data[] = $w['sakit'];
+        $izin_data[] = $w['izin'];
+        $alfa_data[] = $w['alfa'];
+    }
+} else {
+    // Harian — 1 query untuk semua tanggal
+    $q = conn()->query("
+        SELECT a.tanggal, LOWER(a.status) as status, COUNT(*) as total
+        FROM absensi a JOIN siswa s ON a.siswa_id = s.id
+        WHERE a.tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester $kelas_filter
+        GROUP BY a.tanggal, LOWER(a.status)
+        ORDER BY a.tanggal ASC
+    ");
+    if ($q) {
+        while ($r = $q->fetch_assoc()) {
+            $tgl = $r['tanggal'];
+            $st = strtolower($r['status']);
+            if (!isset($chart_raw[$tgl])) {
+                $chart_raw[$tgl] = ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alfa' => 0];
+            }
+            if (isset($chart_raw[$tgl][$st])) $chart_raw[$tgl][$st] = (int)$r['total'];
+        }
+    }
+    for ($i = $num_days - 1; $i >= 0; $i--) {
+        $tgl = date('Y-m-d', strtotime("+$i days", strtotime($tgl_awal)));
+        $days[] = date('d/M', strtotime($tgl));
+        $d = $chart_raw[$tgl] ?? ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alfa' => 0];
+        $hadir_data[] = $d['hadir'];
+        $sakit_data[] = $d['sakit'];
+        $izin_data[] = $d['izin'];
+        $alfa_data[] = $d['alfa'];
+    }
 }
 
 $where_tgl = " AND a.tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir'";
