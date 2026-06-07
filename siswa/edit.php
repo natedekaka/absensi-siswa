@@ -1,13 +1,8 @@
 <?php
 session_start();
-
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 $title = 'Edit Siswa - Sistem Absensi Siswa';
 
@@ -91,7 +86,7 @@ ob_start();
                         <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">NIS</label>
                         <div class="relative">
                             <i class="fas fa-id-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" name="nis" class="form-input-modern w-full pl-10" 
+                            <input type="text" name="nis" class="form-input-modern w-full form-input-icon" 
                                    value="<?= htmlspecialchars($siswa['nis']) ?>" required>
                         </div>
                     </div>
@@ -99,7 +94,7 @@ ob_start();
                         <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">NISN</label>
                         <div class="relative">
                             <i class="fas fa-id-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                            <input type="text" name="nisn" class="form-input-modern w-full pl-10" 
+                            <input type="text" name="nisn" class="form-input-modern w-full form-input-icon" 
                                    value="<?= htmlspecialchars($siswa['nisn']) ?>" required>
                         </div>
                     </div>
@@ -108,7 +103,7 @@ ob_start();
                     <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Nama Lengkap</label>
                     <div class="relative">
                         <i class="fas fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="nama" class="form-input-modern w-full pl-10" 
+                        <input type="text" name="nama" class="form-input-modern w-full form-input-icon" 
                                value="<?= htmlspecialchars($siswa['nama']) ?>" required>
                     </div>
                 </div>
@@ -131,7 +126,7 @@ ob_start();
                     <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Kelas</label>
                     <div class="relative">
                         <i class="fas fa-door-open absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <select name="kelas_id" class="form-input-modern w-full pl-10" required>
+                        <select name="kelas_id" class="form-input-modern w-full form-input-icon" required>
                             <option value="">-- Pilih Kelas --</option>
                             <?php while ($row = $kelas->fetch_assoc()): ?>
                                 <option value="<?= $row['id'] ?>" <?= ($row['id'] == $siswa['kelas_id']) ? 'selected' : '' ?>>

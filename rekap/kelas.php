@@ -1,12 +1,8 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 $tahun_ajaran_aktif = conn()->query("SELECT id FROM tahun_ajaran WHERE is_active = 1")->fetch_assoc();
 $ta_id = $tahun_ajaran_aktif['id'] ?? 0;
@@ -118,11 +114,48 @@ if ($kelas_id) {
 }
 ?>
 
-<div class="mb-6">
+<style>
+@media print {
+    .sidebar, .topbar, footer, .filter-card, .btn-export-group { display: none !important; }
+    .main-content { margin-left: 0 !important; padding: 0 !important; }
+    .print-header { display: block !important; }
+    .card-modern { box-shadow: none !important; border: 1px solid #ddd !important; }
+    .table-modern { font-size: 9px; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.print-header { display: none; text-align: center; margin-bottom: 20px; }
+.print-header h1 { font-size: 18px; margin: 0; color: #1e293b; }
+.print-header p { font-size: 12px; color: #64748b; margin: 2px 0; }
+</style>
+
+<div class="print-header">
+    <?php $sekolah = getKonfigurasiSekolah(conn()); ?>
+    <h1><?= htmlspecialchars($sekolah['nama_sekolah'] ?? 'LAPORAN REKAP ABSENSI') ?></h1>
+    <p>Periode: <?= date('d/m/Y', strtotime($tgl_awal)) ?> - <?= date('d/m/Y', strtotime($tgl_akhir)) ?></p>
+    <?php if ($kelas_id): ?>
+    <p>Kelas: <?= htmlspecialchars($kelas['nama_kelas'] ?? '') ?></p>
+    <?php endif; ?>
+    <hr style="border:1px solid #000;margin:10px 0;">
+</div>
+
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
     <h2 class="text-xl font-bold text-gray-800">
         <i class="fas fa-chart-bar mr-3 text-primary"></i>Rekap Absensi
     </h2>
+    <?php if ($kelas_id): ?>
+    <div class="btn-export-group flex gap-2">
+        <a href="export.php?kelas_id=<?= $kelas_id ?>&tgl_awal=<?= $tgl_awal ?>&tgl_akhir=<?= $tgl_akhir ?>&type=excel"
+           class="btn-modern btn-success-modern text-sm" target="_blank">
+            <i class="fas fa-file-excel mr-1"></i>Export Excel
+        </a>
+        <button onclick="window.print()" class="btn-modern btn-primary-modern text-sm">
+            <i class="fas fa-print mr-1"></i>Cetak / PDF
+        </button>
+    </div>
+    <?php endif; ?>
 </div>
+
+<div class="print-area">
 
 <form method="GET" class="filter-card mb-6">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -262,6 +295,8 @@ if ($kelas_id) {
 </div>
 
 <?php endif; ?>
+
+</div><!-- .print-area -->
 
 <?php
 $content = ob_get_clean();

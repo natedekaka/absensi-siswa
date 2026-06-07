@@ -1,10 +1,9 @@
 <?php
 session_start();
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
 
-auth();
+require_role('admin', 'guru', 'wali_kelas');
 
 if (!isset($_POST['csrf_token']) || !verify_csrf($_POST['csrf_token'])) {
     $_SESSION['error'] = "Token keamanan tidak valid!";

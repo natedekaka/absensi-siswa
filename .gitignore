@@ -8,8 +8,7 @@ assets/uploads/*
 # Database backups (keep migrations, ignore others)
 *.sql
 !migrations/*.sql
-absensi_siswa_backup_*.sql
-absensi_siswa_latest.sql
+!absensi_siswa_latest.sql
 
 # Dependencies
 vendor/

@@ -4,10 +4,7 @@ session_start();
 require_once 'core/init.php';
 require_once 'core/Database.php';
 
-if (!is_logged_in()) {
-    header('Location: ' . BASE_URL . 'login.php');
-    exit;
-}
+require_role('admin');
 
 initKonfigurasiSekolah(conn());
 $sekolah = getKonfigurasiSekolah(conn());

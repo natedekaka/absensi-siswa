@@ -369,7 +369,10 @@ body {
 /* Form controls */
 .form-input-modern {
   width: 100%;
-  padding: 0.7rem 1rem;
+  padding-top: 0.7rem;
+  padding-bottom: 0.7rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
   border: 2px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
@@ -382,6 +385,12 @@ body {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 4px rgba(59,130,246,0.12);
   outline: none;
+}
+
+/* For input groups with a leading icon — the icon is absolute positioned,
+   so the input needs extra left padding so text doesn't overlap the icon */
+.form-input-icon {
+  padding-left: 2.5rem;
 }
 
 .form-select-modern {

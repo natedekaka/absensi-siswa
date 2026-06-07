@@ -1,12 +1,8 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas', 'orang_tua');
 
 $title = 'Riwayat Absensi - Sistem Absensi Siswa';
 
@@ -21,7 +17,40 @@ ob_start();
 $siswa_id = isset($_GET['siswa_id']) ? (int)$_GET['siswa_id'] : 0;
 $semester_selected = isset($_GET['semester_id']) ? (int)$_GET['semester_id'] : 0;
 
-$siswa_list = conn()->query("SELECT s.id, s.nama, k.nama_kelas FROM siswa s LEFT JOIN kelas k ON s.kelas_id = k.id WHERE s.status = 'aktif' OR s.status IS NULL ORDER BY s.nama ASC");
+// Filter data based on role
+$siswa_filter = '';
+$is_guru_mapel = false;
+$guru_user_id = (int)($_SESSION['user']['id'] ?? 0);
+
+if (has_role('orang_tua')) {
+    $ids = get_accessible_siswa_ids();
+    if (!empty($ids)) {
+        $siswa_filter = ' AND s.id IN (' . implode(',', array_map('intval', $ids)) . ')';
+    }
+    // Auto-select first child if none selected
+    if (empty($_GET['siswa_id']) && !empty($ids)) {
+        $_GET['siswa_id'] = $ids[0];
+    }
+} elseif (has_role('guru', 'wali_kelas') && !has_role('admin')) {
+    // Guru mapel: only see students in their assigned classes
+    $is_guru_mapel = true;
+    $teacher_siswa = conn()->query("
+        SELECT DISTINCT s.id FROM siswa s
+        INNER JOIN guru_kelas gk ON gk.kelas_id = s.kelas_id
+        WHERE gk.user_id = $guru_user_id
+    ");
+    $ids = [];
+    while ($row = $teacher_siswa->fetch_assoc()) {
+        $ids[] = $row['id'];
+    }
+    if (!empty($ids)) {
+        $siswa_filter = ' AND s.id IN (' . implode(',', $ids) . ')';
+    } else {
+        $siswa_filter = ' AND 1=0'; // no students
+    }
+}
+
+$siswa_list = conn()->query("SELECT s.id, s.nama, k.nama_kelas FROM siswa s LEFT JOIN kelas k ON s.kelas_id = k.id WHERE (s.status = 'aktif' OR s.status IS NULL) $siswa_filter ORDER BY s.nama ASC");
 $semester_list = conn()->query("SELECT id, nama, tgl_mulai, tgl_selesai FROM semester ORDER BY tgl_mulai DESC");
 
 // Auto-set date range if semester selected
@@ -48,9 +77,18 @@ if ($siswa_id > 0) {
     }
     $where_semester = $semester_id ? " AND semester_id = " . (int)$semester_id : "";
     
+    // Guru mapel: query from absensi_mapel instead of absensi
+    if ($is_guru_mapel) {
+        $tabel_absensi = 'absensi_mapel';
+        $extra_where = " AND user_id = $guru_user_id";
+    } else {
+        $tabel_absensi = 'absensi';
+        $extra_where = '';
+    }
+    
     $absensi = conn()->query("
-        SELECT * FROM absensi 
-        WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester
+        SELECT * FROM $tabel_absensi 
+        WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester $extra_where
         ORDER BY tanggal DESC
     ");
     
@@ -62,13 +100,14 @@ if ($siswa_id > 0) {
             SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) as izin,
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) as alfa,
             COUNT(*) as total
-        FROM absensi 
-        WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester
+        FROM $tabel_absensi 
+        WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester $extra_where
     ")->fetch_assoc();
     
     $chart_data = conn()->query("
-        SELECT tanggal, status FROM absensi 
-        WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester
+        SELECT tanggal, MAX(status) AS status FROM $tabel_absensi 
+        WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester $extra_where
+        GROUP BY tanggal
         ORDER BY tanggal ASC
     ");
     

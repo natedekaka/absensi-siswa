@@ -1,12 +1,12 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
+require_once __DIR__ . '/../core/init.php';
+require_once __DIR__ . '/../core/Database.php';
+
+if (!has_role('admin', 'guru', 'wali_kelas', 'orang_tua')) {
     http_response_code(403);
     die('Unauthorized');
 }
-
-require_once __DIR__ . '/../core/init.php';
-require_once __DIR__ . '/../core/Database.php';
 
 $siswa_id = isset($_GET['siswa_id']) ? (int)$_GET['siswa_id'] : 0;
 $tgl_awal = $_GET['tgl_awal'] ?? date('Y-m-01');
@@ -26,9 +26,14 @@ $semester_aktif = conn()->query("SELECT id FROM semester WHERE is_active = 1 LIM
 $semester_id = $semester_aktif['id'] ?? null;
 $where_semester = $semester_id ? "AND semester_id = " . (int)$semester_id : "";
 
+$user_id = (int)($_SESSION['user']['id'] ?? 0);
+$is_guru_mapel = has_role('guru', 'wali_kelas') && !has_role('admin');
+$extra_where = $is_guru_mapel ? " AND user_id = $user_id" : "";
+
+$tabel_absensi = $is_guru_mapel ? 'absensi_mapel' : 'absensi';
 $absensi = conn()->query("
-    SELECT * FROM absensi 
-    WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester
+    SELECT * FROM $tabel_absensi 
+    WHERE siswa_id = $siswa_id AND tanggal BETWEEN '$tgl_awal' AND '$tgl_akhir' $where_semester $extra_where
     ORDER BY tanggal ASC
 ");
 

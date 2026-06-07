@@ -1,13 +1,8 @@
 <?php
 session_start();
-
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin');
 
 $title = 'Tahun Ajaran & Semester - Sistem Absensi Siswa';
 
@@ -232,7 +227,7 @@ $tahun_ajaran = conn()->query("SELECT * FROM tahun_ajaran ORDER BY nama DESC");
                 <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Nama Tahun Ajaran</label>
                 <div class="relative">
                     <i class="fas fa-calendar absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" name="nama" class="form-input-modern w-full pl-10" placeholder="2025/2026" required>
+                    <input type="text" name="nama" class="form-input-modern w-full form-input-icon" placeholder="2025/2026" required>
                 </div>
                 <p class="text-xs text-gray-400 mt-1">Contoh: 2025/2026</p>
             </div>

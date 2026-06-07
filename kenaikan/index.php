@@ -1,13 +1,8 @@
 <?php
 session_start();
-
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin');
 
 $title = 'Manajemen Kenaikan Kelas - Sistem Absensi Siswa';
 

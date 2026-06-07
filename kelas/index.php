@@ -1,20 +1,17 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin');
 
 $title = 'Data Kelas - Sistem Absensi Siswa';
 
 ob_start();
 
-$kelas = conn()->query("SELECT k.*, COUNT(s.id) as total_siswa 
+$kelas = conn()->query("SELECT k.*, COUNT(s.id) as total_siswa, u.nama as wali_nama
                         FROM kelas k 
                         LEFT JOIN siswa s ON k.id = s.kelas_id 
+                        LEFT JOIN users u ON k.wali_kelas_id = u.id
                         GROUP BY k.id 
                         ORDER BY k.nama_kelas");
 ?>
@@ -64,7 +61,10 @@ $kelas = conn()->query("SELECT k.*, COUNT(s.id) as total_siswa
                 <div class="flex flex-wrap gap-2 mb-4">
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary">
                         <i class="fas fa-user-tie text-xs"></i>
-                        <?= htmlspecialchars($row['wali_kelas'] ?? 'Belum ada') ?>
+                        <?php
+                        $wali_display = $row['wali_nama'] ?: ($row['wali_kelas'] ?: 'Belum ada');
+                        echo htmlspecialchars($wali_display);
+                        ?>
                     </span>
                     <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-green-50 text-green-600">
                         <i class="fas fa-users text-xs"></i>

@@ -1,13 +1,8 @@
 <?php
 session_start();
-
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin');
 
 $title = 'Import Kelas - Sistem Absensi Siswa';
 
@@ -99,7 +94,7 @@ ob_start();
                     <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Pilih File CSV</label>
                     <div class="relative">
                         <i class="fas fa-file-csv absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="file" name="csv_file" class="form-input-modern w-full pl-10" accept=".csv" required>
+                        <input type="file" name="csv_file" class="form-input-modern w-full form-input-icon" accept=".csv" required>
                     </div>
                     <p class="text-xs text-gray-400 mt-2">Format: nama_kelas,wali_kelas</p>
                 </div>

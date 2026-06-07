@@ -1,13 +1,8 @@
 <?php
 session_start();
-
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin');
 
 $title = 'Tambah Kelas - Sistem Absensi Siswa';
 
@@ -15,6 +10,7 @@ $error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama_kelas = $_POST['nama_kelas'];
     $wali_kelas = $_POST['wali_kelas'] ?? '';
+    $wali_kelas_id = !empty($_POST['wali_kelas_id']) ? (int)$_POST['wali_kelas_id'] : null;
     
     if (empty($nama_kelas)) {
         $error = 'Nama kelas harus diisi!';
@@ -27,8 +23,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($cek->num_rows > 0) {
             $error = "Kelas '$nama_kelas' sudah ada!";
         } else {
-            $stmt = conn()->prepare("INSERT INTO kelas (nama_kelas, wali_kelas) VALUES (?, ?)");
-            $stmt->bind_param("ss", $nama_kelas, $wali_kelas);
+            $stmt = conn()->prepare("INSERT INTO kelas (nama_kelas, wali_kelas, wali_kelas_id) VALUES (?, ?, ?)");
+            $stmt->bind_param("ssi", $nama_kelas, $wali_kelas, $wali_kelas_id);
             
             if ($stmt->execute()) {
                 $_SESSION['success'] = "Kelas berhasil ditambahkan!";
@@ -66,17 +62,35 @@ ob_start();
                     <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Nama Kelas</label>
                     <div class="relative">
                         <i class="fas fa-door-closed absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="nama_kelas" class="form-input-modern w-full pl-10" 
+                        <input type="text" name="nama_kelas" class="form-input-modern w-full form-input-icon" 
                                placeholder="Contoh: X IPA 1" required>
                     </div>
                 </div>
                 <div class="mb-4">
-                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Wali Kelas</label>
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Nama Wali Kelas</label>
                     <div class="relative">
                         <i class="fas fa-user-tie absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" name="wali_kelas" class="form-input-modern w-full pl-10" 
-                               placeholder="Nama lengkap wali kelas">
+                        <input type="text" name="wali_kelas" class="form-input-modern w-full form-input-icon" 
+                               placeholder="Nama lengkap wali kelas (opsional)">
                     </div>
+                </div>
+                <div class="mb-4">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Akun Wali Kelas</label>
+                    <div class="relative">
+                        <i class="fas fa-user-circle absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <select name="wali_kelas_id" class="form-input-modern w-full form-input-icon">
+                            <option value="">-- Tidak ada --</option>
+                            <?php
+                            $wali_users = conn()->query("SELECT id, nama, username FROM users WHERE role = 'wali_kelas' ORDER BY nama ASC");
+                            while ($wu = $wali_users->fetch_assoc()):
+                            ?>
+                            <option value="<?= $wu['id'] ?>">
+                                <?= htmlspecialchars($wu['nama'] . ' (' . $wu['username'] . ')') ?>
+                            </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1.5">Pilih akun pengguna dengan role <strong>Wali Kelas</strong>.</p>
                 </div>
                 <div class="flex gap-3 mt-6">
                     <a href="index.php" class="btn-modern btn-neutral-modern flex-1 justify-center">

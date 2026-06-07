@@ -11,8 +11,7 @@ if (!has_role('admin', 'guru', 'wali_kelas')) {
 
 header('Content-Type: application/json');
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+$user_id = (int)($_SESSION['user']['id'] ?? 0);
 
 try {
     $input = json_decode(file_get_contents('php://input'), true);
@@ -25,6 +24,8 @@ try {
     $csrf_token = $input['csrf_token'] ?? '';
     $tanggal = $input['tanggal'] ?? date('Y-m-d');
     $semester_id = (int)($input['semester_id'] ?? 0);
+    $kelas_id = (int)($input['kelas_id'] ?? 0);
+    $mapel_id = (int)($input['mapel_id'] ?? 0);
     $statuses = $input['status'] ?? [];
     
     if (!verify_csrf($csrf_token)) {
@@ -35,6 +36,28 @@ try {
     if (!$semester_id) {
         echo json_encode(['success' => false, 'message' => 'Semester harus dipilih!']);
         exit;
+    }
+    
+    if (!$kelas_id) {
+        echo json_encode(['success' => false, 'message' => 'Kelas harus dipilih!']);
+        exit;
+    }
+
+    if (!$mapel_id) {
+        echo json_encode(['success' => false, 'message' => 'Mata pelajaran harus dipilih!']);
+        exit;
+    }
+
+    // Verify teacher is assigned to this class + mapel (unless admin)
+    if (!has_role('admin')) {
+        $check = conn()->prepare("SELECT 1 FROM guru_kelas WHERE user_id = ? AND kelas_id = ? AND mapel_id = ?");
+        $check->bind_param("iii", $user_id, $kelas_id, $mapel_id);
+        $check->execute();
+        $check->store_result();
+        if ($check->num_rows === 0) {
+            echo json_encode(['success' => false, 'message' => 'Anda tidak terdaftar sebagai pengajar mapel ini di kelas ini!']);
+            exit;
+        }
     }
     
     $semester = conn()->query("SELECT * FROM semester WHERE id = $semester_id")->fetch_assoc();
@@ -57,29 +80,23 @@ try {
     }
     
     $saved = 0;
+    $stmt = conn()->prepare("
+        INSERT INTO absensi_mapel (siswa_id, user_id, kelas_id, mapel_id, tanggal, status, semester_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE status = VALUES(status), semester_id = VALUES(semester_id)
+    ");
+    
     foreach ($statuses as $siswa_id => $status) {
         $siswa_id = (int)$siswa_id;
         if ($siswa_id <= 0) continue;
         $status = in_array($status, ['Hadir', 'Sakit', 'Izin', 'Alfa', 'Terlambat']) ? $status : 'Hadir';
         
-        $check = conn()->prepare("SELECT id FROM absensi WHERE siswa_id = ? AND tanggal = ? AND semester_id = ?");
-        $check->bind_param("isi", $siswa_id, $tanggal, $semester_id);
-        $check->execute();
-        $check->store_result();
-        
-        if ($check->num_rows > 0) {
-            $stmt = conn()->prepare("UPDATE absensi SET status = ?, semester_id = ? WHERE siswa_id = ? AND tanggal = ?");
-            $stmt->bind_param("siis", $status, $semester_id, $siswa_id, $tanggal);
-        } else {
-            $stmt = conn()->prepare("INSERT INTO absensi (siswa_id, tanggal, status, semester_id) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("issi", $siswa_id, $tanggal, $status, $semester_id);
-        }
-        
+        $stmt->bind_param("iiiissi", $siswa_id, $user_id, $kelas_id, $mapel_id, $tanggal, $status, $semester_id);
         $stmt->execute();
         $saved++;
     }
     
-    echo json_encode(['success' => true, 'message' => "Berhasil menyimpan $saved absensi!"]);
+    echo json_encode(['success' => true, 'message' => "Berhasil menyimpan $saved absensi mapel!"]);
     exit;
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);

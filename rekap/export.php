@@ -1,11 +1,11 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    die('Akses ditolak.');
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+
+if (!has_role('admin', 'guru', 'wali_kelas')) {
+    die('Akses ditolak.');
+}
 
 $kelas_id = isset($_GET['kelas_id']) ? (int)$_GET['kelas_id'] : 0;
 $tgl_awal = $_GET['tgl_awal'] ?? date('Y-m-01');

@@ -1,12 +1,8 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 $title = 'Data Siswa - Sistem Absensi Siswa';
 
@@ -18,8 +14,22 @@ $page = $_GET['page'] ?? 1;
 $limit = 20;
 $offset = ($page - 1) * $limit;
 
+$uid = (int)($_SESSION['user']['id'] ?? 0);
+
+// Guru only sees students from classes they teach
+$guru_kelas_ids = [];
+if (!has_role('admin')) {
+    $q = conn()->query("SELECT DISTINCT kelas_id FROM guru_kelas WHERE user_id = $uid AND mapel_id IS NOT NULL");
+    while ($r = $q->fetch_assoc()) {
+        $guru_kelas_ids[] = (int)$r['kelas_id'];
+    }
+}
+
 $where = [];
 $where[] = "(s.status = 'aktif' OR s.status IS NULL)";
+if (!has_role('admin') && !empty($guru_kelas_ids)) {
+    $where[] = "s.kelas_id IN (" . implode(',', $guru_kelas_ids) . ")";
+}
 if ($keyword) $where[] = "s.nama LIKE '%" . db()->escape($keyword) . "%'";
 if ($kelas_filter) $where[] = "s.kelas_id = '" . db()->escape($kelas_filter) . "'";
 $where_sql = "WHERE " . implode(' AND ', $where);
@@ -36,13 +46,18 @@ $siswa = conn()->query("
     LIMIT $limit OFFSET $offset
 ");
 
-$kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
+if (!has_role('admin') && !empty($guru_kelas_ids)) {
+    $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas WHERE id IN (" . implode(',', $guru_kelas_ids) . ") ORDER BY nama_kelas");
+} else {
+    $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
+}
 ?>
 
 <div class="flex items-center justify-between mb-6">
     <h2 class="text-xl font-bold text-gray-800">
         <i class="fas fa-users mr-3 text-primary"></i>Data Siswa
     </h2>
+    <?php if (has_role('admin')): ?>
     <div class="flex gap-3">
         <a href="tambah.php" class="btn-modern btn-primary-modern">
             <i class="fas fa-user-plus mr-1"></i><span class="hidden md:inline"> Tambah</span>
@@ -54,6 +69,7 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
             <i class="fas fa-trash mr-1"></i><span class="hidden md:inline"> Hapus</span>
         </button>
     </div>
+    <?php endif; ?>
 </div>
 
 <div class="filter-card mb-6">
@@ -62,7 +78,7 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
             <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Pencarian</label>
             <div class="relative">
                 <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                <input type="text" name="cari" class="form-input-modern pl-10" 
+                <input type="text" name="cari" class="form-input-modern form-input-icon" 
                        placeholder="Cari nama siswa..." value="<?= htmlspecialchars($keyword) ?>">
             </div>
         </div>
@@ -94,14 +110,18 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
         <table class="table-modern">
             <thead class="text-white">
                 <tr>
+                    <?php if (has_role('admin')): ?>
                     <th class="text-center w-[50px]">
                         <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="accent-white">
                     </th>
+                    <?php endif; ?>
                     <th class="text-center w-[60px]">No</th>
                     <th>Siswa</th>
                     <th class="text-center">NIS</th>
                     <th class="text-center">Kelas</th>
+                    <?php if (has_role('admin')): ?>
                     <th class="text-center w-[120px]">Aksi</th>
+                    <?php endif; ?>
                 </tr>
             </thead>
             <tbody>
@@ -112,9 +132,11 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
                     $avatar_class = ($row['jenis_kelamin'] === 'Laki-laki') ? 'avatar-laki' : 'avatar-perempuan';
                 ?>
                 <tr>
+                    <?php if (has_role('admin')): ?>
                     <td class="text-center">
                         <input type="checkbox" name="siswa_ids[]" value="<?= $row['id'] ?>" class="siswa-checkbox">
                     </td>
+                    <?php endif; ?>
                     <td class="text-center"><?= $no++ ?></td>
                     <td>
                         <div class="flex items-center gap-3">
@@ -133,6 +155,7 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
                             <i class="fas fa-door-open text-xs"></i><?= htmlspecialchars($row['nama_kelas']) ?>
                         </span>
                     </td>
+                    <?php if (has_role('admin')): ?>
                     <td class="text-center">
                         <div class="flex gap-1 justify-center">
                             <a href="edit.php?id=<?= $row['id'] ?>" class="w-9 h-9 rounded-xl inline-flex items-center justify-center text-gray-500 hover:text-yellow-500 hover:bg-yellow-50 transition" title="Edit">
@@ -143,6 +166,7 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
                             </a>
                         </div>
                     </td>
+                    <?php endif; ?>
                 </tr>
                 <?php endwhile; ?>
             </tbody>
@@ -168,9 +192,11 @@ $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kela
     <i class="fas fa-user-slash text-4xl text-gray-300 mb-3"></i>
     <h5 class="text-gray-400 font-semibold">Tidak ada data siswa</h5>
     <p class="text-gray-400 text-sm mt-1">Silakan tambah data siswa atau ubah filter pencarian</p>
+    <?php if (has_role('admin')): ?>
     <a href="tambah.php" class="btn-modern btn-primary-modern mt-4 inline-flex">
         <i class="fas fa-plus mr-2"></i>Tambah Siswa
     </a>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 

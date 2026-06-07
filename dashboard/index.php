@@ -1,12 +1,8 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 $title = 'Dashboard';
 
@@ -39,16 +35,22 @@ if ($period === 'custom') {
     $tgl_akhir = $today;
 }
 
-$stats['siswa'] = conn()->query("SELECT COUNT(*) as total FROM siswa WHERE status = 'aktif' OR status IS NULL")->fetch_assoc()['total'];
-$stats['kelas'] = conn()->query("SELECT COUNT(*) as total FROM kelas")->fetch_assoc()['total'];
+$kelas_ids = get_accessible_kelas_ids();
+$kelas_filter = !empty($kelas_ids) ? ' AND s.kelas_id IN (' . implode(',', array_map('intval', $kelas_ids)) . ')' : '';
+$kelas_filter_single = !empty($kelas_ids) ? ' AND id IN (' . implode(',', array_map('intval', $kelas_ids)) . ')' : '';
+$kelas_filter_k = !empty($kelas_ids) ? ' AND k.id IN (' . implode(',', array_map('intval', $kelas_ids)) . ')' : '';
+
+$stats['siswa'] = conn()->query("SELECT COUNT(*) as total FROM siswa s WHERE (s.status = 'aktif' OR s.status IS NULL) $kelas_filter")->fetch_assoc()['total'];
+$stats['kelas'] = conn()->query("SELECT COUNT(*) as total FROM kelas WHERE 1=1 $kelas_filter_single")->fetch_assoc()['total'];
 
 $where_semester = $semester_id ? " AND semester_id = " . (int)$semester_id : "";
-$stats['absen_hari_ini'] = conn()->query("SELECT COUNT(*) as total FROM absensi WHERE tanggal = '$today' $where_semester")->fetch_assoc()['total'];
+$stats['absen_hari_ini'] = conn()->query("SELECT COUNT(*) as total FROM absensi a JOIN siswa s ON a.siswa_id = s.id WHERE a.tanggal = '$today' $where_semester $kelas_filter")->fetch_assoc()['total'];
 
 $status_query = conn()->query("
-    SELECT LOWER(status) as status, COUNT(*) as total 
-    FROM absensi WHERE tanggal = '$today' $where_semester
-    GROUP BY LOWER(status)
+    SELECT LOWER(a.status) as status, COUNT(*) as total 
+    FROM absensi a JOIN siswa s ON a.siswa_id = s.id
+    WHERE a.tanggal = '$today' $where_semester $kelas_filter
+    GROUP BY LOWER(a.status)
 ");
 
 $today_status = ['Hadir' => 0, 'Sakit' => 0, 'Izin' => 0, 'Alfa' => 0, 'Terlambat' => 0];
@@ -68,9 +70,10 @@ for ($i = $num_days - 1; $i >= 0; $i--) {
     $tgl = date('Y-m-d', strtotime("+$i days", strtotime($tgl_awal)));
     $days[] = date('d/M', strtotime($tgl));
     $q = conn()->query("
-        SELECT LOWER(status) as status, COUNT(*) as total 
-        FROM absensi WHERE tanggal = '$tgl' $where_semester
-        GROUP BY LOWER(status)
+        SELECT LOWER(a.status) as status, COUNT(*) as total 
+        FROM absensi a JOIN siswa s ON a.siswa_id = s.id
+        WHERE a.tanggal = '$tgl' $where_semester $kelas_filter
+        GROUP BY LOWER(a.status)
     ");
     $data = ['hadir' => 0, 'sakit' => 0, 'izin' => 0, 'alfa' => 0];
     if ($q) {
@@ -93,6 +96,7 @@ $kelas_pie = conn()->query("
     FROM kelas k
     LEFT JOIN siswa s ON s.kelas_id = k.id
     LEFT JOIN absensi a ON a.siswa_id = s.id $where_tgl $where_semester
+    WHERE 1=1 $kelas_filter_k
     GROUP BY k.id, k.nama_kelas
     ORDER BY k.nama_kelas
 ");
@@ -266,7 +270,7 @@ function toggleCustom(val) {
                             FROM absensi a
                             JOIN siswa s ON a.siswa_id = s.id
                             JOIN kelas k ON s.kelas_id = k.id
-                            WHERE 1=1 $where_semester
+                            WHERE 1=1 $where_semester $kelas_filter
                             ORDER BY a.id DESC LIMIT 10
                         ");
                         if ($recent && $recent->num_rows > 0):

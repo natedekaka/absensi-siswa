@@ -24,6 +24,12 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user'] = $user;
             $_SESSION['login_time'] = time();
+
+            // Redirect orang_tua to their child's riwayat directly
+            if ($user['role'] === 'orang_tua') {
+                header('Location: ' . BASE_URL . 'siswa/riwayat.php');
+                exit;
+            }
             
             if (isset($_POST['remember']) && $_POST['remember'] == 'on') {
                 $token = bin2hex(random_bytes(32));

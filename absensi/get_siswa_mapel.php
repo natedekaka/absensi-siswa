@@ -9,14 +9,29 @@ if (!has_role('admin', 'guru', 'wali_kelas')) {
     exit;
 }
 
+$user_id = (int)($_SESSION['user']['id'] ?? 0);
+
 $kelas_id = isset($_GET['kelas_id']) ? $_GET['kelas_id'] : '';
+$mapel_id = isset($_GET['mapel_id']) ? (int)$_GET['mapel_id'] : 0;
 $tanggal = isset($_GET['tanggal']) ? $_GET['tanggal'] : date('Y-m-d');
 $semester_id = isset($_GET['semester_id']) ? (int)$_GET['semester_id'] : 0;
 $search = isset($_GET['search']) ? db()->escape($_GET['search']) : '';
 
-if (!$kelas_id || !$semester_id || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
-    echo '<div class="alert alert-warning">Pilih kelas dan semester terlebih dahulu!</div>';
+if (!$kelas_id || !$semester_id || !$mapel_id || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+    echo '<div class="alert alert-warning">Pilih kelas, semester, dan mapel terlebih dahulu!</div>';
     exit;
+}
+
+// For non-admin, verify this teacher is assigned to this class + mapel via guru_kelas
+if (!has_role('admin')) {
+    $check = conn()->prepare("SELECT 1 FROM guru_kelas WHERE user_id = ? AND kelas_id = ? AND mapel_id = ?");
+    $check->bind_param("iii", $user_id, $kelas_id, $mapel_id);
+    $check->execute();
+    $check->store_result();
+    if ($check->num_rows === 0) {
+        echo '<div class="alert alert-danger">Anda tidak terdaftar sebagai pengajar untuk mapel ini di kelas ini.</div>';
+        exit;
+    }
 }
 
 $query = "
@@ -43,7 +58,7 @@ $query = "
             SUM(CASE WHEN status = 'Sakit' THEN 1 ELSE 0 END) AS sakit,
             SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) AS izin,
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
-        FROM absensi a
+        FROM absensi_mapel a
         INNER JOIN semester sem ON a.semester_id = sem.id
         WHERE sem.semester = 1
         GROUP BY siswa_id
@@ -56,7 +71,7 @@ $query = "
             SUM(CASE WHEN status = 'Sakit' THEN 1 ELSE 0 END) AS sakit,
             SUM(CASE WHEN status = 'Izin' THEN 1 ELSE 0 END) AS izin,
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
-        FROM absensi a
+        FROM absensi_mapel a
         INNER JOIN semester sem ON a.semester_id = sem.id
         WHERE sem.semester = 2
         GROUP BY siswa_id
@@ -81,7 +96,6 @@ $result = db()->query($query);
 
 if ($result && $result->num_rows > 0):
 ?>
-
 <style>
     .table-absensi {
         background: #ffffff;
@@ -90,7 +104,7 @@ if ($result && $result->num_rows > 0):
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .table-absensi thead {
-        background: #1E293B;
+        background: #7C3AED;
         color: white;
     }
     .table-absensi th, .table-absensi td {
@@ -142,7 +156,24 @@ if ($result && $result->num_rows > 0):
         accent-color: #10b981;
         cursor: pointer;
     }
+    .header-info {
+        background: #f5f3ff;
+        border: 1px solid #ddd6fe;
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #6d28d9;
+        font-size: 0.9rem;
+    }
 </style>
+
+<div class="header-info">
+    <i class="fas fa-chalkboard-teacher text-lg"></i>
+    <span>Absensi Mata Pelajaran — Kelas <strong><?= htmlspecialchars($row['nama_kelas'] ?? '') ?></strong></span>
+</div>
 
 <table class="table-absensi">
     <thead>
@@ -163,9 +194,10 @@ if ($result && $result->num_rows > 0):
         </tr>
     </thead>
     <tbody>
-        <?php $no = 1; while ($row = $result->fetch_assoc()):
-            $check = conn()->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal = ? AND semester_id = ?");
-            $check->bind_param("isi", $row['id'], $tanggal, $semester_id);
+        <?php $no = 1; $nama_kelas = ''; while ($row = $result->fetch_assoc()):
+            $nama_kelas = $row['nama_kelas'];
+            $check = conn()->prepare("SELECT status FROM absensi_mapel WHERE siswa_id = ? AND user_id = ? AND kelas_id = ? AND mapel_id = ? AND tanggal = ? AND semester_id = ?");
+            $check->bind_param("iiiisi", $row['id'], $user_id, $kelas_id, $mapel_id, $tanggal, $semester_id);
             $check->execute();
             $check->store_result();
             
@@ -181,7 +213,7 @@ if ($result && $result->num_rows > 0):
         ?>
         <tr>
             <?php if ($kelas_id === 'all'): ?>
-            <td class="font-semibold text-gray-500 dark:text-gray-400"><?= htmlspecialchars($row['nama_kelas']) ?></td>
+            <td class="font-semibold text-gray-500"><?= htmlspecialchars($row['nama_kelas']) ?></td>
             <?php endif; ?>
             <td><?= $no++ ?></td>
             <td class="text-start">

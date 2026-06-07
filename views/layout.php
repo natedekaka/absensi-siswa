@@ -66,39 +66,78 @@ function navActive($section, $file = '') {
     </div>
 
     <nav class="sidebar-nav mt-2">
+        <?php if (has_role('admin', 'guru', 'wali_kelas')): ?>
         <div class="sidebar-section-label">Utama</div>
         <a href="<?= BASE_URL ?>dashboard/" class="<?= navActive('dashboard') ? 'active' : '' ?>">
             <i class="fas fa-tachometer-alt"></i> Dashboard
         </a>
+        <?php endif; ?>
+
+        <?php if (has_role('admin')): ?>
         <a href="<?= BASE_URL ?>absensi/" class="<?= navActive('absensi') && $current_page === 'index.php' ? 'active' : '' ?>">
             <i class="fas fa-clipboard-check"></i> Absensi
         </a>
         <a href="<?= BASE_URL ?>absensi/barcode.php" class="<?= $current_page === 'barcode.php' && $current_dir === 'absensi' ? 'active' : '' ?>">
             <i class="fas fa-qrcode"></i> Scan Barcode
         </a>
+        <?php endif; ?>
 
+        <?php if (has_role('admin', 'guru', 'wali_kelas')): ?>
+        <a href="<?= BASE_URL ?>absensi/mapel.php" class="<?= $current_page === 'mapel.php' && $current_dir === 'absensi' ? 'active' : '' ?>">
+            <i class="fas fa-book-open"></i> Absen Mapel
+        </a>
+        <?php endif; ?>
+
+        <?php if (has_role('admin', 'guru', 'wali_kelas')): ?>
         <div class="sidebar-section-label">Data</div>
         <a href="<?= BASE_URL ?>siswa/" class="<?= navActive('siswa') && $current_page === 'index.php' ? 'active' : '' ?>">
             <i class="fas fa-users"></i> Siswa
         </a>
+        <?php endif; ?>
+        <?php if (has_role('admin')): ?>
         <a href="<?= BASE_URL ?>siswa/barcode.php" class="<?= $current_page === 'barcode.php' && $current_dir === 'siswa' ? 'active' : '' ?>">
             <i class="fas fa-barcode"></i> Kartu Siswa
         </a>
+        <?php endif; ?>
+
         <a href="<?= BASE_URL ?>siswa/riwayat.php" class="<?= $current_page === 'riwayat.php' ? 'active' : '' ?>">
             <i class="fas fa-history"></i> Riwayat Absensi
         </a>
+
+        <?php if (has_role('admin')): ?>
         <a href="<?= BASE_URL ?>kelas/" class="<?= navActive('kelas') ? 'active' : '' ?>">
             <i class="fas fa-door-open"></i> Kelas
         </a>
+        <?php endif; ?>
 
         <div class="sidebar-section-label">Laporan</div>
+        <?php if (has_role('admin')): ?>
         <a href="<?= BASE_URL ?>rekap/kelas.php" class="<?= $current_page === 'kelas.php' && $current_dir === 'rekap' ? 'active' : '' ?>">
             <i class="fas fa-chart-bar"></i> Rekap Absensi
         </a>
+        <?php endif; ?>
+        <?php if (has_role('admin', 'guru', 'wali_kelas')): ?>
+        <a href="<?= BASE_URL ?>rekap/mapel.php" class="<?= $current_page === 'mapel.php' && $current_dir === 'rekap' ? 'active' : '' ?>">
+            <i class="fas fa-chart-pie"></i> Rekap Mapel
+        </a>
+        <?php endif; ?>
 
+        <?php if (has_role('admin')): ?>
         <div class="sidebar-section-label">Pengaturan</div>
+        <a href="<?= BASE_URL ?>users/" class="<?= navActive('users') ? 'active' : '' ?>">
+            <i class="fas fa-users-cog"></i> Pengguna
+        </a>
         <a href="<?= BASE_URL ?>profil_sekolah.php" class="<?= $current_page === 'profil_sekolah.php' ? 'active' : '' ?>">
             <i class="fas fa-building"></i> Profil Sekolah
+        </a>
+        <a href="<?= BASE_URL ?>mapel/" class="<?= navActive('mapel') ? 'active' : '' ?>">
+            <i class="fas fa-book"></i> Mata Pelajaran
+        </a>
+        <a href="<?= BASE_URL ?>kelas/guru.php" class="<?= $current_dir === 'kelas' && $current_page === 'guru.php' ? 'active' : '' ?>">
+            <i class="fas fa-chalkboard-teacher"></i> Guru Kelas
+        </a>
+        <a href="<?= BASE_URL ?>siswa/orang_tua.php" class="<?= $current_dir === 'siswa' && $current_page === 'orang_tua.php' ? 'active' : '' ?>">
+            <i class="fas fa-user-friends"></i> Orang Tua Siswa
         </a>
         <a href="<?= BASE_URL ?>kenaikan/" class="<?= navActive('kenaikan') ? 'active' : '' ?>">
             <i class="fas fa-graduation-cap"></i> Kenaikan Kelas
@@ -106,6 +145,7 @@ function navActive($section, $file = '') {
         <a href="<?= BASE_URL ?>tahun_ajaran/" class="<?= navActive('tahun_ajaran') ? 'active' : '' ?>">
             <i class="fas fa-calendar"></i> Tahun Ajaran
         </a>
+        <?php endif; ?>
     </nav>
 </aside>
 

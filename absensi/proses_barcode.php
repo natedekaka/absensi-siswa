@@ -8,6 +8,12 @@ $base_path = __DIR__ . '/../';
 require_once $base_path . 'core/init.php';
 require_once $base_path . 'core/Database.php';
 
+if (!has_role('admin', 'guru', 'wali_kelas')) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
 header('Content-Type: application/json');
 header('Cache-Control: no-cache');
 

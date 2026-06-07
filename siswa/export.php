@@ -1,11 +1,11 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    die('Akses ditolak.');
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+
+if (!has_role('admin', 'guru', 'wali_kelas')) {
+    die('Akses ditolak.');
+}
 
 $keyword = isset($_GET['cari']) ? db()->escape($_GET['cari']) : '';
 $kelas_id_filter = isset($_GET['kelas_id']) ? db()->escape($_GET['kelas_id']) : '';

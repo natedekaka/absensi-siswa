@@ -1,8 +1,8 @@
 <?php
 session_start();
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 initKonfigurasiSekolah(conn());
 $sekolah = getKonfigurasiSekolah(conn());
