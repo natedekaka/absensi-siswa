@@ -109,11 +109,14 @@ if ($result && $result->num_rows > 0):
     }
     .table-absensi th, .table-absensi td {
         vertical-align: middle;
-        text-align: center;
         padding: 0.5rem;
     }
-    .table-absensi td:first-child { text-align: center; }
-    .table-absensi td:nth-child(3) { text-align: left; }
+    .table-absensi th {
+        text-align: center;
+    }
+    .table-absensi td:first-child,
+    .table-absensi td.col-hadir,
+    .table-absensi td.col-status { text-align: center; }
     .table-absensi tbody tr:hover { background: #F1F5F9; }
     .table-absensi th.col-hadir, .table-absensi td.col-hadir { width: 60px; min-width: 60px; }
     .table-absensi th.col-status, .table-absensi td.col-status { width: 50px; min-width: 50px; }
