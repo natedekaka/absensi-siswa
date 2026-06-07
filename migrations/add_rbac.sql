@@ -1,14 +1,23 @@
--- RBAC: Perluas role users + tabel relasi
--- Created: 2026-06-07
+-- RBAC: Perluas role users + tabel relasi (idempotent)
 
--- 1. Perluas ENUM role users
+SET @db = 'absensi_siswa';
+
+-- 1. Perluas ENUM role users (idempotent — MODIFY aman dijalankan ulang)
 ALTER TABLE users MODIFY COLUMN role ENUM('admin','guru','wali_kelas','orang_tua') NOT NULL DEFAULT 'guru';
 
--- 2. Tambah kolom wali_kelas_id ke tabel kelas (FK ke users.id)
-ALTER TABLE kelas ADD COLUMN wali_kelas_id INT NULL AFTER wali_kelas;
-ALTER TABLE kelas ADD INDEX idx_wali_kelas_id (wali_kelas_id);
+-- 2. Tambah kolom wali_kelas_id ke tabel kelas if not exists
+SET @exists = (SELECT COUNT(*) FROM information_schema.COLUMNS 
+               WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'kelas' AND COLUMN_NAME = 'wali_kelas_id');
+SET @sql = IF(@exists = 0, 
+    'ALTER TABLE kelas ADD COLUMN wali_kelas_id INT NULL AFTER wali_kelas',
+    'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
--- 3. Tabel relasi guru dengan kelas (seorang guru bisa ngajar banyak kelas)
+ALTER TABLE kelas ADD INDEX IF NOT EXISTS idx_wali_kelas_id (wali_kelas_id);
+
+-- 3. Tabel relasi guru dengan kelas
 CREATE TABLE IF NOT EXISTS guru_kelas (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
@@ -19,7 +28,7 @@ CREATE TABLE IF NOT EXISTS guru_kelas (
     FOREIGN KEY (kelas_id) REFERENCES kelas(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- 4. Tabel relasi orang tua dengan siswa (1 orang tua bisa punya banyak anak)
+-- 4. Tabel relasi orang tua dengan siswa
 CREATE TABLE IF NOT EXISTS siswa_orang_tua (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,

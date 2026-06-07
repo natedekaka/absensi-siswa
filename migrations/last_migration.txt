@@ -1,1 +1,1 @@
-add_mapel_id_ke_absensi_mapel.sql
+cleanup_duplicate_indexes.sql

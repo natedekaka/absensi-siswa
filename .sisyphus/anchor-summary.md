@@ -82,3 +82,12 @@ Aplikasi PHP absensi siswa dengan role-based access (admin, guru, wali_kelas). A
 - Guru (bukan admin) lihat data **`absensi_mapel`** (bukan `absensi` reguler)
 - Guru hanya lihat siswa di **kelas yang diassign** ke mereka via `guru_kelas`
 - Export (CSV/PDF) mengikuti data yang sesuai role
+
+### 14. Performance Optimization Batch 1
+- **Fix N+1 dashboard**: Grafik trend kehadiran dari 1 query/hari → 1 query total
+  - Periode > 31 hari otomatis agregasi per minggu
+- **Duplicate indexes cleanup**: Hapus 3 redundant indexes di `absensi` (`siswa_id`, `semester_id`, `idx_tanggal`), 1 di `absensi_mapel` (`mapel_id`) — menghemat ~5MB index memory
+- **Apache compression**: gzip aktif (CSS 57KB → 11KB), mod_expires + mod_headers, cache 1 tahun untuk static assets
+- **OPcache tuning**: memory 128MB, max_files 10000, revalidate 60s
+- **PHP output_buffering**: 4096 bytes untuk efisiensi kompresi
+- **Config permanen**: `docker/apache-performance.conf` + `docker/php-performance.ini` di-mount via docker-compose
