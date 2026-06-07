@@ -764,17 +764,20 @@ body {
 /* --- Misc dark mode text fixes --- */
 .dark .text-muted { color: var(--color-text-muted-dark) !important; }
 
+/* Fix Tailwind text-gray-* readability in light mode (default too light: #9CA3AF) */
+.text-gray-400 { color: #64748B !important; }
+
 /* Fix common Tailwind text-gray-* classes in dark mode */
 .dark .text-gray-800,
 .dark .text-gray-700,
-.dark .text-gray-900 { color: #E2E8F0 !important; }
+.dark .text-gray-900 { color: #F1F5F9 !important; }
 
 .dark .text-gray-500,
-.dark .text-gray-600 { color: #94A3B8 !important; }
+.dark .text-gray-600 { color: #CBD5E1 !important; }
 
-.dark .text-gray-400 { color: #64748B !important; }
+.dark .text-gray-400 { color: #94A3B8 !important; }
 
-.dark .text-gray-300 { color: #475569 !important; }
+.dark .text-gray-300 { color: #64748B !important; }
 
 .dark .bg-gray-50,
 .dark .bg-gray-100 { background-color: #1E293B !important; }
