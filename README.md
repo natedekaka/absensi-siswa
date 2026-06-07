@@ -138,7 +138,7 @@ Aplikasi web berbasis PHP untuk mencatat dan mengelola absensi siswa. Mendukung 
 - PHP >= 8.0
 - MySQL >= 5.7 atau MariaDB >= 10.3
 - Web Server (Apache/Nginx) atau PHP built-in server
-- Docker (opsional, untuk development)
+- Docker / Podman (opsional, untuk development & production)
 - Node.js (untuk build CSS dengan Tailwind CLI)
 
 ---
@@ -201,20 +201,24 @@ Aplikasi web berbasis PHP untuk mencatat dan mengelola absensi siswa. Mendukung 
 
 ---
 
-### Metode 2: Docker (Rekomendasi)
+### Metode 2: Docker / Podman (Rekomendasi)
 
-1. **Pastikan Docker terinstal**
+1. **Pastikan Docker atau Podman terinstal**
 
-2. **Jalankan dengan docker-compose:**
+2. **Jalankan dengan docker-compose / podman-compose:**
    ```bash
+   # Docker
    docker-compose up -d
+
+   # Podman
+   podman-compose up -d
    ```
 
 3. **Akses aplikasi:**
-   - Web: `http://localhost:8080`
-   - phpMyAdmin: `http://localhost:8081`
+   - Web: `http://localhost:8082`
+   - phpMyAdmin: `http://localhost:8083`
 
-**Catatan:** Docker otomatis menjalankan migrasi saat container pertama kali dinyalakan.
+**Catatan:** Container otomatis menjalankan migrasi, kompresi gzip, dan OPcache tuning saat pertama kali dinyalakan.
 
 ---
 
