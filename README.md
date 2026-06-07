@@ -218,6 +218,99 @@ Aplikasi web berbasis PHP untuk mencatat dan mengelola absensi siswa. Mendukung 
 
 ---
 
+### Metode 3: Deploy ke Production Server
+
+1. **Clone repository:**
+   ```bash
+   git clone https://github.com/username/absensi-siswa.git
+   cd absensi-siswa
+   ```
+
+2. **Build CSS (butuh Node.js):**
+   ```bash
+   npm install
+   npx @tailwindcss/cli -i assets/css/main.css -o assets/css/app.css --minify
+   ```
+
+3. **Setup Database:**
+   ```bash
+   mysql -u root -p -e "CREATE DATABASE absensi_siswa"
+   ```
+
+4. **Buat `.env`:**
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+   Sesuaikan konfigurasi database dan `APP_ENV=production`.
+
+5. **Jalankan migrasi:**
+   ```bash
+   php migrate.php
+   ```
+
+6. **Set permission:**
+   ```bash
+   chmod -R 755 .
+   chmod -R 777 assets/uploads
+   ```
+
+7. **Config Apache** (`/etc/apache2/sites-available/absensi.conf`):
+   ```apache
+   <VirtualHost *:80>
+       ServerName absensi.domain.com
+       DocumentRoot /var/www/absensi-siswa
+
+       <Directory /var/www/absensi-siswa>
+           Options -Indexes +FollowSymLinks
+           AllowOverride All
+           Require all granted
+       </Directory>
+
+       ErrorLog ${APACHE_LOG_DIR}/absensi-error.log
+       CustomLog ${APACHE_LOG_DIR}/absensi-access.log combined
+   </VirtualHost>
+   ```
+   ```bash
+   a2ensite absensi.conf
+   a2enmod rewrite
+   systemctl restart apache2
+   ```
+
+8. **Config Nginx** (alternatif, `/etc/nginx/sites-available/absensi`):
+   ```nginx
+   server {
+       listen 80;
+       server_name absensi.domain.com;
+       root /var/www/absensi-siswa;
+       index index.php;
+
+       location / {
+           try_files $uri $uri/ /index.php?$query_string;
+       }
+
+       location ~ \.php$ {
+           include snippets/fastcgi-php.conf;
+           fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+       }
+
+       location ~ /\.ht {
+           deny all;
+       }
+
+       location /assets/ {
+           expires 1y;
+           add_header Cache-Control "public, immutable";
+       }
+   }
+   ```
+   ```bash
+   ln -s /etc/nginx/sites-available/absensi /etc/nginx/sites-enabled/
+   nginx -t && systemctl restart nginx
+   ```
+
+---
+
 ## ⚙️ Konfigurasi
 
 ### Environment Variables (`.env`)
