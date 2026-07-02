@@ -6,6 +6,20 @@ require_role('admin');
 
 $title = 'Tahun Ajaran & Semester - Sistem Absensi Siswa';
 
+// Fix existing semesters missing academic year in name
+$fix = conn()->query("
+    SELECT s.id, s.nama, s.semester, ta.nama as ta_nama 
+    FROM semester s 
+    JOIN tahun_ajaran ta ON s.tahun_ajaran_id = ta.id 
+    WHERE s.nama NOT LIKE CONCAT('%', ta.nama, '%')
+");
+if ($fix) {
+    while ($f = $fix->fetch_assoc()) {
+        $fixed_name = "Semester {$f['semester']} - {$f['ta_nama']}";
+        conn()->query("UPDATE semester SET nama = '" . db()->escape($fixed_name) . "' WHERE id = {$f['id']}");
+    }
+}
+
 // Proses Tahun Ajaran
 if (isset($_POST['tambah_tahun'])) {
     $nama = $_POST['nama'];
@@ -36,7 +50,9 @@ if (isset($_POST['tambah_semester'])) {
     $tgl_mulai = $_POST['tgl_mulai'];
     $tgl_selesai = $_POST['tgl_selesai'];
     
-    $nama = "Semester $semester";
+    // Auto-include academic year in semester name
+    $ta_nama = conn()->query("SELECT nama FROM tahun_ajaran WHERE id = $tahun_ajaran_id")->fetch_assoc()['nama'] ?? '';
+    $nama = "Semester $semester - $ta_nama";
     
     $stmt = conn()->prepare("INSERT INTO semester (tahun_ajaran_id, semester, nama, tgl_mulai, tgl_selesai) VALUES (?, ?, ?, ?, ?)");
     $stmt->bind_param("issss", $tahun_ajaran_id, $semester, $nama, $tgl_mulai, $tgl_selesai);

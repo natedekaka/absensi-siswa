@@ -19,6 +19,13 @@ if (!$kelas_id || !$semester_id || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal
     exit;
 }
 
+// Get tahun_ajaran_id of selected semester — used to filter rekap columns
+$ta_id_smt = 0;
+$ta_row = conn()->query("SELECT tahun_ajaran_id FROM semester WHERE id = $semester_id");
+if ($ta_row && $ta_row->num_rows > 0) {
+    $ta_id_smt = (int)$ta_row->fetch_assoc()['tahun_ajaran_id'];
+}
+
 $query = "
     SELECT 
         s.*,
@@ -45,7 +52,7 @@ $query = "
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
         FROM absensi a
         INNER JOIN semester sem ON a.semester_id = sem.id
-        WHERE sem.semester = 1
+        WHERE sem.semester = 1 AND sem.tahun_ajaran_id = $ta_id_smt
         GROUP BY siswa_id
     ) rekap_smt1 ON s.id = rekap_smt1.siswa_id
     LEFT JOIN (
@@ -58,7 +65,7 @@ $query = "
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
         FROM absensi a
         INNER JOIN semester sem ON a.semester_id = sem.id
-        WHERE sem.semester = 2
+        WHERE sem.semester = 2 AND sem.tahun_ajaran_id = $ta_id_smt
         GROUP BY siswa_id
     ) rekap_smt2 ON s.id = rekap_smt2.siswa_id
 ";

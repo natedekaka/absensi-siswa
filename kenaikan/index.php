@@ -191,6 +191,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $error = "Silakan pilih file CSV yang valid";
         }
         
+    } elseif ($action == 'naikkan_tingkat_saja') {
+        $tingkat_tujuan = (int)$_POST['tingkat'];
+        if (!in_array($tingkat_tujuan, [11, 12])) {
+            $error = "Tingkat tujuan tidak valid.";
+        } else {
+            $tingkat_asal = $tingkat_tujuan - 1;
+            $label_asal = $tingkat_asal == 10 ? 'X' : 'XI';
+            $label_tujuan = $tingkat_tujuan == 11 ? 'XI' : 'XII';
+            conn()->query("UPDATE siswa SET tingkat = $tingkat_tujuan WHERE tingkat = $tingkat_asal AND status = 'aktif'");
+            $count = conn()->affected_rows;
+            if ($count > 0) {
+                $success = "✅ Berhasil menaikkan tingkat <strong>$count siswa</strong> dari <strong>$label_asal ($tingkat_asal)</strong> ke <strong>$label_tujuan ($tingkat_tujuan)</strong>.<br>";
+                $success .= "<small class='text-green-600'>Kelas siswa tidak berubah. Silakan atur redistribusi ke kelas tujuan di menu Redistribusi.</small>";
+            } else {
+                $error = "Tidak ada siswa dengan tingkat $tingkat_asal yang ditemukan.";
+            }
+        }
+        
     } elseif ($action == 'lulus') {
         $tahun_lulus = (int)$_POST['tahun_lulus'];
         
@@ -410,31 +428,71 @@ ob_start();
         </div>
     </div>
 
-    <!-- Step 2: Redistribusi -->
+    <!-- Step 2: Naikkan Tingkat (Baru) -->
+    <div class="card-modern">
+        <div class="gradient-header" style="background:linear-gradient(135deg,#7c3aed,#6366f1);">
+            <div class="flex items-center justify-between">
+                <h5 class="font-semibold text-white"><i class="fas fa-layer-group mr-2"></i>Naikkan Tingkat</h5>
+                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">2</span>
+            </div>
+        </div>
+        <div class="p-5">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Naikkan <strong>tingkat</strong> siswa tanpa memindahkan kelas. 
+                Setelah ini, atur redistribusi ke kelas tujuan secara manual.
+            </p>
+            <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl p-3 mb-4 text-xs text-indigo-700 dark:text-indigo-300">
+                <i class="fas fa-info-circle mr-1"></i>
+                X → tingkat 11 tetap di kelas X. XI → tingkat 12 tetap di kelas XI.
+                Nanti pindahkan ke kelas XII / XI via menu Redistribusi.  
+            </div>
+            <form method="POST">
+                <input type="hidden" name="action" value="naikkan_tingkat_saja">
+                <div class="flex gap-2">
+                    <button type="submit" name="tingkat" value="11" class="btn-modern btn-primary-modern flex-1 justify-center">
+                        <i class="fas fa-arrow-up mr-2"></i>X → XI
+                    </button>
+                    <button type="submit" name="tingkat" value="12" class="btn-modern btn-primary-modern flex-1 justify-center">
+                        <i class="fas fa-arrow-up mr-2"></i>XI → XII
+                    </button>
+                </div>
+            </form>
+            <?php
+            $belum_naik_10 = conn()->query("SELECT COUNT(*) as total FROM siswa WHERE tingkat = 10 AND status = 'aktif'")->fetch_assoc()['total'];
+            $belum_naik_11 = conn()->query("SELECT COUNT(*) as total FROM siswa WHERE tingkat = 11 AND status = 'aktif'")->fetch_assoc()['total'];
+            ?>
+            <div class="flex gap-3 mt-3 text-xs text-gray-400">
+                <span>Tingkat 10 (X): <strong><?= $belum_naik_10 ?></strong> siswa</span>
+                <span>Tingkat 11 (XI): <strong><?= $belum_naik_11 ?></strong> siswa</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 3: Redistribusi -->
     <div class="card-modern">
         <div class="gradient-header green">
             <div class="flex items-center justify-between">
                 <h5 class="font-semibold text-white"><i class="fas fa-random mr-2"></i>Redistribusi Kelas</h5>
-                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">2</span>
+                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">3</span>
             </div>
         </div>
         <div class="p-5 text-center">
             <div class="w-[70px] h-[70px] rounded-full flex items-center justify-center text-2xl mx-auto mb-4 bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400">
                 <i class="fas fa-random"></i>
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Pindahkan siswa antar kelas/jurusan (IPA/IPS/Bahasa) untuk semua tingkat.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Pindahkan siswa antar kelas/jurusan setelah naik tingkat. Drag & drop 2 panel.</p>
             <a href="redistribusi.php" class="btn-modern btn-success-modern w-full justify-center">
                 <i class="fas fa-random mr-2"></i>Buka Redistribusi
             </a>
         </div>
     </div>
 
-    <!-- Step 3: Kelulusan -->
+    <!-- Step 4: Kelulusan -->
     <div class="card-modern">
         <div class="gradient-header orange">
             <div class="flex items-center justify-between">
                 <h5 class="font-semibold text-white"><i class="fas fa-user-graduate mr-2"></i>Kelulusan</h5>
-                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">3</span>
+                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">4</span>
             </div>
         </div>
         <div class="p-5 text-center">
@@ -448,12 +506,12 @@ ob_start();
         </div>
     </div>
 
-    <!-- Step 4: Export/Import -->
+    <!-- Step 5: Export/Import -->
     <div class="card-modern">
         <div class="gradient-header red">
             <div class="flex items-center justify-between">
                 <h5 class="font-semibold text-white"><i class="fas fa-file-export mr-2"></i>Export/Import CSV</h5>
-                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">4</span>
+                <span class="absolute -top-3 right-4 min-w-[32px] h-8 px-2 bg-white text-gray-800 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">5</span>
             </div>
         </div>
         <div class="p-5">

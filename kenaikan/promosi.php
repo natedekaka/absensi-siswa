@@ -59,6 +59,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['action'] == 'export') {
     
     // Empty row as separator
     fputcsv($output, [], ';');
+    fputcsv($output, ['=== REKAP JUMLAH SISWA PER KELAS ASAL ==='], ';');
+    fputcsv($output, ['Kelas Asal', 'Jumlah Siswa'], ';');
+    $ringkasan = conn()->query("
+        SELECT k.nama_kelas, COUNT(s.id) as jml
+        FROM siswa s JOIN kelas k ON s.kelas_id = k.id
+        WHERE s.status = 'aktif' AND (k.nama_kelas LIKE '{$map[0]}-%' OR k.nama_kelas LIKE '{$map[1]}-%')
+        GROUP BY k.id ORDER BY k.nama_kelas
+    ");
+    while ($r = $ringkasan->fetch_assoc()) {
+        fputcsv($output, [$r['nama_kelas'], $r['jml']], ';');
+    }
+    
+    fputcsv($output, [], ';');
     fputcsv($output, ['=== REFERENSI KELAS TUJUAN ==='], ';');
     fputcsv($output, ['ID Kelas', 'Nama Kelas'], ';');
     
@@ -161,12 +174,28 @@ $count_tujuan = conn()->query("
     WHERE nama_kelas LIKE '{$map[2]}-%' OR nama_kelas LIKE '{$map[3]}-%'
 ")->fetch_assoc()['total'];
 
+// ─── Per-class student count ─────────────────────────────────────
+$kelas_asal_counts = conn()->query("
+    SELECT k.id, k.nama_kelas, COUNT(s.id) as jml
+    FROM kelas k LEFT JOIN siswa s ON s.kelas_id = k.id AND s.status = 'aktif'
+    WHERE k.nama_kelas LIKE '{$map[0]}-%' OR k.nama_kelas LIKE '{$map[1]}-%'
+    GROUP BY k.id ORDER BY k.nama_kelas
+");
+$kelas_asal_data = [];
+while ($k = $kelas_asal_counts->fetch_assoc()) {
+    $kelas_asal_data[] = $k;
+}
+
+$count_asal_rombel = count($kelas_asal_data);
+$rata_asal = $count_asal_rombel > 0 ? round($count_asal / $count_asal_rombel, 1) : 0;
+
 // ─── Current class list for reference ────────────────────────────
 $kelas_tujuan_list = conn()->query("
     SELECT id, nama_kelas FROM kelas 
     WHERE nama_kelas LIKE '{$map[2]}-%' OR nama_kelas LIKE '{$map[3]}-%'
     ORDER BY nama_kelas
 ");
+$count_tujuan_rombel = $kelas_tujuan_list->num_rows;
 
 ob_start();
 ?>
@@ -235,7 +264,7 @@ ob_start();
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="card-modern">
             <div class="card-modern-body text-center">
                 <h3 class="text-3xl font-bold text-indigo-500"><?= $count_asal ?></h3>
@@ -244,15 +273,90 @@ ob_start();
         </div>
         <div class="card-modern">
             <div class="card-modern-body text-center">
-                <h3 class="text-3xl font-bold text-emerald-500"><i class="fas fa-arrow-right text-xl mr-1"></i></h3>
-                <p class="text-sm text-gray-400">Akan dipromosikan ke</p>
+                <h3 class="text-3xl font-bold text-indigo-400"><?= $count_asal_rombel ?></h3>
+                <p class="text-sm text-gray-400">Rombel <?= $label_asal ?></p>
             </div>
         </div>
         <div class="card-modern">
             <div class="card-modern-body text-center">
-                <h3 class="text-3xl font-bold text-amber-500"><?= $count_tujuan ?></h3>
-                <p class="text-sm text-gray-400">Kelas <?= $label_tujuan ?> Tersedia</p>
+                <h3 class="text-3xl font-bold text-amber-500"><?= $count_tujuan_rombel ?></h3>
+                <p class="text-sm text-gray-400">Rombel <?= $label_tujuan ?> Tujuan</p>
             </div>
+        </div>
+        <div class="card-modern">
+            <div class="card-modern-body text-center">
+                <h3 class="text-3xl font-bold <?= $count_asal_rombel == $count_tujuan_rombel ? 'text-emerald-500' : 'text-rose-500' ?>">
+                    <?= $count_asal_rombel == $count_tujuan_rombel ? '✓' : $count_asal_rombel - $count_tujuan_rombel ?>
+                </h3>
+                <p class="text-sm text-gray-400">Selisih Rombel</p>
+            </div>
+        </div>
+    </div>
+
+    <?php if ($count_asal_rombel != $count_tujuan_rombel): ?>
+    <div class="card-modern mb-6" style="border:2px solid #f43f5e;background:#fff1f2;">
+        <div class="card-modern-body">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                    <i class="fas fa-exclamation-triangle text-rose-600"></i>
+                </div>
+                <div>
+                    <h5 class="font-bold text-rose-800">Perhatian: Jumlah Rombel Tidak Sama</h5>
+                    <p class="text-sm text-rose-700 mt-1">
+                        Ada <strong><?= $count_asal_rombel ?> rombel</strong> <?= $label_asal ?> tapi hanya <strong><?= $count_tujuan_rombel ?> rombel</strong> <?= $label_tujuan ?> tersedia.
+                        Butuh penyesuaian oleh BK.
+                    </p>
+                    <?php if ($count_asal_rombel > $count_tujuan_rombel): ?>
+                    <div class="mt-3 p-3 bg-white/60 rounded-xl text-sm text-rose-700">
+                        <strong>Rekomendasi:</strong> 
+                        <?= $count_asal_rombel - $count_tujuan_rombel ?> rombel perlu digabung/dibagi.
+                        Pilih 1 kelas yang paling sedikit siswanya, lalu distribusikan ke kelas lainnya.
+                        <div class="mt-2 text-xs">
+                            Rata-rata per rombel saat ini: <strong><?= $rata_asal ?> siswa</strong>.<br>
+                            Setelah digabung ke <?= $count_tujuan_rombel ?> rombel: rata-rata <strong><?= round($count_asal / $count_tujuan_rombel, 1) ?> siswa/rombel</strong>.
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Daftar Kelas Asal + Jumlah Siswa -->
+    <div class="card-modern mb-6">
+        <div class="px-5 py-3" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:12px 12px 0 0;">
+            <h5 class="font-semibold text-white"><i class="fas fa-users mr-2"></i>Daftar Siswa per Rombel <?= $label_asal ?></h5>
+            <p class="text-xs text-white/70 mt-1">Gunakan data ini untuk merencanakan distribusi ke kelas tujuan</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table-modern w-full">
+                <thead><tr><th>Kelas</th><th class="text-center">Jumlah Siswa</th><th class="text-center">Distribusi Ke</th></tr></thead>
+                <tbody>
+                    <?php 
+                    $rata_target = $count_tujuan_rombel > 0 ? round($count_asal / $count_tujuan_rombel) : 0;
+                    foreach ($kelas_asal_data as $k): ?>
+                    <tr>
+                        <td><strong><?= htmlspecialchars($k['nama_kelas']) ?></strong></td>
+                        <td class="text-center">
+                            <span class="badge-modern <?= (int)$k['jml'] <= $rata_target ? 'badge-success-modern' : 'badge-warning-modern' ?>">
+                                <?= $k['jml'] ?> siswa
+                            </span>
+                        </td>
+                        <td class="text-center text-xs text-gray-400">
+                            <?= $count_asal_rombel != $count_tujuan_rombel ? '<i class="fas fa-arrow-right text-amber-500 mr-1"></i>Lihat tabel referensi' : '<i class="fas fa-check text-emerald-500 mr-1"></i>1:1' ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+                <tfoot>
+                    <tr class="font-bold bg-gray-50 dark:bg-gray-800/30">
+                        <td>Total</td>
+                        <td class="text-center"><?= $count_asal ?> siswa</td>
+                        <td class="text-center text-xs"><?= $count_asal_rombel ?> rombel → <?= $count_tujuan_rombel ?> rombel</td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 
