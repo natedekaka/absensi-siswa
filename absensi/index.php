@@ -9,10 +9,18 @@ $title = 'Input Absensi - Sistem Absensi Siswa';
 ob_start();
 ?>
 
-<div class="flex items-center mb-6">
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
     <h2 class="text-xl font-bold text-gray-800">
         <i class="fas fa-clipboard-check mr-3 text-primary"></i>Input Absensi Harian
     </h2>
+    <div class="flex items-center gap-2">
+        <span id="autoSaveStatus" class="text-xs text-gray-400 hidden">
+            <i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...
+        </span>
+        <button type="button" id="btnCopyKemarin" class="btn-modern text-sm hidden" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:8px;padding:6px 12px;" onclick="copyAbsensiKemarin()">
+            <i class="fas fa-copy mr-1"></i>Copy Kemarin
+        </button>
+    </div>
 </div>
 
 <form id="form-absensi">
@@ -87,6 +95,7 @@ ob_start();
 $content = ob_get_clean();
 
 $scripts = "<script>
+// ─── Inisialisasi ─────────────────────────────────────────────
 window.onload = function() {
     document.getElementById('form-absensi').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -100,6 +109,7 @@ function toggleElements(show) {
     document.getElementById('tombolSimpanAtas').style.display = display;
     document.getElementById('tombolSimpanBawah').style.display = display;
     document.getElementById('searchContainer').style.display = display;
+    document.getElementById('btnCopyKemarin').style.display = show ? 'inline-flex' : 'none';
 }
 
 document.getElementById('semester').addEventListener('change', function() {
@@ -122,6 +132,7 @@ document.getElementById('kelas').addEventListener('change', function() {
 document.getElementById('tanggal').addEventListener('change', loadSiswa);
 document.getElementById('search_nama').addEventListener('input', loadSiswa);
 
+// ─── Load Siswa (AJAX) ──────────────────────────────────────
 function loadSiswa() {
     const kelasId = document.getElementById('kelas').value;
     const tanggal = document.getElementById('tanggal').value;
@@ -148,6 +159,145 @@ function loadSiswa() {
     }
 }
 
+// ─── FITUR 1: Set Semua Hadir ────────────────────────────────
+function selectAllHadir(checked) {
+    const radios = document.querySelectorAll('#siswa-container input[type=\"radio\"][value=\"Hadir\"]');
+    radios.forEach(function(radio) {
+        radio.checked = checked;
+    });
+    if (checked && radios.length > 0) {
+        triggerAutoSave(radios[0]);
+    }
+}
+
+// ─── FITUR 2: Auto-Save on Radio Click ──────────────────────
+var autoSaveTimer = null;
+function triggerAutoSave(el) {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(function() {
+        doAutoSave();
+    }, 400);
+}
+
+function doAutoSave() {
+    const statusEl = document.getElementById('autoSaveStatus');
+    statusEl.classList.remove('hidden');
+    
+    const csrfToken = document.querySelector('input[name=\"csrf_token\"]')?.value;
+    const tanggal = document.getElementById('tanggal').value;
+    const semesterId = document.getElementById('semester').value;
+    
+    const statuses = {};
+    const radioButtons = document.querySelectorAll('input[type=\"radio\"]:checked');
+    for (let i = 0; i < radioButtons.length; i++) {
+        const radio = radioButtons[i];
+        if (radio.name.indexOf('status[') === 0) {
+            const match = radio.name.match(/status\[(\d+)\]/);
+            if (match) {
+                statuses[match[1]] = radio.value;
+            }
+        }
+    }
+    
+    if (Object.keys(statuses).length === 0) {
+        statusEl.classList.add('hidden');
+        return;
+    }
+    
+    fetch('proses.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            csrf_token: csrfToken,
+            tanggal: tanggal,
+            semester_id: semesterId,
+            status: statuses
+        })
+    })
+    .then(response => response.text())
+    .then(text => {
+        try {
+            const data = JSON.parse(text);
+            if (data.success) {
+                showToast(data.message, 'success');
+            }
+        } catch(e) {}
+    })
+    .catch(error => {})
+    .finally(() => {
+        statusEl.classList.add('hidden');
+    });
+}
+
+// ─── Toast Notification ──────────────────────────────────────
+function showToast(msg, type) {
+    let toast = document.getElementById('toastNotif');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastNotif';
+        toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:all 0.3s;transform:translateY(100px);opacity:0;';
+        document.body.appendChild(toast);
+    }
+    toast.style.background = type === 'success' ? '#10B981' : '#EF4444';
+    toast.style.color = '#fff';
+    toast.innerHTML = (type === 'success' ? '<i class=\"fas fa-check-circle mr-2\"></i>' : '<i class=\"fas fa-exclamation-circle mr-2\"></i>') + msg;
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => {
+        toast.style.transform = 'translateY(100px)';
+        toast.style.opacity = '0';
+    }, 2000);
+}
+
+// ─── FITUR 3: Copy Absensi Kemarin ──────────────────────────
+function copyAbsensiKemarin() {
+    const kelasId = document.getElementById('kelas').value;
+    const semesterId = document.getElementById('semester').value;
+    const tanggal = document.getElementById('tanggal').value;
+    
+    if (!kelasId || !semesterId) {
+        showToast('Pilih kelas dan semester dulu!', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('btnCopyKemarin');
+    btn.disabled = true;
+    btn.innerHTML = '<i class=\"fas fa-spinner fa-spin mr-1\"></i>Memuat...';
+    
+    fetch('get_absensi_kemarin.php?kelas_id=' + encodeURIComponent(kelasId) + '&semester_id=' + encodeURIComponent(semesterId) + '&tanggal=' + encodeURIComponent(tanggal) + '&type=piket')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.data) {
+                let count = 0;
+                const radios = document.querySelectorAll('#siswa-container input[type=\"radio\"]');
+                for (let i = 0; i < radios.length; i++) {
+                    const match = radios[i].name.match(/status\[(\d+)\]/);
+                    if (match) {
+                        const siswaId = match[1];
+                        const yesterdayStatus = result.data[siswaId];
+                        if (yesterdayStatus && radios[i].value === yesterdayStatus) {
+                            radios[i].checked = true;
+                            count++;
+                        }
+                    }
+                }
+                showToast('✅ Absensi kemarin disalin ke ' + count + ' siswa!', 'success');
+                if (count > 0) doAutoSave();
+            } else {
+                showToast('Tidak ada data absensi kemarin', 'error');
+            }
+        })
+        .catch(err => {
+            showToast('Gagal memuat data kemarin', 'error');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class=\"fas fa-copy mr-1\"></i>Copy Kemarin';
+        });
+}
+
+// ─── Simpan Manual (tombol) ─────────────────────────────────
 function simpanAbsensi(e) {
     e.preventDefault();
     
@@ -177,9 +327,7 @@ function simpanAbsensi(e) {
     
     fetch('proses.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             csrf_token: csrfToken,
             tanggal: tanggal,
@@ -187,28 +335,22 @@ function simpanAbsensi(e) {
             status: statuses
         })
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.text();
-    })
+    .then(response => response.text())
     .then(text => {
-        console.log('Response text:', text);
         try {
             const data = JSON.parse(text);
             if (data.success) {
-                alert(data.message);
+                showToast(data.message, 'success');
                 loadSiswa();
             } else {
-                alert(data.message);
+                showToast(data.message, 'error');
             }
         } catch(e) {
-            console.error('JSON parse error:', e);
-            alert('Respons server tidak valid: ' + text.substring(0, 200));
+            showToast('Respons server tidak valid', 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan! Error: ' + error.message);
+        showToast('Terjadi kesalahan saat menyimpan!', 'error');
     })
     .finally(() => {
         submitBtn.disabled = false;

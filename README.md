@@ -1,572 +1,433 @@
-# 🎓 Sistem Absensi Siswa
+# 🎓 Sistem Absensi Siswa — Panduan Penggunaan
 
-Aplikasi web berbasis PHP untuk mencatat dan mengelola absensi siswa. Mendukung **absensi piket (reguler)** dan **absensi mata pelajaran (mapel)** dengan role-based access untuk Admin, Guru, dan Wali Kelas. Dilengkapi fitur ekspor, visualisasi data, dan antarmuka responsif.
+Aplikasi absensi untuk sekolah berbasis web. Mendukung absensi piket (reguler) dan absensi mata pelajaran (mapel), scan barcode, rekap visual, dan manajemen data siswa.
 
-![PHP Version](https://img.shields.io/badge/PHP-8.2-blue.svg)
-![MySQL](https://img.shields.io/badge/Database-MySQL-orange.svg)
-![Tailwind CSS](https://img.shields.io/badge/CSS-Tailwind%20v4-38BDF8.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+> **Role di aplikasi ini:** Admin • Guru • Wali Kelas • Orang Tua
 
 ---
 
 ## 📋 Daftar Isi
 
-- [Fitur](#fitur)
-- [Role & Hak Akses](#role--hak-akses)
-- [Teknologi](#teknologi)
-- [Persyaratan](#persyaratan)
-- [Instalasi](#instalasi)
-- [Konfigurasi](#konfigurasi)
-- [Cara Menggunakan](#cara-menggunakan)
-- [Struktur Folder](#struktur-folder)
-- [Migrasi Database](#migrasi-database)
-- [Kontribusi](#kontribusi)
-- [Lisensi](#lisensi)
+- [Login & Pertama Kali](#-login--pertama-kali)
+- [Dashboard](#-dashboard)
+- [Absensi Harian (Piket)](#-absensi-harian-piket)
+- [Absensi Mapel (Mata Pelajaran)](#-absensi-mapel-mata-pelajaran)
+- [Copy Absensi Kemarin](#-copy-absensi-kemarin)
+- [Scan Barcode](#-scan-barcode)
+- [Rekap & Laporan](#-rekap--laporan)
+- [Riwayat Absensi Siswa](#-riwayat-absensi-siswa)
+- [Manajemen Data (Admin)](#-manajemen-data-admin)
+- [Kenaikan Kelas & Promosi](#-kenaikan-kelas--promosi)
+- [Import Siswa Baru](#-import-siswa-baru)
+- [Role & Hak Akses](#-role--hak-akses)
+- [FAQ](#-faq)
 
 ---
 
-## ✨ Fitur
+## 🔐 Login & Pertama Kali
 
-### 1. **Manajemen Absensi Piket (Reguler)**
-   - Input absensi harian (Hadir, Terlambat, Sakit, Izin, Alfa) per kelas
-   - Scan barcode untuk input cepat
-   - Filter berdasarkan kelas, semester, dan tanggal
-   - *Akses: Admin & Wali Kelas*
+1. Buka aplikasi di browser (kiri sekolah masing-masing)
+2. Masukkan **Username** dan **Password** dari admin
+3. Centang **Remember Me** agar tidak perlu login ulang
+4. Klik **Masuk**
 
-### 2. **Absensi Mata Pelajaran (Mapel)**
-   - Guru mapel mengabsen siswa per kelas + mata pelajaran
-   - Pilih semester → kelas → mapel → tanggal
-   - Status absensi per siswa (Hadir/Terlambat/Sakit/Izin/Alfa)
-   - Guru hanya melihat kelas + mapel yang diassign
-   - *Akses: Admin & Guru*
+![Login page concept]
 
-### 3. **Rekap & Laporan**
-   - Rekap absensi piket per kelas/semester
-   - Rekap absensi mapel per kelas + mapel
-   - Riwayat absensi per siswa (piket & mapel, sesuai role)
-   - **Progress Bar** kehadiran dengan kode warna
-   - **Calendar Heatmap** visualisasi GitHub-style
-   - **Grafik Tren** kehadiran
-   - Export ke **Excel (CSV)** dan **PDF**
+**Lupa password?** Klik "Lupa Password" — masukkan email — cek inbox untuk link reset.
 
-### 4. **Role-Based Access Control (RBAC)**
-   - **Admin**: akses penuh (absensi piket, scan barcode, manajemen data, dll)
-   - **Guru**: hanya lihat kelas+mapel yang diassign, akses Absen Mapel & Rekap Mapel
-   - **Wali Kelas**: akses absensi piket + rekap untuk kelas yang diampu
+> **Admin pertama** harus dibuat langsung ke database.
 
-### 5. **Manajemen Data**
-   - **Siswa**: CRUD, import CSV, export, generate barcode
-   - **Kelas**: CRUD
-   - **Users**: CRUD untuk admin/guru/wali_kelas
-   - **Mata Pelajaran (Mapel)**: CRUD
-   - **Orang Tua**: hubungkan orang tua ke siswa
-   - **Tahun Ajaran**: kelola tahun ajaran aktif
-   - **Kenaikan Kelas & Kelulusan**: naikkan siswa ke kelas berikutnya, kelulusan, redistribusi
+### Setelah Login Pertama Kali
 
-### 6. **Atur Guru Kelas + Mapel**
-   - Admin pilih guru → centang kelas yang diampu → pilih mapel (untuk guru mapel)
-   - Data disimpan ke tabel `guru_kelas` dengan `mapel_id`
+Admin sebaiknya melakukan ini dulu:
 
-### 7. **Searchable Dropdown**
-   - Pencarian siswa real-time dengan TomSelect
-   - Menampilkan nama siswa + kelas
-
-### 8. **Filter Semester**
-   - Pilihan semester dengan auto-set tanggal
-   - Periode semester otomatis terisi
-
-### 9. **Bulk Delete**
-   - Hapus masal data absensi dengan checkbox
-   - Konfirmasi sebelum menghapus
-
-### 10. **Autentikasi & Keamanan**
-   - Login dengan Remember Me
-   - Forgot Password dengan token reset
-   - CSRF Protection pada semua form
-   - Password hashing dengan bcrypt
-
-### 11. **Konfigurasi Sekolah**
-   - Atur nama sekolah
+1. **Profil Sekolah** (sidebar → Pengaturan → Profil Sekolah)
+   - Isi nama sekolah
    - Upload logo
-   - Pilih warna tema (Primary & Sekunder)
+   - Pilih warna tema (primary & sekunder)
+2. **Tahun Ajaran** (sidebar → Pengaturan → Tahun Ajaran)
+   - Tambah tahun ajaran baru → klik **Aktifkan**
+3. **Kelas** (sidebar → Data → Kelas)
+   - Tambah semua kelas yang ada
+4. **Mata Pelajaran** (sidebar → Pengaturan → Mata Pelajaran)
+   - Tambah semua mapel yang diajarkan
+5. **Pengguna** (sidebar → Pengaturan → Pengguna)
+   - Tambah akun Guru dan Wali Kelas
+6. **Atur Guru Kelas** (sidebar → Pengaturan → Guru Kelas)
+   - Pilih guru → centang kelas yang diampu
+   - Untuk guru mapel: pilih juga mata pelajarannya
+7. **Siswa** (sidebar → Data → Siswa → Import CSV)
 
-### 12. **UI/UX Modern**
-   - Dark Mode toggle
-   - Responsive (Mobile & Desktop)
-   - PWA Support (Progressive Web App)
-   - Stat cards dengan gradient
+---
+
+## 📊 Dashboard
+
+Halaman utama setelah login. Menampilkan:
+
+| Kartu Statistik | Keterangan |
+|---|---|
+| Total Siswa | Semua siswa aktif |
+| Total Kelas | Jumlah kelas terdaftar |
+| Total Guru | Jumlah guru & wali kelas |
+| Hari Ini | Tanggal + jam real-time |
+| **Kehadiran Hari Ini** | Pie chart: Hadir, Terlambat, Sakit, Izin, Alfa |
+| **Tren Bulanan** | Line chart kehadiran 30 hari terakhir |
+
+Role non-admin melihat data sesuai aksesnya.
+
+---
+
+## 📝 Absensi Harian (Piket)
+
+> **Akses:** Admin, Wali Kelas
+
+Untuk absensi rutin setiap hari per kelas.
+
+### Langkah-langkah:
+
+1. **Buka menu** `Absensi` di sidebar
+2. **Pilih filter:**
+   - **Tanggal** — otomatis hari ini
+   - **Semester** — otomatis semester aktif
+   - **Kelas** — pilih kelas yang akan diabsen
+3. Tabel siswa akan muncul otomatis
+4. Klik **radio button** status per siswa:
+
+| Status | Warna | Arti |
+|---|---|---|
+| Hadir | 🟢 Hijau | Siswa hadir tepat waktu |
+| Terlambat | 🟡 Kuning | Hadir tapi terlambat |
+| Sakit | 🔵 Biru | Tidak hadir karena sakit |
+| Izin | 🟣 Ungu | Tidak hadir karena izin |
+| Alfa | 🔴 Merah | Tidak hadir tanpa keterangan |
+
+### ✨ Set Semua Hadir
+
+Klik checkbox **"Semua"** di pojok kiri header tabel untuk set semua siswa ke **Hadir** dalam 1 klik. Centang sekali — semua berubah jadi Hijau.
+
+### ✨ Auto-Save
+
+Setiap kali kamu klik status siswa, data **otomatis tersimpan** setelah jeda 400ms. Tidak perlu klik tombol simpan. Indikator "Menyimpan..." muncul di pojok kanan atas, lalu hilang saat selesai.
+
+### ✨ Copy Absensi Kemarin
+
+Tombol **"Copy Kemarin"** akan muncul setelah kelas dipilih. Fungsinya menyalin data absensi dari hari sebelumnya (sistem akan cari data mundur hingga 7 hari, otomatis skip hari Minggu) dan menerapkannya ke hari ini. Auto-save langsung jalan.
+
+### Filter Semua Kelas (*Admin only*)
+
+Pilih opsi **"Semua Kelas"** di dropdown kelas untuk menampilkan absensi gabungan semua kelas dalam satu tabel.
+
+---
+
+## 📚 Absensi Mapel (Mata Pelajaran)
+
+> **Akses:** Admin, Guru
+
+Guru mengabsen siswa sesuai mata pelajaran yang diampu.
+
+### Langkah-langkah:
+
+1. Buka menu **Absen Mapel** di sidebar
+2. Pilih filter:
+   - **Semester**
+   - **Kelas**
+   - **Mata Pelajaran**
+   - **Tanggal**
+3. Tabel siswa tampil otomatis
+4. Klik status per siswa (Hadir/Terlambat/Sakit/Izin/Alfa)
+
+### Yang perlu diketahui:
+- Guru hanya melihat kelas & mapel yang **diassign** ke dirinya (atur di menu Guru Kelas oleh Admin)
+- Auto-save juga aktif (sama seperti absensi piket)
+- Tombol "Copy Kemarin" juga tersedia
+- Checkbox "Semua" juga tersedia
+
+---
+
+## 📋 Copy Absensi Kemarin
+
+Fitur ini ada di halaman **Absensi** dan **Absen Mapel**.
+
+### Cara kerja:
+1. Pilih kelas
+2. Tombol **"Copy Kemarin"** akan muncul di pojok kanan atas
+3. Klik tombol — sistem mencari data absensi dari hari sebelumnya
+4. **Maju mundur hingga 7 hari** — kalau kemarin libur/Minggu, sistem cari hari sebelumnya
+5. **Hari Minggu otomatis dilewati**
+6. Data ditemukan → diterapkan ke form → auto-save langsung jalan
+7. Muncul notifikasi hijau: *"Data absensi kemarin berhasil disalin"*
+
+### Kapan fitur ini berguna:
+- Hari Senin — copy dari Jumat sebelumnya (skip Sabtu-Minggu)
+- Setelah libur panjang — copy dari hari terakhir sebelum libur
+- Update manual: copy dulu lalu ubah beberapa siswa yang berbeda
+
+---
+
+## 📷 Scan Barcode
+
+> **Akses:** Admin only
+
+Untuk absensi cepat dengan kamera. Setiap siswa punya barcode unik (NIS).
+
+### Langkah-langkah:
+
+1. Buka menu **Scan Barcode** di sidebar
+2. Izinkan akses kamera saat diminta browser
+3. Arahkan kamera ke barcode/kartu siswa
+4. Barcode terbaca — data siswa muncul
+5. Pilih status (Hadir/Terlambat/Sakit/Izin/Alfa)
+6. Klik **Simpan**
+7. Langsung siap scan siswa berikutnya
+
+### Cetak Kartu Barcode:
+1. Buka menu **Kartu Siswa** (sidebar → Data → Kartu Siswa)
+2. Centang siswa yang ingin dicetak
+3. Klik **Cetak Barcode**
+
+---
+
+## 📈 Rekap & Laporan
+
+> **Akses:** Admin, Wali Kelas (Rekap Piket) • Admin, Guru (Rekap Mapel)
+
+### Rekap Absensi (Piket)
+
+1. Buka menu **Rekap Absensi** di sidebar
+2. Pilih **Kelas** dan **Rentang Tanggal**
+3. Klik **Filter**
+4. Lihat tabel rekap per siswa dengan jumlah:
+   - Total hari
+   - Hadir • Terlambat • Sakit • Izin • Alfa
+5. **Export Excel** atau **Export PDF** untuk unduh
+
+### Rekap Mapel
+
+1. Buka menu **Rekap Mapel** di sidebar
+2. Pilih **Kelas** → lihat daftar mapel
+3. Klik mapel untuk lihat detail rekap per siswa
+4. Export Excel & PDF juga tersedia
+
+---
+
+## 👤 Riwayat Absensi Siswa
+
+> **Akses:** Semua role (data sesuai akses masing-masing)
+
+Lihat riwayat lengkap seorang siswa dalam 3 tampilan:
+
+1. **Progress Bar** — persentase kehadiran (hijau jika > 75%)
+2. **Calendar Heatmap** — kalender warna dengan kode:
+   - 🟩 Hijau = Hadir
+   - 🟨 Kuning = Terlambat
+   - 🟦 Biru = Sakit / Izin
+   - 🟥 Merah = Alfa
+   - ⬜ Abu-abu = Tanpa keterangan / libur
+3. **Grafik Tren** — line chart kehadiran per minggu
+4. **Tabel Detail** — daftar tanggal + status lengkap
+
+### Cara:
+1. Buka menu **Riwayat Absensi** di sidebar
+2. Cari siswa dengan kotak pencarian (ketik nama, otomatis muncul saran)
+3. Pilih semester
+4. Semua tampilan terisi otomatis
+
+### Fitur tambahan:
+- **Hapus Masal** — centang beberapa baris → klik Hapus
+- **Export Excel** — unduh data tabel
+- **Export PDF** — unduh laporan lengkap dengan grafik
+
+---
+
+## ⚙️ Manajemen Data (Admin)
+
+Semua menu admin ada di sidebar bagian **Data** dan **Pengaturan**.
+
+### Siswa
+| Menu | Fungsi |
+|---|---|
+| Siswa → Daftar | Lihat, cari, edit, hapus siswa |
+| Siswa → Tambah | Form tambah 1 siswa |
+| Siswa → Import CSV | Import banyak siswa dari file Excel/CSV (lihat panduan khusus di bawah) |
+| Siswa → Export | Download semua data siswa |
+| Siswa → Kartu Siswa | Cetak barcode |
+
+### Kelas
+| Menu | Fungsi |
+|---|---|
+| Kelas → Daftar | Tambah/edit/hapus kelas |
+| Kelas → Atur Guru | Assign guru dan wali kelas ke kelas + mapel |
+
+### Atur Guru Kelas & Mapel
+1. Buka menu **Guru Kelas** di sidebar
+2. Pilih guru dari daftar
+3. Centang kelas yang diampu guru tersebut
+4. Untuk **guru mata pelajaran**: pilih mapel di dropdown samping kelas
+5. Klik **Simpan**
+
+### Pengguna (User)
+
+Mengelola akun login:
+- **Admin** — akses penuh semua fitur
+- **Guru** — hanya bisa absen mapel + rekap mapel
+- **Wali Kelas** — hanya bisa absen piket + rekap piket untuk kelasnya
+- **Orang Tua** — hanya bisa lihat riwayat anaknya
+
+### Konfigurasi Sekolah
+- Nama sekolah, logo, warna tema (primary & sekunder)
+- Warna tema dipakai di sidebar, tombol, dan aksen aplikasi
+
+---
+
+## 🎓 Kenaikan Kelas & Promosi
+
+> **Akses:** Admin only
+
+Setiap akhir tahun ajaran, ada 3 tahap:
+
+### Tahap 1: Luluskan Kelas 12 (Kelulusan)
+
+1. Buka menu **Kenaikan Kelas** di sidebar
+2. Klik tab **Kelulusan**
+3. Masukkan **Tahun Lulus**
+4. Klik **Proses Kelulusan**
+5. Semua siswa XII otomatis jadi **alumni** (status berubah, tingkat jadi NULL)
+
+### Tahap 2: Promosi XI→XII dan X→XI (Promosi)
+
+> **Fitur baru:** Promosi 1 langkah via Export→Excel→Import
+
+Karena data naik kelas diatur manual oleh **Guru BK**, flow-nya:
+
+1. Buka menu **Kenaikan Kelas** → **Promosi**
+2. Pilih **X → XI** atau **XI → XII**
+3. Klik **Export CSV** — download file berisi:
+   - Data siswa lengkap (NIS, NISN, Nama, Kelas Asal, ID Kelas Asal)
+   - **Kolom kosong**: Kelas Tujuan + ID Kelas Tujuan (untuk diisi BK)
+   - Referensi daftar kelas tujuan di bagian bawah file
+4. **BK edit file di Excel:**
+   - Isi kolom **ID Kelas Tujuan** (nomor ID dari tabel referensi)
+   - Simpan sebagai CSV
+5. **Upload** file hasil editan BK → klik **Import & Promosikan**
+6. Sistem otomatis:
+   - ✅ Pindahkan siswa ke kelas baru
+   - ✅ Update tingkat (X→11, XI→12)
+   - ✅ Generate barcode untuk yang belum punya
+
+**Contoh isian Excel:**
+```
+NIS;NISN;Nama;Kelas Asal;ID Asal;Kelas Tujuan;ID Tujuan
+1234;0051234567;Adi Saputra;XI-1;21;XII-1;464
+```
+
+### Tahap 3: Import Siswa Baru Kelas 10
+
+Gunakan menu **Siswa → Import CSV** — lihat panduan di bawah.
+
+---
+
+### Cara Lama (Alternatif): Kenaikan Manual
+
+Jika tetap ingin pakai cara lama:
+
+1. Buka menu **Kenaikan Kelas** → **Kenaikan**
+2. Pilih **tingkat asal** dan **tingkat tujuan**
+3. Mapping setiap kelas asal → kelas tujuan
+4. Klik **Naikkan Kelas**
+
+Cara ini juga update tingkat tapi **tidak** generate barcode. Direkomendasikan untuk situasi darurat/sederhana.
+
+---
+
+## 📥 Import Siswa Baru
+
+> **Akses:** Admin only
+
+Untuk import data dalam jumlah banyak sekaligus (kelas 10 baru, pindahan, dll).
+
+### Format File CSV:
+
+| Kolom | Nama | Wajib | Contoh |
+|---|---|---|---|
+| 1 | NIS | ✅ | 2526001 |
+| 2 | NISN | ✅ | 0123456789 |
+| 3 | Nama | ✅ | Adi Saputra |
+| 4 | Kelas ID | ✅ | 1 (lihat tabel referensi) |
+| 5 | Jenis Kelamin | ✅ | Laki-laki / Perempuan |
+
+### Langkah-langkah:
+
+1. Buka menu **Siswa** → **Import CSV**
+2. Klik **Template Umum** atau **Template Khusus Kelas X** untuk download format
+3. Isi data di Excel/LibreOffice — kolom 4 (Kelas ID) lihat tabel referensi di halaman
+4. Simpan sebagai **CSV UTF-8**
+5. Upload file → klik **Import Data**
+
+### ✨ Yang otomatis dilakukan sistem:
+- **Tingkat** terdeteksi otomatis dari nama kelas (X→10, XI→11, XII→12)
+- **Barcode** otomatis digenerate dari NIS
+- Data yang NIS sudah ada akan di-update (beserta tingkatnya)
+- Siswa lama yang belum punya barcode akan dilengkapi
+
+### Template Khusus Kelas X
+Template ini sudah menyertakan daftar kelas X dan ID-nya di bagian bawah file. Cocok untuk import siswa baru PPDB.
 
 ---
 
 ## 👥 Role & Hak Akses
 
-| Menu | Admin | Guru | Wali Kelas |
-|------|-------|------|------------|
-| Dashboard | ✅ | ✅ | ✅ |
-| Absensi Piket | ✅ | — | ✅ |
-| Scan Barcode | ✅ | — | — |
-| Absensi Mapel | ✅ | ✅ | — |
-| Manajemen Siswa | ✅ | — | — |
-| Riwayat Siswa | ✅ | ✅ (mapel only) | ✅ (piket) |
-| Manajemen Kelas | ✅ | — | — |
-| Rekap Piket | ✅ | — | ✅ |
-| Rekap Mapel | ✅ | ✅ | — |
-| Manajemen User | ✅ | — | — |
-| Manajemen Mapel | ✅ | — | — |
-| Atur Guru Kelas | ✅ | — | — |
-| Tahun Ajaran | ✅ | — | — |
-| Kenaikan Kelas | ✅ | — | — |
-| Konfigurasi Sekolah | ✅ | — | — |
+| Menu | Admin | Guru | Wali Kelas | Orang Tua |
+|---|---|---|---|---|
+| Dashboard | ✅ | ✅ | ✅ | ✅ |
+| Absensi Piket | ✅ | — | ✅ | — |
+| Scan Barcode | ✅ | — | — | — |
+| Absen Mapel | ✅ | ✅ | — | — |
+| Siswa (CRUD) | ✅ | — | — | — |
+| Riwayat Siswa | ✅ | ✅ (mapel) | ✅ (piket) | ✅ (anak) |
+| Kelas (CRUD) | ✅ | — | — | — |
+| Rekap Piket | ✅ | — | ✅ | — |
+| Rekap Mapel | ✅ | ✅ | — | — |
+| User Management | ✅ | — | — | — |
+| Mata Pelajaran | ✅ | — | — | — |
+| Guru Kelas | ✅ | — | — | — |
+| Tahun Ajaran | ✅ | — | — | — |
+| Kenaikan Kelas | ✅ | — | — | — |
+| Profil Sekolah | ✅ | — | — | — |
 
 ---
 
-## 🛠️ Teknologi
+## ❓ FAQ
 
-| Komponen | Teknologi |
-|-----------|-------------|
-| **Backend** | PHP 8.2, MySQLi (singleton wrapper) |
-| **Frontend** | HTML5, CSS3, JavaScript (ES6+) |
-| **CSS Framework** | Tailwind CSS v4 (custom design system) |
-| **Libraries** | TomSelect, Chart.js, Font Awesome 6, jsPDF, SheetJS |
-| **Database** | MySQL/MariaDB |
-| **PWA** | Service Worker, Manifest.json |
+### Data absensi tidak muncul setelah pilih kelas?
+Pastikan kelas sudah dipilih, tanggal sudah benar, dan ada siswa di kelas tersebut. Coba refresh halaman.
 
----
+### Auto-save kok tidak jalan?
+Fitur auto-save aktif secara default. Cek koneksi internet. Indikator "Menyimpan..." harus muncul saat klik status. Jika tidak, coba clear cache browser.
 
-## 📝 Persyaratan
+### Copy Kemarin tidak muncul?
+Tombol muncul setelah kelas dan tanggal dipilih. Pastikan tanggal sebelumnya ada data absensi.
 
-- PHP >= 8.0
-- MySQL >= 5.7 atau MariaDB >= 10.3
-- Web Server (Apache/Nginx) atau PHP built-in server
-- Docker / Podman (opsional, untuk development & production)
-- Node.js (untuk build CSS dengan Tailwind CLI)
+### Import CSV error "Data tidak valid"?
+- Pastikan pakai separator **;** (titik koma), bukan koma
+- Pastikan kolom Kelas ID diisi dengan **angka** (ID dari tabel referensi)
+- Pastikan file ber-ekstensi .csv
+- Cek tidak ada baris kosong di tengah data
 
----
+### Barcode tidak terbaca kamera?
+- Pastikan ruangan cukup terang
+- Pastikan barcode dicetak dengan kontras tinggi (hitam di atas putih)
+- Coba zoom kamera dengan mendekatkan/menjauhkan kartu
+- Untuk sementara: bisa input manual via menu Absensi
 
-## 🚀 Instalasi
+### Guru tidak bisa melihat kelas/mapel?
+Cek di menu **Guru Kelas** — pastikan guru sudah di-assign ke kelas dan mapel yang benar.
 
-### Metode 1: Local Development
+### Lupa password admin?
+Minta admin lain untuk reset di menu Pengguna, atau reset via database langsung.
 
-1. **Clone repository:**
-   ```bash
-   git clone https://github.com/username/absensi-siswa.git
-   cd absensi-siswa
-   ```
-
-2. **Setup Database:**
-   ```bash
-   # Login ke MySQL
-   mysql -u root -p
-   
-   # Buat database
-   CREATE DATABASE absensi_siswa;
-   EXIT;
-   ```
-
-3. **Copy file environment:**
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Edit konfigurasi `.env`:**
-   ```env
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_NAME=absensi_siswa
-   DB_USER=root
-   DB_PASS=
-   BASE_URL=/
-   APP_ENV=development
-   APP_SECRET=your_random_secret_key_here
-   ```
-
-5. **Install dependencies & build CSS:**
-   ```bash
-   npm install
-   npx tailwindcss -i assets/css/main.css -o assets/css/app.css
-   ```
-
-6. **Jalankan migrasi:**
-   ```bash
-   php migrate.php
-   ```
-
-7. **Start web server:**
-   ```bash
-   php -S localhost:8000
-   ```
-
-8. **Akses aplikasi:**
-   - Buka browser: `http://localhost:8000`
+### Data absensi terhapus?
+Hubungi admin. Data absensi bisa di-restore dari backup database.
 
 ---
 
-### Metode 2: Docker / Podman (Rekomendasi)
-
-1. **Pastikan Docker atau Podman terinstal**
-
-2. **Jalankan dengan docker-compose / podman-compose:**
-   ```bash
-   # Docker
-   docker-compose up -d
-
-   # Podman
-   podman-compose up -d
-   ```
-
-3. **Akses aplikasi:**
-   - Web: `http://localhost:8082`
-   - phpMyAdmin: `http://localhost:8083`
-
-**Catatan:** Container otomatis menjalankan migrasi, kompresi gzip, dan OPcache tuning saat pertama kali dinyalakan.
-
----
-
-### Metode 3: Deploy ke Production Server
-
-1. **Clone repository:**
-   ```bash
-   git clone https://github.com/username/absensi-siswa.git
-   cd absensi-siswa
-   ```
-
-2. **Build CSS (butuh Node.js):**
-   ```bash
-   npm install
-   npx @tailwindcss/cli -i assets/css/main.css -o assets/css/app.css --minify
-   ```
-
-3. **Setup Database:**
-   ```bash
-   mysql -u root -p -e "CREATE DATABASE absensi_siswa"
-   ```
-
-4. **Buat `.env`:**
-   ```bash
-   cp .env.example .env
-   nano .env
-   ```
-   Sesuaikan konfigurasi database dan `APP_ENV=production`.
-
-5. **Jalankan migrasi:**
-   ```bash
-   php migrate.php
-   ```
-
-6. **Set permission:**
-   ```bash
-   chmod -R 755 .
-   chmod -R 777 assets/uploads
-   ```
-
-7. **Config Apache** (`/etc/apache2/sites-available/absensi.conf`):
-   ```apache
-   <VirtualHost *:80>
-       ServerName absensi.domain.com
-       DocumentRoot /var/www/absensi-siswa
-
-       <Directory /var/www/absensi-siswa>
-           Options -Indexes +FollowSymLinks
-           AllowOverride All
-           Require all granted
-       </Directory>
-
-       ErrorLog ${APACHE_LOG_DIR}/absensi-error.log
-       CustomLog ${APACHE_LOG_DIR}/absensi-access.log combined
-   </VirtualHost>
-   ```
-   ```bash
-   a2ensite absensi.conf
-   a2enmod rewrite
-   systemctl restart apache2
-   ```
-
-8. **Config Nginx** (alternatif, `/etc/nginx/sites-available/absensi`):
-   ```nginx
-   server {
-       listen 80;
-       server_name absensi.domain.com;
-       root /var/www/absensi-siswa;
-       index index.php;
-
-       location / {
-           try_files $uri $uri/ /index.php?$query_string;
-       }
-
-       location ~ \.php$ {
-           include snippets/fastcgi-php.conf;
-           fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-       }
-
-       location ~ /\.ht {
-           deny all;
-       }
-
-       location /assets/ {
-           expires 1y;
-           add_header Cache-Control "public, immutable";
-       }
-   }
-   ```
-   ```bash
-   ln -s /etc/nginx/sites-available/absensi /etc/nginx/sites-enabled/
-   nginx -t && systemctl restart nginx
-   ```
-
----
-
-## ⚙️ Konfigurasi
-
-### Environment Variables (`.env`)
-
-| Variabel | Deskripsi | Default |
-|-----------|-------------|---------|
-| `DB_HOST` | Host database | `127.0.0.1` |
-| `DB_PORT` | Port database | `3306` |
-| `DB_NAME` | Nama database | `absensi_siswa` |
-| `DB_USER` | Username database | `root` |
-| `DB_PASS` | Password database | (kosong) |
-| `BASE_URL` | Base URL aplikasi | `/` |
-| `APP_ENV` | Environment (`development`/`production`/`docker`) | `development` |
-| `APP_SECRET` | Secret key untuk CSRF & session | (wajib diubah) |
-| `UPLOAD_MAX_SIZE` | Maksimal ukuran upload | `2M` |
-| `ALLOWED_EXTENSIONS` | Ekstensi file yang diizinkan | `jpg,jpeg,png,pdf` |
-
----
-
-## 📖 Cara Menggunakan
-
-### 1. **Login**
-   - Akses `http://localhost:8080/login.php`
-   - Admin perlu dibuat pertama kali via phpMyAdmin
-   - Fitur "Remember Me" tersedia
-   - Lupa password? Klik "Lupa Password" → cek email (konfigurasi SMTP diperlukan)
-
-### 2. **Input Absensi Piket (Reguler)**
-   - Masuk ke menu **Absensi > Input Absensi**
-   - Pilih **Semester** dan **Kelas**
-   - Pilih **Tanggal**
-   - Klik siswa → pilih status (Hadir/Terlambat/Sakit/Izin/Alfa)
-   - Klik **Simpan Absensi**
-   - *Menu ini hanya untuk Admin & Wali Kelas*
-
-### 3. **Input Absensi Mapel**
-   - Masuk ke menu **Absensi > Absen Mapel**
-   - Pilih **Semester, Kelas, Mata Pelajaran, Tanggal**
-   - Data siswa akan tampil otomatis
-   - Klik siswa → pilih status (Hadir/Terlambat/Sakit/Izin/Alfa)
-   - Klik **Simpan Absensi**
-   - Guru hanya melihat kelas & mapel yang diassign ke dirinya
-   - *Menu ini untuk Admin & Guru*
-
-### 4. **Scan Barcode**
-   - Masuk ke menu **Absensi > Scan Barcode**
-   - Izinkan akses kamera
-   - Arahkan ke barcode siswa
-   - Pilih status → **Simpan**
-   - *Menu ini hanya untuk Admin*
-
-### 5. **Rekap Absensi Piket**
-   - Masuk ke menu **Rekap > Rekap Absensi**
-   - Pilih **Kelas** dan **Periode Tanggal**
-   - Klik **Filter**
-   - Lihat statistik per kelas
-   - *Menu ini untuk Admin & Wali Kelas*
-
-### 6. **Rekap Absensi Mapel**
-   - Masuk ke menu **Rekap > Rekap Mapel**
-   - Pilih **Semester, Kelas, Mata Pelajaran**
-   - Lihat statistik kehadiran per siswa
-   - Klik kelas + mapel untuk lihat detail per siswa
-   - Export Excel & PDF tersedia
-   - *Menu ini untuk Admin & Guru*
-
-### 7. **Riwayat Siswa**
-   - Masuk ke menu **Siswa > Riwayat**
-   - **Cari siswa** dengan kotak pencarian (TomSelect)
-   - Pilih **Semester** → tanggal otomatis terisi
-   - Lihat:
-     - **Progress Bar** kehadiran (%)
-     - **Calendar Heatmap** (Hijau=Hadir, Kuning=Terlambat, Biru=Sakit/Izin, Merah=Alfa)
-     - **Grafik Tren** kehadiran
-     - **Tabel Detail** dengan fitur **Hapus Masal**
-   - **Export** ke Excel atau PDF
-   - Guru melihat data absensi mapel, Admin & Wali Kelas melihat data absensi piket
-
-### 8. **Manajemen Data**
-   - **Siswa**: Tambah/edit/hapus/import CSV/export/generate barcode
-   - **Kelas**: Tambah/edit/hapus
-   - **Mata Pelajaran**: Tambah/edit/hapus
-   - **Users**: Kelola akun admin, guru, wali_kelas
-   - **Tahun Ajaran**: Kelola tahun ajaran + set aktif
-   - **Kenaikan Kelas**: Naikkan siswa, kelulusan, redistribusi siswa
-
-### 9. **Atur Guru Kelas & Mapel**
-   - Masuk ke **Kelas > Atur Guru**
-   - Pilih guru dari daftar
-   - Centang kelas yang diampu guru tersebut
-   - Untuk guru mapel: pilih mata pelajaran dari dropdown
-   - Klik **Simpan**
-
-### 10. **Konfigurasi Sekolah**
-   - Masuk ke menu **Pengaturan > Profil Sekolah**
-   - Atur nama sekolah, alamat
-   - Upload logo
-   - Pilih warna tema (Primary & Sekunder)
-
----
-
-## 📂 Struktur Folder
-
-```
-absensi-siswa/
-├── core/
-│   ├── init.php              # Inisialisasi (CSRF, helper functions, RBAC)
-│   ├── config.php            # Konfigurasi environment
-│   ├── Database.php         # MySQLi wrapper (singleton)
-│   └── App.php               # Router & helper functions
-├── views/
-│   └── layout.php           # Main layout (navbar, sidebar, footer)
-├── dashboard/
-│   └── index.php            # Dashboard dengan statistik
-├── absensi/
-│   ├── index.php           # Input absensi piket
-│   ├── proses.php          # Proses simpan absensi piket
-│   ├── barcode.php         # Scan barcode
-│   ├── proses_barcode.php  # Proses simpan dari barcode
-│   ├── get_siswa.php       # AJAX get siswa by kelas (piket)
-│   ├── mapel.php           # Input absensi mapel
-│   ├── proses_mapel.php    # Proses simpan absensi mapel
-│   └── get_siswa_mapel.php # AJAX get siswa by kelas + mapel
-├── rekap/
-│   ├── kelas.php           # Rekap piket per kelas
-│   ├── export.php          # Export rekap piket
-│   ├── mapel.php           # Rekap absensi mapel
-│   └── export_mapel.php    # Export rekap mapel
-├── siswa/
-│   ├── index.php           # List siswa
-│   ├── tambah.php          # Form tambah siswa
-│   ├── edit.php            # Form edit siswa
-│   ├── import.php          # Import CSV
-│   ├── export.php          # Export CSV
-│   ├── hapus.php           # Hapus siswa
-│   ├── hapus_batch.php     # Hapus masal siswa
-│   ├── bulk_delete.php     # Hapus masal riwayat absensi
-│   ├── barcode.php         # Barcode generator
-│   ├── orang_tua.php       # Kelola orang tua siswa
-│   ├── riwayat.php         # Riwayat absensi (heatmap, progress bar, grafik)
-│   └── export_riwayat.php  # Export riwayat siswa
-├── kelas/
-│   ├── index.php           # List kelas
-│   ├── tambah.php          # Tambah kelas
-│   ├── edit.php            # Edit kelas
-│   └── guru.php            # Atur guru + mapel per kelas
-├── mapel/
-│   └── index.php           # CRUD mata pelajaran
-├── users/
-│   └── index.php           # Manajemen user (admin/guru/wali_kelas)
-├── kenaikan/
-│   ├── index.php           # Kenaikan kelas
-│   ├── kelulusan.php       # Kelulusan siswa
-│   └── redistribusi.php    # Redistribusi siswa antar kelas
-├── tahun_ajaran/
-│   └── index.php           # CRUD tahun ajaran
-├── migrations/
-│   ├── add_konfigurasi_sekolah.sql
-│   ├── add_kolom_siswa.sql
-│   ├── add_barcode_siswa.sql
-│   ├── add_indexes.sql
-│   ├── add_remember_token.sql
-│   ├── add_rbac.sql
-│   ├── add_absensi_mapel.sql
-│   ├── add_mapel.sql
-│   └── add_mapel_id_ke_absensi_mapel.sql
-├── assets/
-│   ├── css/
-│   │   ├── main.css              # Source CSS (Tailwind v4 + custom design)
-│   │   └── app.css               # Compiled CSS
-│   ├── js/
-│   ├── img/
-│   └── uploads/
-├── propos_sekolah.php        # Konfigurasi sekolah (logo, warna, nama)
-├── forgot_password.php
-├── reset_password.php
-├── migrate.php               # CLI migration tool
-├── manifest.json             # PWA manifest
-├── service-worker.js         # PWA service worker
-├── package.json              # Node.js dependencies (Tailwind CSS)
-├── docker-compose.yml        # Docker configuration
-├── .env.example              # Contoh file environment
-└── README.md                 # Dokumentasi ini
-```
-
----
-
-## 🗃️ Migrasi Database
-
-Jalankan migrasi untuk membuat tabel database:
-
-```bash
-# Jalankan semua migrasi
-php migrate.php
-
-# Jalankan ulang dari awal (hati-hati, akan menghapus semua tabel!)
-php migrate.php --fresh
-```
-
-**Tabel yang dibuat:**
-
-| Tabel | Deskripsi |
-|-------|-----------|
-| `siswa` | Data siswa |
-| `kelas` | Data kelas |
-| `semester` | Data semester |
-| `tahun_ajaran` | Data tahun ajaran |
-| `absensi` | Data absensi piket (reguler) |
-| `absensi_mapel` | Data absensi mata pelajaran |
-| `mapel` | Data mata pelajaran |
-| `guru_kelas` | Relasi guru → kelas (+ mapel_id untuk guru mapel) |
-| `users` | Data pengguna (admin, guru, wali_kelas) |
-| `siswa_orang_tua` | Relasi siswa → orang tua |
-| `konfigurasi_sekolah` | Pengaturan sekolah (logo, nama, warna tema) |
-
----
-
-## 🤝 Kontribusi
-
-Kontribusi sangat diterima!
-
-1. Fork repository ini
-2. Buat branch fitur (`git checkout -b fitur/AmazingFeature`)
-3. Commit perubahan (`git commit -m 'Add some AmazingFeature'`)
-4. Push ke branch (`git push origin fitur/AmazingFeature`)
-5. Buat Pull Request
-
----
-
-## 📄 Lisensi
-
-Proyek ini dilisensi di bawah **MIT License** - lihat file `LICENSE` untuk detail.
-
----
-
-## 📧️ Support & Kontak
-
-- **Issues:** Gunakan [GitHub Issues](https://github.com/username/absensi-siswa/issues) untuk bug reports
-- **Diskusi:** Gunakan [GitHub Discussions](https://github.com/username/absensi-siswa/discussions)
-
----
-
-## 🙏 Acknowledgments
-
-- **Tailwind CSS** - CSS Framework
-- **TomSelect** - Searchable dropdown
-- **Chart.js** - Data visualization
-- **Font Awesome** - Icons
-- **SheetJS (xlsx)** - Export Excel
-- **jsPDF** - Export PDF
-- **Docker** - Containerization
-
----
-
-**Dibuat dengan ❤️ oleh MGMP Informatika Sanaci**
+© 2026 Sistem Absensi Siswa

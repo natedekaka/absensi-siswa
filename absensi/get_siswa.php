@@ -155,7 +155,10 @@ if ($result && $result->num_rows > 0):
             <?php endif; ?>
             <th>No</th>
             <th>Nama Siswa</th>
-            <th class="col-hadir">Hadir</th>
+            <th class="col-hadir">
+                <input type="checkbox" id="selectAllHadir" onclick="if(window.parent.selectAllHadir)window.parent.selectAllHadir(this.checked);else selectAllHadir(this.checked)" style="accent-color:#fff;width:16px;height:16px;cursor:pointer;" title="Set semua Hadir">
+                <br><span style="font-size:9px;opacity:0.8;">Semua</span>
+            </th>
             <th class="col-status">T</th>
             <th class="col-status">S</th>
             <th class="col-status">I</th>
@@ -191,11 +194,11 @@ if ($result && $result->num_rows > 0):
                 <strong><?= htmlspecialchars($row['nama']) ?></strong>
                 <input type="hidden" name="siswa_id[]" value="<?= $row['id'] ?>">
             </td>
-            <td class="col-hadir"><input type="radio" name="status[<?= $row['id'] ?>]" value="Hadir" <?= ($status_sebelumnya == 'Hadir') ? 'checked' : $hadir_checked ?>></td>
-            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Terlambat" <?= ($status_sebelumnya == 'Terlambat') ? 'checked' : '' ?>></td>
-            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Sakit" <?= ($status_sebelumnya == 'Sakit') ? 'checked' : '' ?>></td>
-            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Izin" <?= ($status_sebelumnya == 'Izin') ? 'checked' : '' ?>></td>
-            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Alfa" <?= ($status_sebelumnya == 'Alfa') ? 'checked' : '' ?>></td>
+            <td class="col-hadir"><input type="radio" name="status[<?= $row['id'] ?>]" value="Hadir" <?= ($status_sebelumnya == 'Hadir') ? 'checked' : $hadir_checked ?> onchange="triggerAutoSave(this)"></td>
+            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Terlambat" <?= ($status_sebelumnya == 'Terlambat') ? 'checked' : '' ?> onchange="triggerAutoSave(this)"></td>
+            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Sakit" <?= ($status_sebelumnya == 'Sakit') ? 'checked' : '' ?> onchange="triggerAutoSave(this)"></td>
+            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Izin" <?= ($status_sebelumnya == 'Izin') ? 'checked' : '' ?> onchange="triggerAutoSave(this)"></td>
+            <td class="col-status"><input type="radio" name="status[<?= $row['id'] ?>]" value="Alfa" <?= ($status_sebelumnya == 'Alfa') ? 'checked' : '' ?> onchange="triggerAutoSave(this)"></td>
             <td class="col-rekap">
                 <span class="rekap-badge">
                     <span class="rekap-h">H:<?= (int)$row['total_hadir_smt1'] ?></span>

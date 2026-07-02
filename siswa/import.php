@@ -30,6 +30,29 @@ if (isset($_GET['download']) && $_GET['download'] == 'template') {
     }
 }
 
+if (isset($_GET['download']) && $_GET['download'] == 'template_x') {
+    $kelas_x = conn()->query("SELECT id, nama_kelas FROM kelas WHERE nama_kelas LIKE 'X-%' OR nama_kelas LIKE '10-%' ORDER BY nama_kelas");
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="template_import_kelas_x.csv"');
+    
+    $output = fopen('php://output', 'w');
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+    
+    fputcsv($output, ['nis', 'nisn', 'nama', 'kelas_id', 'jenis_kelamin']);
+    fputcsv($output, ['2526001', '0123456789', 'Contoh Siswa 1', '', 'Laki-laki']);
+    fputcsv($output, ['2526002', '1123456789', 'Contoh Siswa 2', '', 'Perempuan']);
+    fputcsv($output, []);
+    fputcsv($output, ['REFERENSI KELAS X']);
+    fputcsv($output, ['ID Kelas', 'Nama Kelas']);
+    while ($k = $kelas_x->fetch_assoc()) {
+        fputcsv($output, [$k['id'], $k['nama_kelas']]);
+    }
+    
+    fclose($output);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == UPLOAD_ERR_OK) {
         $file = $_FILES['csv_file']['tmp_name'];
@@ -60,23 +83,38 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 continue;
             }
             
-            $cek = conn()->prepare("SELECT id FROM siswa WHERE nis = ?");
+            // Auto-detect tingkat from class name
+            $detect = detectTingkatByKelasId($kelas_id);
+            $tingkat = $detect ?? 10;
+            
+            $cek = conn()->prepare("SELECT id, barcode, tingkat FROM siswa WHERE nis = ?");
             $cek->bind_param("s", $nis);
             $cek->execute();
             $cek->store_result();
-            
+            $siswa_id = null;
+            $barcode_lama = null;
             if ($cek->num_rows > 0) {
-                $stmt = conn()->prepare("UPDATE siswa SET nisn = ?, nama = ?, kelas_id = ?, jenis_kelamin = ? WHERE nis = ?");
-                $stmt->bind_param("ssiss", $nisn, $nama, $kelas_id, $jenis_kelamin, $nis);
+                $cek->bind_result($siswa_id, $barcode_lama, $tingkat_lama);
+                $cek->fetch();
+            }
+            $cek->close();
+            
+            if ($siswa_id) {
+                $stmt = conn()->prepare("UPDATE siswa SET nisn = ?, nama = ?, kelas_id = ?, jenis_kelamin = ?, tingkat = ? WHERE nis = ?");
+                $stmt->bind_param("ssiiss", $nisn, $nama, $kelas_id, $jenis_kelamin, $tingkat, $nis);
                 
                 if ($stmt->execute()) {
+                    if (empty($barcode_lama)) {
+                        generateBarcodeSiswa($siswa_id, $nis);
+                    }
                     $updated++;
                 } else {
                     $errors[] = "Error update NIS $nis";
                 }
             } else {
-                $stmt = conn()->prepare("INSERT INTO siswa (nis, nisn, nama, kelas_id, jenis_kelamin) VALUES (?, ?, ?, ?, ?)");
-                $stmt->bind_param("sssis", $nis, $nisn, $nama, $kelas_id, $jenis_kelamin);
+                $barcode = $nis;
+                $stmt = conn()->prepare("INSERT INTO siswa (nis, nisn, nama, kelas_id, jenis_kelamin, tingkat, barcode) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->bind_param("sssisis", $nis, $nisn, $nama, $kelas_id, $jenis_kelamin, $tingkat, $barcode);
                 
                 if ($stmt->execute()) {
                     $imported++;
@@ -89,10 +127,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         fclose($handle);
         
         if ($imported > 0) {
-            $success = "Berhasil menambahkan $imported data siswa";
+            $success = "✅ Berhasil menambahkan $imported data siswa";
+            $success .= "<br><small class='text-green-600'>Tingkat & barcode otomatis tergenerate.</small>";
         }
         if ($updated > 0) {
-            $success .= ($success ? "<br>" : "") . "Berhasil memperbarui $updated data";
+            $success .= ($success ? "<br>" : "") . "✅ Berhasil memperbarui $updated data (tingkat ikut terupdate)";
         }
         if (!empty($errors)) {
             $error = implode("<br>", $errors);
@@ -154,10 +193,19 @@ ob_start();
                         <h6 class="font-bold text-gray-800 dark:text-white mb-2">
                             <i class="fas fa-download mr-2 text-emerald-600"></i>Unduh Format Template
                         </h6>
-                        <p class="text-sm text-gray-500 mb-3">Unduh file template di bawah untuk melihat format yang benar.</p>
-                        <a href="?download=template" class="btn-modern btn-success-modern text-sm">
-                            <i class="fas fa-file-download mr-2"></i>Unduh Template CSV
-                        </a>
+                        <p class="text-sm text-gray-500 mb-3">Unduh file template untuk melihat format yang benar.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="?download=template" class="btn-modern btn-success-modern text-sm">
+                                <i class="fas fa-file-download mr-2"></i>Template Umum
+                            </a>
+                            <a href="?download=template_x" class="btn-modern btn-primary-modern text-sm">
+                                <i class="fas fa-file-download mr-2"></i>Template Khusus Kelas X
+                            </a>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2">
+                            <i class="fas fa-magic mr-1 text-emerald-500"></i>
+                            <strong>Baru:</strong> Tingkat & barcode otomatis terisi saat import.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -197,6 +245,12 @@ ob_start();
                             <p class="text-xs text-gray-400 mt-0.5">Laki-laki atau Perempuan</p>
                         </div>
                     </div>
+                </div>
+                <div class="mt-3 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl text-sm">
+                    <i class="fas fa-magic mr-2 text-emerald-600"></i>
+                    <strong class="text-gray-800 dark:text-gray-200">Fitur Otomatis:</strong>
+                    <span class="text-gray-500">Tingkat siswa otomatis terdeteksi dari nama kelas (X/XI/XII).<br>
+                    Barcode otomatis digenerate dari NIS untuk siswa baru.</span>
                 </div>
             </div>
 

@@ -161,3 +161,41 @@ function updateKonfigurasiSekolah($conn, $nama_sekolah, $logo, $warna_primer, $w
     
     return $result;
 }
+
+// ─── Helper: Auto-detect tingkat dari prefix kelas ─────────────
+function detectTingkatByKelasNama($nama_kelas): ?int {
+    if (preg_match('/^X[\s-]/i', $nama_kelas) || preg_match('/^10[\s-]/', $nama_kelas)) return 10;
+    if (preg_match('/^XI[\s-]/i', $nama_kelas) || preg_match('/^11[\s-]/', $nama_kelas)) return 11;
+    if (preg_match('/^XII[\s-]/i', $nama_kelas) || preg_match('/^12[\s-]/', $nama_kelas)) return 12;
+    return null;
+}
+
+function detectTingkatByKelasId($kelas_id): ?int {
+    $q = conn()->query("SELECT nama_kelas FROM kelas WHERE id = " . (int)$kelas_id);
+    if ($q && $row = $q->fetch_assoc()) {
+        return detectTingkatByKelasNama($row['nama_kelas']);
+    }
+    return null;
+}
+
+// ─── Helper: Generate barcode untuk siswa ──────────────────────
+function generateBarcodeSiswa($siswa_id, $nis): string {
+    $barcode = $nis;
+    $cek = conn()->query("SELECT id FROM siswa WHERE id = " . (int)$siswa_id);
+    if ($cek && $cek->num_rows > 0) {
+        conn()->query("UPDATE siswa SET barcode = '$barcode' WHERE id = " . (int)$siswa_id);
+    }
+    return $barcode;
+}
+
+// ─── Helper: Get kelas ID by name prefix ──────────────────────
+function getKelasByTingkat($tingkat): array {
+    $prefix_map = [10 => ['X', '10'], 11 => ['XI', '11'], 12 => ['XII', '12']];
+    $p = $prefix_map[$tingkat] ?? ['X', '10'];
+    $result = conn()->query("SELECT id, nama_kelas FROM kelas WHERE nama_kelas LIKE '{$p[0]}-%' OR nama_kelas LIKE '{$p[1]}-%' ORDER BY nama_kelas");
+    $list = [];
+    while ($row = $result->fetch_assoc()) {
+        $list[] = $row;
+    }
+    return $list;
+}
