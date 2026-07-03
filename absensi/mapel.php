@@ -28,9 +28,6 @@ ob_start();
         <span id="autoSaveStatus" class="text-xs text-gray-400 hidden">
             <i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...
         </span>
-        <button type="button" id="btnCopyKemarin" class="btn-modern text-sm hidden" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:8px;padding:6px 12px;" onclick="copyAbsensiKemarin()">
-            <i class="fas fa-copy mr-1"></i>Copy Kemarin
-        </button>
     </div>
 </div>
 
@@ -171,7 +168,6 @@ function toggleElements(show) {
     document.getElementById('tombolSimpanAtas').style.display = display;
     document.getElementById('tombolSimpanBawah').style.display = display;
     document.getElementById('searchContainer').style.display = display;
-    document.getElementById('btnCopyKemarin').style.display = show ? 'inline-flex' : 'none';
 }
 
 document.getElementById('semester').addEventListener('change', function() {
@@ -335,54 +331,6 @@ function showToast(msg, type) {
         toast.style.transform = 'translateY(100px)';
         toast.style.opacity = '0';
     }, 2000);
-}
-
-// ─── FITUR 3: Copy Absensi Kemarin ──────────────────────────
-function copyAbsensiKemarin() {
-    const kelasId = document.getElementById('kelas').value;
-    const semesterId = document.getElementById('semester').value;
-    const mapelId = document.getElementById('mapel').value;
-    const tanggal = document.getElementById('tanggal').value;
-    
-    if (!kelasId || !semesterId || !mapelId) {
-        showToast('Pilih kelas, semester, dan mapel dulu!', 'error');
-        return;
-    }
-    
-    const btn = document.getElementById('btnCopyKemarin');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memuat...';
-    
-    fetch('get_absensi_kemarin.php?kelas_id=' + encodeURIComponent(kelasId) + '&semester_id=' + encodeURIComponent(semesterId) + '&mapel_id=' + encodeURIComponent(mapelId) + '&tanggal=' + encodeURIComponent(tanggal) + '&type=mapel')
-        .then(response => response.json())
-        .then(result => {
-            if (result.success && result.data) {
-                let count = 0;
-                const radios = document.querySelectorAll('#siswa-container input[type="radio"]');
-                for (let i = 0; i < radios.length; i++) {
-                    const match = radios[i].name.match(/status\[(\d+)\]/);
-                    if (match) {
-                        const siswaId = match[1];
-                        const yesterdayStatus = result.data[siswaId];
-                        if (yesterdayStatus && radios[i].value === yesterdayStatus) {
-                            radios[i].checked = true;
-                            count++;
-                        }
-                    }
-                }
-                showToast('✅ Absensi kemarin disalin ke ' + count + ' siswa!', 'success');
-                if (count > 0) doAutoSave();
-            } else {
-                showToast('Tidak ada data absensi kemarin', 'error');
-            }
-        })
-        .catch(err => {
-            showToast('Gagal memuat data kemarin', 'error');
-        })
-        .finally(() => {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-copy mr-1"></i>Copy Kemarin';
-        });
 }
 
 // ─── Simpan Manual (tombol) ─────────────────────────────────

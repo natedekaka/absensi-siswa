@@ -116,24 +116,29 @@ function is_ajax() {
 }
 
 $konfigurasi_cache = null;
+$konfigurasi_table_checked = false;
 
 function initKonfigurasiSekolah($conn) {
-    global $konfigurasi_cache;
+    global $konfigurasi_cache, $konfigurasi_table_checked;
     
-    $table_check = $conn->query("SHOW TABLES LIKE 'konfigurasi_sekolah'");
+    // Hanya cek SHOW TABLES sekali per request (hemat 1 query setiap load halaman)
+    if (!$konfigurasi_table_checked) {
+        $table_check = $conn->query("SHOW TABLES LIKE 'konfigurasi_sekolah'");
+        $konfigurasi_table_checked = true;
 
-    if ($table_check->num_rows === 0) {
-        $conn->query("CREATE TABLE IF NOT EXISTS konfigurasi_sekolah (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            nama_sekolah VARCHAR(255) NOT NULL DEFAULT 'SMA Negeri',
-            logo VARCHAR(255) DEFAULT NULL,
-            warna_primer VARCHAR(20) DEFAULT '#4f46e5',
-            warna_sekunder VARCHAR(20) DEFAULT '#64748b',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        
-        $conn->query("INSERT INTO konfigurasi_sekolah (nama_sekolah) VALUES ('SMA Negeri')");
+        if ($table_check->num_rows === 0) {
+            $conn->query("CREATE TABLE IF NOT EXISTS konfigurasi_sekolah (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                nama_sekolah VARCHAR(255) NOT NULL DEFAULT 'SMA Negeri',
+                logo VARCHAR(255) DEFAULT NULL,
+                warna_primer VARCHAR(20) DEFAULT '#4f46e5',
+                warna_sekunder VARCHAR(20) DEFAULT '#64748b',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            
+            $conn->query("INSERT INTO konfigurasi_sekolah (nama_sekolah) VALUES ('SMA Negeri')");
+        }
     }
 }
 

@@ -19,14 +19,14 @@ if (isset($_GET['token']) && isset($_GET['id'])) {
     $token = $_GET['token'];
     $user_id = intval($_GET['id']);
     
-    $stmt = conn()->prepare("SELECT * FROM users WHERE id = ? AND remember_token IS NOT NULL AND remember_expires > NOW()");
+    $stmt = conn()->prepare("SELECT * FROM password_resets WHERE user_id = ? AND expires_at > NOW() AND used = 0 ORDER BY created_at DESC LIMIT 1");
     $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
     
     if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        if (password_verify($token, $user['remember_token'])) {
+        $reset = $result->fetch_assoc();
+        if (password_verify($token, $reset['token'])) {
             $valid_token = true;
         }
     }

@@ -88,6 +88,7 @@ $smt1_range = null;
 $smt2_range = null;
 $siswa_smt1 = null;
 $siswa_smt2 = null;
+$all_siswa = null;
 
 if ($kelas_id) {
     $kelas = conn()->query("SELECT * FROM kelas WHERE id = $kelas_id")->fetch_assoc();
@@ -111,6 +112,28 @@ if ($kelas_id) {
     
     $siswa_smt1 = $smt1_range ? getSiswaStatsByDateRange($kelas_id, $smt1_range['awal'], $smt1_range['akhir'], $smt1_range['id']) : null;
     $siswa_smt2 = $smt2_range ? getSiswaStatsByDateRange($kelas_id, $smt2_range['awal'], $smt2_range['akhir'], $smt2_range['id']) : null;
+
+    // Build indexed arrays by student ID for unified table
+    $data_smt1 = [];
+    if ($siswa_smt1 && $siswa_smt1->num_rows > 0) {
+        while ($row = $siswa_smt1->fetch_assoc()) {
+            $data_smt1[$row['id']] = $row;
+        }
+        $siswa_smt1->data_seek(0);
+    }
+    $data_smt2 = [];
+    if ($siswa_smt2 && $siswa_smt2->num_rows > 0) {
+        while ($row = $siswa_smt2->fetch_assoc()) {
+            $data_smt2[$row['id']] = $row;
+        }
+        $siswa_smt2->data_seek(0);
+    }
+
+    // Get all students for unified table
+    $all_siswa_stmt = conn()->prepare("SELECT id, nis, nama, jenis_kelamin FROM siswa WHERE kelas_id = ? AND (status = 'aktif' OR status IS NULL) ORDER BY nama ASC");
+    $all_siswa_stmt->bind_param("i", $kelas_id);
+    $all_siswa_stmt->execute();
+    $all_siswa = $all_siswa_stmt->get_result();
 }
 ?>
 
@@ -122,6 +145,10 @@ if ($kelas_id) {
     .card-modern { box-shadow: none !important; border: 1px solid #ddd !important; }
     .table-modern { font-size: 9px; }
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .rekap-grid { display: block !important; }
+    .rekap-grid > div { max-width: 100% !important; width: 100% !important; }
+    .table-wrap { max-height: none !important; overflow: visible !important; }
+    .table-wrap thead { position: static !important; }
 }
 .print-header { display: none; text-align: center; margin-bottom: 20px; }
 .print-header h1 { font-size: 18px; margin: 0; color: #1e293b; }
@@ -225,72 +252,59 @@ if ($kelas_id) {
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="card-modern">
-        <div class="card-modern-header font-semibold text-white" style="background:#10B981;">
-            Semester 1
-        </div>
-        <div class="overflow-x-auto" style="max-height:400px;">
-            <table class="table-modern text-sm">
-                <thead class="sticky top-0 z-10">
-                    <tr>
-                        <th>#</th><th>Siswa</th><th class="text-center">H</th><th class="text-center">T</th>
-                        <th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th class="text-center">%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $no = 1;
-                    if ($siswa_smt1): while ($row = $siswa_smt1->fetch_assoc()):
-                        $persen = $hari_smt1 > 0 ? round(($row['hadir'] / $hari_smt1) * 100, 1) : 0;
-                    ?>
-                    <tr>
-                        <td class="text-gray-500"><?= $no++ ?></td>
-                        <td class="font-medium"><?= htmlspecialchars($row['nama']) ?></td>
-                        <td class="text-center"><?= $row['hadir'] ?></td>
-                        <td class="text-center"><?= $row['terlambat'] ?></td>
-                        <td class="text-center"><?= $row['sakit'] ?></td>
-                        <td class="text-center"><?= $row['izin'] ?></td>
-                        <td class="text-center"><?= $row['alfa'] ?></td>
-                        <td class="text-center font-semibold"><?= $persen ?>%</td>
-                    </tr>
-                    <?php endwhile; endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="card-modern">
-        <div class="card-modern-header font-semibold text-white" style="background:#3B82F6;">
-            Semester 2
-        </div>
-        <div class="overflow-x-auto" style="max-height:400px;">
-            <table class="table-modern text-sm">
-                <thead class="sticky top-0 z-10">
-                    <tr>
-                        <th>#</th><th>Siswa</th><th class="text-center">H</th><th class="text-center">T</th>
-                        <th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th class="text-center">%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php 
-                    $no = 1;
-                    if ($siswa_smt2): while ($row = $siswa_smt2->fetch_assoc()):
-                        $persen = $hari_smt2 > 0 ? round(($row['hadir'] / $hari_smt2) * 100, 1) : 0;
-                    ?>
-                    <tr>
-                        <td class="text-gray-500"><?= $no++ ?></td>
-                        <td class="font-medium"><?= htmlspecialchars($row['nama']) ?></td>
-                        <td class="text-center"><?= $row['hadir'] ?></td>
-                        <td class="text-center"><?= $row['terlambat'] ?></td>
-                        <td class="text-center"><?= $row['sakit'] ?></td>
-                        <td class="text-center"><?= $row['izin'] ?></td>
-                        <td class="text-center"><?= $row['alfa'] ?></td>
-                        <td class="text-center font-semibold"><?= $persen ?>%</td>
-                    </tr>
-                    <?php endwhile; endif; ?>
-                </tbody>
-            </table>
-        </div>
+<div class="card-modern">
+    <div class="overflow-x-auto table-wrap">
+        <table class="table-modern text-sm w-full">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th rowspan="2" class="text-center align-middle">#</th>
+                    <th rowspan="2" class="text-center align-middle">NIS</th>
+                    <th rowspan="2" class="text-center align-middle">Nama Siswa</th>
+                    <th colspan="6" class="text-center font-semibold" style="background:#10B981;color:#fff;">Semester 1 (<?= $hari_smt1 ?> hari)</th>
+                    <th colspan="6" class="text-center font-semibold" style="background:#3B82F6;color:#fff;">Semester 2 (<?= $hari_smt2 ?> hari)</th>
+                </tr>
+                <tr class="bg-gray-50">
+                    <th class="text-center">H</th><th class="text-center">T</th><th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th class="text-center">%</th>
+                    <th class="text-center">H</th><th class="text-center">T</th><th class="text-center">S</th><th class="text-center">I</th><th class="text-center">A</th><th class="text-center">%</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php
+                $no = 1;
+                if ($all_siswa && $all_siswa->num_rows > 0):
+                    while ($row = $all_siswa->fetch_assoc()):
+                        $d1 = isset($data_smt1[$row['id']]) ? $data_smt1[$row['id']] : ['hadir'=>0,'terlambat'=>0,'sakit'=>0,'izin'=>0,'alfa'=>0];
+                        $d2 = isset($data_smt2[$row['id']]) ? $data_smt2[$row['id']] : ['hadir'=>0,'terlambat'=>0,'sakit'=>0,'izin'=>0,'alfa'=>0];
+                        $persen1 = $hari_smt1 > 0 ? round(($d1['hadir'] / $hari_smt1) * 100, 1) : 0;
+                        $persen2 = $hari_smt2 > 0 ? round(($d2['hadir'] / $hari_smt2) * 100, 1) : 0;
+                ?>
+                <tr>
+                    <td class="text-gray-500 text-center"><?= $no++ ?></td>
+                    <td class="text-center"><?= htmlspecialchars($row['nis']) ?></td>
+                    <td class="font-medium"><?= htmlspecialchars($row['nama']) ?></td>
+                    <td class="text-center"><?= $d1['hadir'] ?></td>
+                    <td class="text-center"><?= $d1['terlambat'] ?></td>
+                    <td class="text-center"><?= $d1['sakit'] ?></td>
+                    <td class="text-center"><?= $d1['izin'] ?></td>
+                    <td class="text-center"><?= $d1['alfa'] ?></td>
+                    <td class="text-center font-semibold"><?= $persen1 ?>%</td>
+                    <td class="text-center"><?= $d2['hadir'] ?></td>
+                    <td class="text-center"><?= $d2['terlambat'] ?></td>
+                    <td class="text-center"><?= $d2['sakit'] ?></td>
+                    <td class="text-center"><?= $d2['izin'] ?></td>
+                    <td class="text-center"><?= $d2['alfa'] ?></td>
+                    <td class="text-center font-semibold"><?= $persen2 ?>%</td>
+                </tr>
+                <?php
+                    endwhile;
+                else:
+                ?>
+                <tr>
+                    <td colspan="15" class="text-center text-gray-400 py-4">Tidak ada data siswa.</td>
+                </tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 

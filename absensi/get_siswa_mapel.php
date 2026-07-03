@@ -22,6 +22,13 @@ if (!$kelas_id || !$semester_id || !$mapel_id || !preg_match('/^\d{4}-\d{2}-\d{2
     exit;
 }
 
+// Get tahun_ajaran_id of selected semester — used to filter rekap columns
+$ta_id_smt = 0;
+$ta_row = conn()->query("SELECT tahun_ajaran_id FROM semester WHERE id = $semester_id");
+if ($ta_row && $ta_row->num_rows > 0) {
+    $ta_id_smt = (int)$ta_row->fetch_assoc()['tahun_ajaran_id'];
+}
+
 // For non-admin, verify this teacher is assigned to this class + mapel via guru_kelas
 if (!has_role('admin')) {
     $check = conn()->prepare("SELECT 1 FROM guru_kelas WHERE user_id = ? AND kelas_id = ? AND mapel_id = ?");
@@ -60,7 +67,7 @@ $query = "
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
         FROM absensi_mapel a
         INNER JOIN semester sem ON a.semester_id = sem.id
-        WHERE sem.semester = 1
+        WHERE sem.semester = 1 AND sem.tahun_ajaran_id = $ta_id_smt
         GROUP BY siswa_id
     ) rekap_smt1 ON s.id = rekap_smt1.siswa_id
     LEFT JOIN (
@@ -73,7 +80,7 @@ $query = "
             SUM(CASE WHEN status = 'Alfa' THEN 1 ELSE 0 END) AS alfa
         FROM absensi_mapel a
         INNER JOIN semester sem ON a.semester_id = sem.id
-        WHERE sem.semester = 2
+        WHERE sem.semester = 2 AND sem.tahun_ajaran_id = $ta_id_smt
         GROUP BY siswa_id
     ) rekap_smt2 ON s.id = rekap_smt2.siswa_id
 ";
@@ -95,6 +102,31 @@ if ($kelas_id === 'all') {
 $result = db()->query($query);
 
 if ($result && $result->num_rows > 0):
+    // ─── BATCH: Ambil status absensi_mapel semua siswa dalam 1 query (N+1 → 1) ───
+    $siswa_rows = [];
+    $all_ids = [];
+    $nama_kelas = '';
+    while ($row = $result->fetch_assoc()) {
+        $siswa_rows[] = $row;
+        $all_ids[] = (int)$row['id'];
+        if (!$nama_kelas) $nama_kelas = $row['nama_kelas'];
+    }
+    $result->free();
+
+    $existing = [];
+    if (!empty($all_ids)) {
+        $ids_str = implode(',', $all_ids);
+        $kelas_id_int = (int)$kelas_id;
+        $q_batch = conn()->query("
+            SELECT siswa_id, status FROM absensi_mapel 
+            WHERE siswa_id IN ($ids_str) AND user_id = $user_id AND kelas_id = $kelas_id_int AND mapel_id = $mapel_id AND tanggal = '$tanggal' AND semester_id = $semester_id
+        ");
+        if ($q_batch) {
+            while ($a = $q_batch->fetch_assoc()) {
+                $existing[(int)$a['siswa_id']] = $a['status'];
+            }
+        }
+    }
 ?>
 <style>
     .table-absensi {
@@ -175,7 +207,7 @@ if ($result && $result->num_rows > 0):
 
 <div class="header-info">
     <i class="fas fa-chalkboard-teacher text-lg"></i>
-    <span>Absensi Mata Pelajaran — Kelas <strong><?= htmlspecialchars($row['nama_kelas'] ?? '') ?></strong></span>
+    <span>Absensi Mata Pelajaran — Kelas <strong><?= htmlspecialchars($nama_kelas) ?></strong></span>
 </div>
 
 <table class="table-absensi">
@@ -200,20 +232,8 @@ if ($result && $result->num_rows > 0):
         </tr>
     </thead>
     <tbody>
-        <?php $no = 1; $nama_kelas = ''; while ($row = $result->fetch_assoc()):
-            $nama_kelas = $row['nama_kelas'];
-            $check = conn()->prepare("SELECT status FROM absensi_mapel WHERE siswa_id = ? AND user_id = ? AND kelas_id = ? AND mapel_id = ? AND tanggal = ? AND semester_id = ?");
-            $check->bind_param("iiiisi", $row['id'], $user_id, $kelas_id, $mapel_id, $tanggal, $semester_id);
-            $check->execute();
-            $check->store_result();
-            
-            $status_sebelumnya = '';
-            if ($check->num_rows > 0) {
-                $check->bind_result($status_sebelumnya);
-                $check->fetch();
-            }
-            $check->close();
-
+        <?php $no = 1; foreach ($siswa_rows as $row):
+            $status_sebelumnya = $existing[(int)$row['id']] ?? '';
             $hadir_checked = ($status_sebelumnya === '') ? 'checked' : '';
             $status_class = strtolower($status_sebelumnya) ?: 'kosong';
         ?>
@@ -257,7 +277,7 @@ if ($result && $result->num_rows > 0):
                 <?php endif; ?>
             </td>
         </tr>
-        <?php endwhile; ?>
+        <?php endforeach; ?>
     </tbody>
 </table>
 

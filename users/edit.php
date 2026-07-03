@@ -35,17 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($stmt->execute()) {
-            // Sync guru_kelas
+            // Sync guru_kelas — batch INSERT (dari N+1 queries jadi 2 queries)
             conn()->query("DELETE FROM guru_kelas WHERE user_id = $id");
             if ($role === 'guru') {
-                $all_kelas = conn()->query("SELECT id FROM kelas");
-                if ($all_kelas) {
-                    $insert = conn()->prepare("INSERT IGNORE INTO guru_kelas (user_id, kelas_id) VALUES (?, ?)");
-                    while ($k = $all_kelas->fetch_assoc()) {
-                        $insert->bind_param("ii", $id, $k['id']);
-                        $insert->execute();
-                    }
-                }
+                conn()->query("INSERT IGNORE INTO guru_kelas (user_id, kelas_id) SELECT $id, id FROM kelas");
             }
 
             $_SESSION['success'] = 'Pengguna berhasil diperbarui!';

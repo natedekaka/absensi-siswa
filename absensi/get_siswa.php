@@ -87,6 +87,25 @@ if ($kelas_id === 'all') {
 $result = db()->query($query);
 
 if ($result && $result->num_rows > 0):
+    // ─── BATCH: Ambil status absensi semua siswa dalam 1 query (N+1 → 1) ───
+    $siswa_rows = [];
+    $all_ids = [];
+    while ($row = $result->fetch_assoc()) {
+        $siswa_rows[] = $row;
+        $all_ids[] = (int)$row['id'];
+    }
+    $result->free();
+
+    $existing = [];
+    if (!empty($all_ids)) {
+        $ids_str = implode(',', $all_ids);
+        $q_batch = conn()->query("SELECT siswa_id, status FROM absensi WHERE siswa_id IN ($ids_str) AND tanggal = '$tanggal' AND semester_id = $semester_id");
+        if ($q_batch) {
+            while ($a = $q_batch->fetch_assoc()) {
+                $existing[(int)$a['siswa_id']] = $a['status'];
+            }
+        }
+    }
 ?>
 
 <style>
@@ -176,19 +195,8 @@ if ($result && $result->num_rows > 0):
         </tr>
     </thead>
     <tbody>
-        <?php $no = 1; while ($row = $result->fetch_assoc()):
-            $check = conn()->prepare("SELECT status FROM absensi WHERE siswa_id = ? AND tanggal = ? AND semester_id = ?");
-            $check->bind_param("isi", $row['id'], $tanggal, $semester_id);
-            $check->execute();
-            $check->store_result();
-            
-            $status_sebelumnya = '';
-            if ($check->num_rows > 0) {
-                $check->bind_result($status_sebelumnya);
-                $check->fetch();
-            }
-            $check->close();
-
+        <?php $no = 1; foreach ($siswa_rows as $row):
+            $status_sebelumnya = $existing[(int)$row['id']] ?? '';
             $hadir_checked = ($status_sebelumnya === '') ? 'checked' : '';
             $status_class = strtolower($status_sebelumnya) ?: 'kosong';
         ?>
@@ -232,7 +240,7 @@ if ($result && $result->num_rows > 0):
                 <?php endif; ?>
             </td>
         </tr>
-        <?php endwhile; ?>
+        <?php endforeach; ?>
     </tbody>
 </table>
 

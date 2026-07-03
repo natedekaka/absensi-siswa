@@ -32,16 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute()) {
                 $user_id = $stmt->insert_id;
 
-                // Jika guru, otomatis link ke semua kelas
+                // Jika guru, otomatis link ke semua kelas — batch INSERT
                 if ($role === 'guru') {
-                    $all_kelas = conn()->query("SELECT id FROM kelas");
-                    if ($all_kelas) {
-                        $insert = conn()->prepare("INSERT IGNORE INTO guru_kelas (user_id, kelas_id) VALUES (?, ?)");
-                        while ($k = $all_kelas->fetch_assoc()) {
-                            $insert->bind_param("ii", $user_id, $k['id']);
-                            $insert->execute();
-                        }
-                    }
+                    conn()->query("INSERT IGNORE INTO guru_kelas (user_id, kelas_id) SELECT $user_id, id FROM kelas");
                 }
 
                 $_SESSION['success'] = 'Pengguna berhasil ditambahkan!';

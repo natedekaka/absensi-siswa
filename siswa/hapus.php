@@ -13,6 +13,7 @@ if ($id <= 0) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm'])) {
     conn()->query("DELETE FROM absensi WHERE siswa_id = $id");
+    conn()->query("DELETE FROM absensi_mapel WHERE siswa_id = $id");
     
     $stmt = conn()->prepare("DELETE FROM siswa WHERE id = ?");
     $stmt->bind_param("i", $id);

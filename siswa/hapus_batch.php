@@ -27,6 +27,7 @@ if (isset($_POST['confirm_delete'])) {
     foreach ($selected as $siswa_id) {
         $id = intval($siswa_id);
         conn()->query("DELETE FROM absensi WHERE siswa_id = $id");
+        conn()->query("DELETE FROM absensi_mapel WHERE siswa_id = $id");
         
         $stmt = conn()->prepare("DELETE FROM siswa WHERE id = ?");
         $stmt->bind_param("i", $id);

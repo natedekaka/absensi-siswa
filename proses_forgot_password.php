@@ -25,9 +25,10 @@ if (isset($_POST['username'])) {
         $hashed_token = password_hash($token, PASSWORD_DEFAULT);
         $expires = date('Y-m-d H:i:s', time() + 3600);
         
-        $update_stmt = conn()->prepare("UPDATE users SET remember_token = ?, remember_expires = ? WHERE id = ?");
-        $update_stmt->bind_param("ssi", $hashed_token, $expires, $user['id']);
-        $update_stmt->execute();
+        // Store in password_resets table (separate from remember_token)
+        $insert_stmt = conn()->prepare("INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)");
+        $insert_stmt->bind_param("iss", $user['id'], $hashed_token, $expires);
+        $insert_stmt->execute();
         
         $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
         $reset_link = $protocol . '://' . $_SERVER['HTTP_HOST'] . BASE_URL . 'reset_password.php?token=' . $token . '&id=' . $user['id'];
@@ -37,7 +38,8 @@ if (isset($_POST['username'])) {
         exit;
     }
     
-    $_SESSION['error'] = "Username tidak ditemukan!";
+    // Always show the same message regardless — prevents username enumeration
+    $_SESSION['success'] = "Proses reset password sedang diproses. Silakan hubungi admin jika mengalami kendala.";
     header('Location: forgot_password.php');
     exit;
 }
