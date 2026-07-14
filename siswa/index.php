@@ -6,6 +6,35 @@ require_role('admin', 'guru', 'wali_kelas');
 
 $title = 'Data Siswa - Sistem Absensi Siswa';
 
+// ─── AJAX: Pindah Kelas ─────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'pindah_kelas') {
+    header('Content-Type: application/json');
+    if (!has_role('admin')) {
+        echo json_encode(['success' => false, 'error' => 'Hanya admin yang bisa pindah kelas']);
+        exit;
+    }
+    $siswa_id = (int)($_POST['siswa_id'] ?? 0);
+    $kelas_baru_id = (int)($_POST['kelas_id'] ?? 0);
+    if ($siswa_id <= 0 || $kelas_baru_id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Data tidak valid']);
+        exit;
+    }
+    $tingkat_baru = detectTingkatByKelasId($kelas_baru_id);
+    if ($tingkat_baru === null) {
+        echo json_encode(['success' => false, 'error' => 'Tingkat tidak terdeteksi dari kelas tujuan']);
+        exit;
+    }
+    $stmt = conn()->prepare("UPDATE siswa SET kelas_id = ?, tingkat = ? WHERE id = ? AND status = 'aktif'");
+    $stmt->bind_param("iii", $kelas_baru_id, $tingkat_baru, $siswa_id);
+    if ($stmt->execute() && $stmt->affected_rows > 0) {
+        $nama_kelas = conn()->query("SELECT nama_kelas FROM kelas WHERE id = $kelas_baru_id")->fetch_assoc()['nama_kelas'] ?? '';
+        echo json_encode(['success' => true, 'kelas_baru' => $nama_kelas]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Siswa tidak ditemukan']);
+    }
+    exit;
+}
+
 ob_start();
 
 $keyword = $_GET['cari'] ?? '';
@@ -51,6 +80,15 @@ if (!has_role('admin') && !empty($guru_kelas_ids)) {
 } else {
     $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
 }
+
+$all_kelas_options = [];
+$kelas_list->data_seek(0);
+while ($k = $kelas_list->fetch_assoc()) {
+    $all_kelas_options[] = $k;
+}
+$kelas_list->data_seek(0);
+
+$kelas_json = json_encode($all_kelas_options);
 ?>
 
 <div class="flex items-center justify-between mb-6">
@@ -120,6 +158,7 @@ if (!has_role('admin') && !empty($guru_kelas_ids)) {
                     <th class="text-center">NIS</th>
                     <th class="text-center">Kelas</th>
                     <?php if (has_role('admin')): ?>
+                    <th class="text-center w-[180px]">Pindah Kelas</th>
                     <th class="text-center w-[120px]">Aksi</th>
                     <?php endif; ?>
                 </tr>
@@ -151,11 +190,24 @@ if (!has_role('admin') && !empty($guru_kelas_ids)) {
                     </td>
                     <td class="text-center"><?= htmlspecialchars($row['nis']) ?></td>
                     <td class="text-center">
-                        <span class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary">
+                        <span class="kelas-badge inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary">
                             <i class="fas fa-door-open text-xs"></i><?= htmlspecialchars($row['nama_kelas']) ?>
                         </span>
                     </td>
                     <?php if (has_role('admin')): ?>
+                    <td class="text-center">
+                        <select class="form-input-modern text-xs py-1 px-2 min-w-[150px] pindah-kelas-select"
+                                data-siswa-id="<?= $row['id'] ?>"
+                                data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
+                                onchange="pindahKelas(this)">
+                            <option value="">Pindah ke...</option>
+                            <?php foreach ($all_kelas_options as $k): ?>
+                            <option value="<?= $k['id'] ?>" <?= $k['id'] == $row['kelas_id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($k['nama_kelas']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
                     <td class="text-center">
                         <div class="flex gap-1 justify-center">
                             <a href="edit.php?id=<?= $row['id'] ?>" class="w-9 h-9 rounded-xl inline-flex items-center justify-center text-gray-500 hover:text-yellow-500 hover:bg-yellow-50 transition" title="Edit">
@@ -361,6 +413,63 @@ function submitDelete() {
 document.getElementById('deleteModal')?.addEventListener('click', function(e) {
     if (e.target === this) closeDeleteModal();
 });
+
+// ─── Pindah Kelas ─────────────────────────────────────
+function pindahKelas(select) {
+    const siswaId = select.dataset.siswaId;
+    const nama = select.dataset.nama;
+    const kelasBaruId = select.value;
+    const kelasBaruNama = select.options[select.selectedIndex].text;
+
+    if (!kelasBaruId) return;
+
+    if (!confirm(`Pindahkan ${nama} ke kelas ${kelasBaruNama}?\n\nTingkat akan otomatis menyesuaikan.`)) {
+        select.value = '';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'pindah_kelas');
+    formData.append('siswa_id', siswaId);
+    formData.append('kelas_id', kelasBaruId);
+
+    fetch(window.location.href, { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            // Update kelas badge in same row
+            const badge = select.closest('tr').querySelector('.kelas-badge');
+            if (badge) badge.textContent = res.kelas_baru;
+            showToast('success', `${nama} → ${res.kelas_baru}`);
+        } else {
+            showToast('error', res.error || 'Gagal pindah kelas');
+            select.value = '';
+        }
+    })
+    .catch(() => {
+        showToast('error', 'Koneksi error');
+        select.value = '';
+    });
+}
+
+function showToast(type, msg) {
+    const container = document.getElementById('msgContainer') || (() => {
+        const d = document.createElement('div');
+        d.id = 'msgContainer';
+        d.className = 'mb-4';
+        document.querySelector('.filter-card')?.after(d) || document.querySelector('.card-modern')?.before(d);
+        return d;
+    })();
+    const div = document.createElement('div');
+    div.className = `alert-modern ${type === 'success' ? 'alert-success-modern' : 'alert-danger-modern'} flex items-center gap-3 mb-2`;
+    div.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} text-lg"></i>
+        <span class="flex-1">${msg}</span>
+        <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
+    `;
+    container.appendChild(div);
+    setTimeout(() => { if (div.parentElement) div.remove(); }, 3000);
+}
 </script>
 
 

@@ -43,8 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($cek->num_rows > 0) {
             $error = "NIS '$nis' sudah digunakan!";
         } else {
-            $stmt = conn()->prepare("UPDATE siswa SET nis=?, nisn=?, nama=?, kelas_id=?, jenis_kelamin=? WHERE id=?");
-            $stmt->bind_param("sssisi", $nis, $nisn, $nama, $kelas_id, $jenis_kelamin, $id);
+            $tingkat_baru = detectTingkatByKelasId($kelas_id);
+            $stmt = conn()->prepare("UPDATE siswa SET nis=?, nisn=?, nama=?, kelas_id=?, tingkat=?, jenis_kelamin=? WHERE id=?");
+            $stmt->bind_param("sssissi", $nis, $nisn, $nama, $kelas_id, $tingkat_baru, $jenis_kelamin, $id);
 
             if ($stmt->execute()) {
                 $_SESSION['success'] = "Siswa berhasil diperbarui!";
