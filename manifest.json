@@ -1,0 +1,22 @@
+{
+    "name": "Sistem Absensi Siswa",
+    "short_name": "Absensi",
+    "description": "Aplikasi absensi siswa berbasis web",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#4f46e5",
+    "theme_color": "#4f46e5",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/assets/uploads/logo_1773179850.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/assets/uploads/logo_1773179850.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

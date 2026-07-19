@@ -12,7 +12,7 @@ class App {
             $this->controller = ucfirst($url[0]) . "Controller";
             unset($url[0]);
         }
-
+        
         require_once "../controllers/" . $this->controller . ".php";
         $this->controller = new $this->controller;
 

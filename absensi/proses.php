@@ -1,13 +1,13 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
+require_once __DIR__ . '/../core/init.php';
+require_once __DIR__ . '/../core/Database.php';
+
+if (!has_role('admin', 'guru', 'wali_kelas')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
-
-require_once __DIR__ . '/../core/init.php';
-require_once __DIR__ . '/../core/Database.php';
 
 header('Content-Type: application/json');
 

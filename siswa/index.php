@@ -1,14 +1,39 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 $title = 'Data Siswa - Sistem Absensi Siswa';
+
+// ─── AJAX: Pindah Kelas ─────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'pindah_kelas') {
+    header('Content-Type: application/json');
+    if (!has_role('admin')) {
+        echo json_encode(['success' => false, 'error' => 'Hanya admin yang bisa pindah kelas']);
+        exit;
+    }
+    $siswa_id = (int)($_POST['siswa_id'] ?? 0);
+    $kelas_baru_id = (int)($_POST['kelas_id'] ?? 0);
+    if ($siswa_id <= 0 || $kelas_baru_id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Data tidak valid']);
+        exit;
+    }
+    $tingkat_baru = detectTingkatByKelasId($kelas_baru_id);
+    if ($tingkat_baru === null) {
+        echo json_encode(['success' => false, 'error' => 'Tingkat tidak terdeteksi dari kelas tujuan']);
+        exit;
+    }
+    $stmt = conn()->prepare("UPDATE siswa SET kelas_id = ?, tingkat = ? WHERE id = ? AND status = 'aktif'");
+    $stmt->bind_param("iii", $kelas_baru_id, $tingkat_baru, $siswa_id);
+    if ($stmt->execute() && $stmt->affected_rows > 0) {
+        $nama_kelas = conn()->query("SELECT nama_kelas FROM kelas WHERE id = $kelas_baru_id")->fetch_assoc()['nama_kelas'] ?? '';
+        echo json_encode(['success' => true, 'kelas_baru' => $nama_kelas]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Siswa tidak ditemukan']);
+    }
+    exit;
+}
 
 ob_start();
 
@@ -18,8 +43,22 @@ $page = $_GET['page'] ?? 1;
 $limit = 20;
 $offset = ($page - 1) * $limit;
 
+$uid = (int)($_SESSION['user']['id'] ?? 0);
+
+// Guru only sees students from classes they teach
+$guru_kelas_ids = [];
+if (!has_role('admin')) {
+    $q = conn()->query("SELECT DISTINCT kelas_id FROM guru_kelas WHERE user_id = $uid AND mapel_id IS NOT NULL");
+    while ($r = $q->fetch_assoc()) {
+        $guru_kelas_ids[] = (int)$r['kelas_id'];
+    }
+}
+
 $where = [];
 $where[] = "(s.status = 'aktif' OR s.status IS NULL)";
+if (!has_role('admin') && !empty($guru_kelas_ids)) {
+    $where[] = "s.kelas_id IN (" . implode(',', $guru_kelas_ids) . ")";
+}
 if ($keyword) $where[] = "s.nama LIKE '%" . db()->escape($keyword) . "%'";
 if ($kelas_filter) $where[] = "s.kelas_id = '" . db()->escape($kelas_filter) . "'";
 $where_sql = "WHERE " . implode(' AND ', $where);
@@ -36,141 +75,54 @@ $siswa = conn()->query("
     LIMIT $limit OFFSET $offset
 ");
 
-$kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
+if (!has_role('admin') && !empty($guru_kelas_ids)) {
+    $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas WHERE id IN (" . implode(',', $guru_kelas_ids) . ") ORDER BY nama_kelas");
+} else {
+    $kelas_list = conn()->query("SELECT id, nama_kelas FROM kelas ORDER BY nama_kelas");
+}
+
+$all_kelas_options = [];
+$kelas_list->data_seek(0);
+while ($k = $kelas_list->fetch_assoc()) {
+    $all_kelas_options[] = $k;
+}
+$kelas_list->data_seek(0);
+
+$kelas_json = json_encode($all_kelas_options);
 ?>
 
-<style>
-.siswa-card {
-    border: none;
-    border-radius: 16px;
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-.siswa-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-}
-.siswa-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-.avatar-laki {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-.avatar-perempuan {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-}
-.search-card {
-    border: none;
-    border-radius: 16px;
-    background: white;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-}
-.search-icon {
-    background: var(--wa-bg);
-    border: none;
-    border-radius: 12px 0 0 12px;
-}
-.search-input {
-    border: none;
-    border-radius: 0 12px 12px 0;
-    padding-left: 0;
-}
-.search-input:focus {
-    box-shadow: none;
-}
-.table-header-custom {
-    background: linear-gradient(135deg, var(--wa-dark) 0%, #0d6e67 100%);
-    color: white;
-}
-.table-siswa tbody tr {
-    transition: all 0.2s;
-}
-.table-siswa tbody tr:hover {
-    background: var(--wa-light);
-}
-.badge-kelas {
-    background: rgba(18, 140, 126, 0.1);
-    color: var(--wa-dark);
-    padding: 0.4rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-.btn-action {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-}
-.btn-action:hover {
-    transform: scale(1.1);
-}
-</style>
-
-<script>
-function toggleSelectAll() {
-    const selectAll = document.getElementById('selectAll');
-    const checkboxes = document.querySelectorAll('.siswa-checkbox');
-    checkboxes.forEach(cb => cb.checked = selectAll.checked);
-}
-
-function updateSelectAll() {
-    const checkboxes = document.querySelectorAll('.siswa-checkbox');
-    const selectAll = document.getElementById('selectAll');
-    const checked = document.querySelectorAll('.siswa-checkbox:checked');
-    selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
-    selectAll.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
-}
-
-document.querySelectorAll('.siswa-checkbox').forEach(cb => {
-    cb.addEventListener('change', updateSelectAll);
-});
-</script>
-
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="fw-bold text-wa-dark mb-0">
-        <i class="fas fa-users me-2"></i>Data Siswa
+<div class="flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold text-gray-800">
+        <i class="fas fa-users mr-3 text-primary"></i>Data Siswa
     </h2>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="tambah.php" class="btn btn-wa-primary">
-            <i class="fas fa-user-plus me-1 me-md-2"></i><span class="d-none d-md-inline">Tambah</span>
+    <?php if (has_role('admin')): ?>
+    <div class="flex gap-3">
+        <a href="tambah.php" class="btn-modern btn-primary-modern">
+            <i class="fas fa-user-plus mr-1"></i><span class="hidden md:inline"> Tambah</span>
         </a>
-        <a href="import.php" class="btn btn-wa-success">
-            <i class="fas fa-file-import me-1 me-md-2"></i><span class="d-none d-md-inline">Import</span>
+        <a href="import.php" class="btn-modern btn-success-modern">
+            <i class="fas fa-file-import mr-1"></i><span class="hidden md:inline"> Import</span>
         </a>
-        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-            <i class="fas fa-trash me-1 me-md-2"></i><span class="d-none d-md-inline">Hapus</span>
+        <button type="button" class="btn-modern btn-danger-modern" onclick="openDeleteModal()">
+            <i class="fas fa-trash mr-1"></i><span class="hidden md:inline"> Hapus</span>
         </button>
     </div>
+    <?php endif; ?>
 </div>
 
-<div class="search-card p-4 mb-4">
-    <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-5">
-            <label class="form-label fw-semibold text-muted small">PENCARIAN</label>
-            <div class="input-group">
-                <span class="input-group-text search-icon">
-                    <i class="fas fa-search text-muted"></i>
-                </span>
-                <input type="text" name="cari" class="form-control search-input" 
+<div class="filter-card mb-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+        <div class="md:col-span-5">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Pencarian</label>
+            <div class="relative">
+                <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" name="cari" class="form-input-modern form-input-icon" 
                        placeholder="Cari nama siswa..." value="<?= htmlspecialchars($keyword) ?>">
             </div>
         </div>
-        <div class="col-md-4">
-            <label class="form-label fw-semibold text-muted small">FILTER KELAS</label>
-            <select name="kelas_id" class="form-select" onchange="this.form.submit()">
+        <div class="md:col-span-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Filter Kelas</label>
+            <select name="kelas_id" class="form-select-modern" onchange="this.form.submit()">
                 <option value="">Semua Kelas</option>
                 <?php
                 $kelas_list->data_seek(0);
@@ -182,29 +134,33 @@ document.querySelectorAll('.siswa-checkbox').forEach(cb => {
                 <?php endwhile; ?>
             </select>
         </div>
-        <div class="col-md-3">
-            <label class="form-label fw-semibold text-muted small">&nbsp;</label>
-            <button type="submit" class="btn btn-wa-primary w-100">
-                <i class="fas fa-search me-2"></i>Cari
+        <div class="md:col-span-3">
+            <button type="submit" class="btn-modern btn-primary-modern w-full">
+                <i class="fas fa-search mr-2"></i>Cari
             </button>
         </div>
     </form>
 </div>
 
 <?php if ($total > 0): ?>
-<div class="card-custom">
-    <div class="table-responsive">
-        <table class="table table-siswa mb-0">
-            <thead class="table-header-custom">
+<div class="card-modern overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="table-modern">
+            <thead class="text-white">
                 <tr>
-                    <th class="text-center rounded-top-0" style="width: 50px">
-                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                    <?php if (has_role('admin')): ?>
+                    <th class="text-center w-[50px]">
+                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="accent-white">
                     </th>
-                    <th class="text-center" style="width: 60px">No</th>
+                    <?php endif; ?>
+                    <th class="text-center w-[60px]">No</th>
                     <th>Siswa</th>
                     <th class="text-center">NIS</th>
                     <th class="text-center">Kelas</th>
-                    <th class="text-center" style="width: 120px">Aksi</th>
+                    <?php if (has_role('admin')): ?>
+                    <th class="text-center w-[180px]">Pindah Kelas</th>
+                    <th class="text-center w-[120px]">Aksi</th>
+                    <?php endif; ?>
                 </tr>
             </thead>
             <tbody>
@@ -215,40 +171,54 @@ document.querySelectorAll('.siswa-checkbox').forEach(cb => {
                     $avatar_class = ($row['jenis_kelamin'] === 'Laki-laki') ? 'avatar-laki' : 'avatar-perempuan';
                 ?>
                 <tr>
+                    <?php if (has_role('admin')): ?>
                     <td class="text-center">
                         <input type="checkbox" name="siswa_ids[]" value="<?= $row['id'] ?>" class="siswa-checkbox">
                     </td>
-                    <td class="text-center text-muted"><?= $no++ ?></td>
+                    <?php endif; ?>
+                    <td class="text-center"><?= $no++ ?></td>
                     <td>
-                        <div class="d-flex align-items-center">
-                            <div class="siswa-avatar <?= $avatar_class ?> me-3">
+                        <div class="flex items-center gap-3">
+                            <div class="avatar-modern <?= $avatar_class ?> w-10 h-10 text-sm">
                                 <?= $initial ?>
                             </div>
                             <div>
-                                <div class="fw-semibold"><?= htmlspecialchars($row['nama']) ?></div>
-                                <small class="text-muted"><?= $row['jenis_kelamin'] ?></small>
+                                <div class="font-semibold text-sm"><?= htmlspecialchars($row['nama']) ?></div>
+                                <span class="text-xs text-gray-500"><?= $row['jenis_kelamin'] ?></span>
                             </div>
                         </div>
                     </td>
+                    <td class="text-center"><?= htmlspecialchars($row['nis']) ?></td>
                     <td class="text-center">
-                        <span class="text-muted"><?= htmlspecialchars($row['nis']) ?></span>
-                    </td>
-                    <td class="text-center">
-                        <span class="badge-kelas">
-                            <i class="fas fa-door-open me-1"></i><?= htmlspecialchars($row['nama_kelas']) ?>
+                        <span class="kelas-badge inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-primary-50 text-primary">
+                            <i class="fas fa-door-open text-xs"></i><?= htmlspecialchars($row['nama_kelas']) ?>
                         </span>
                     </td>
+                    <?php if (has_role('admin')): ?>
                     <td class="text-center">
-                        <div class="d-flex gap-1 justify-content-center">
-                            <a href="edit.php?id=<?= $row['id'] ?>" class="btn btn-action btn-warning" title="Edit">
+                        <select class="form-input-modern text-xs py-1 px-2 min-w-[150px] pindah-kelas-select"
+                                data-siswa-id="<?= $row['id'] ?>"
+                                data-nama="<?= htmlspecialchars($row['nama'], ENT_QUOTES) ?>"
+                                onchange="pindahKelas(this)">
+                            <option value="">Pindah ke...</option>
+                            <?php foreach ($all_kelas_options as $k): ?>
+                            <option value="<?= $k['id'] ?>" <?= $k['id'] == $row['kelas_id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($k['nama_kelas']) ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </td>
+                    <td class="text-center">
+                        <div class="flex gap-1 justify-center">
+                            <a href="edit.php?id=<?= $row['id'] ?>" class="w-9 h-9 rounded-xl inline-flex items-center justify-center text-gray-500 hover:text-yellow-500 hover:bg-yellow-50 transition" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <a href="hapus.php?id=<?= $row['id'] ?>" class="btn btn-action btn-danger" title="Hapus"
-                               onclick="return confirm('Yakin hapus <?= htmlspecialchars($row['nama']) ?>?')">
+                            <a href="hapus.php?id=<?= $row['id'] ?>" class="w-9 h-9 rounded-xl inline-flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-red-50 transition" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </a>
                         </div>
                     </td>
+                    <?php endif; ?>
                 </tr>
                 <?php endwhile; ?>
             </tbody>
@@ -257,327 +227,251 @@ document.querySelectorAll('.siswa-checkbox').forEach(cb => {
 </div>
 
 <?php if ($total_pages > 1): ?>
-<nav class="mt-4">
-    <ul class="pagination justify-content-center pagination-custom">
+<nav class="mt-6">
+    <div class="pagination-modern justify-center">
         <?php for ($i = 1; $i <= $total_pages; $i++): ?>
-        <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-            <a class="page-link" href="?page=<?= $i ?>&cari=<?= urlencode($keyword) ?>&kelas_id=<?= $kelas_filter ?>">
-                <?= $i ?>
-            </a>
-        </li>
+        <a href="?page=<?= $i ?>&cari=<?= urlencode($keyword) ?>&kelas_id=<?= $kelas_filter ?>" 
+           class="<?= ($i == $page) ? 'active' : '' ?>">
+            <?= $i ?>
+        </a>
         <?php endfor; ?>
-    </ul>
+    </div>
 </nav>
 <?php endif; ?>
 
 <?php else: ?>
-<div class="card-custom p-5 text-center">
-    <div class="mb-3">
-        <i class="fas fa-user-slash fa-4x text-muted"></i>
-    </div>
-    <h5 class="text-muted">Tidak ada data siswa</h5>
-    <p class="text-muted small">Silakan tambah data siswa atau ubah filter pencarian</p>
-    <a href="tambah.php" class="btn btn-wa-primary">
-        <i class="fas fa-plus me-2"></i>Tambah Siswa
+<div class="card-modern p-8 text-center">
+    <i class="fas fa-user-slash text-4xl text-gray-300 mb-3"></i>
+    <h5 class="text-gray-400 font-semibold">Tidak ada data siswa</h5>
+    <p class="text-gray-400 text-sm mt-1">Silakan tambah data siswa atau ubah filter pencarian</p>
+    <?php if (has_role('admin')): ?>
+    <a href="tambah.php" class="btn-modern btn-primary-modern mt-4 inline-flex">
+        <i class="fas fa-plus mr-2"></i>Tambah Siswa
     </a>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden;">
-            <div class="modal-header bg-danger bg-opacity-10 border-0 pb-0">
-                <div class="text-center w-100 pt-4">
-                    <div class="delete-icon-container mb-3">
-                        <i class="fas fa-trash-alt"></i>
+<!-- Delete Modal -->
+<div id="deleteModal" class="modal-overlay z-50" style="display: none;">
+    <div class="modal-modern max-w-[500px]">
+        <div class="modal-modern-header flex-col items-center text-center pt-8">
+            <div class="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center mx-auto mb-4 shadow-lg" style="box-shadow:0 10px 30px rgba(220,53,69,0.3);">
+                <i class="fas fa-trash-alt text-2xl text-white"></i>
+            </div>
+            <h4 class="text-lg font-bold text-gray-800">Hapus Siswa</h4>
+            <p class="text-sm text-gray-400 mt-1">Pilih opsi penghapusan data</p>
+            <button onclick="closeDeleteModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">&times;</button>
+        </div>
+        <div class="modal-modern-body">
+            <form method="POST" id="deleteForm" action="hapus_batch.php">
+                <!-- Option: Selected -->
+                <label class="block relative mb-3 cursor-pointer">
+                    <input class="absolute inset-0 opacity-0 z-10 cursor-pointer" type="radio" name="delete_type" value="selected" checked onchange="onDeleteTypeChange(this)">
+                    <div class="option-card p-4 pr-12 border-2 border-gray-200 rounded-xl transition-all relative has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 hover:border-emerald-500 hover:bg-emerald-50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-xl bg-primary-50 text-primary flex items-center justify-center shrink-0">
+                                <i class="fas fa-check-square"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm">Hapus yang Dipilih</div>
+                                <small class="text-gray-400" id="selectedCountText">Centang siswa di tabel...</small>
+                            </div>
+                        </div>
                     </div>
-                    <h4 class="modal-title fw-bold text-dark">Hapus Siswa</h4>
-                    <p class="text-muted mb-0 pb-3">Pilih opsi penghapusan data</p>
+                </label>
+                
+                <!-- Option: Per Kelas -->
+                <label class="block relative mb-3 cursor-pointer">
+                    <input class="absolute inset-0 opacity-0 z-10 cursor-pointer" type="radio" name="delete_type" value="kelas" onchange="onDeleteTypeChange(this)">
+                    <div class="option-card p-4 pr-12 border-2 border-gray-200 rounded-xl transition-all relative has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 hover:border-emerald-500 hover:bg-emerald-50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                                <i class="fas fa-door-open"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm">Hapus per Kelas</div>
+                                <small class="text-gray-400">Pilih kelas tertentu</small>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+                
+                <!-- Option: All -->
+                <label class="block relative mb-4 cursor-pointer">
+                    <input class="absolute inset-0 opacity-0 z-10 cursor-pointer" type="radio" name="delete_type" value="all" onchange="onDeleteTypeChange(this)">
+                    <div class="option-card p-4 pr-12 border-2 border-gray-200 rounded-xl transition-all relative has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 hover:border-emerald-500 hover:bg-emerald-50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                                <i class="fas fa-users-slash"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm">Hapus Semua</div>
+                                <small class="text-gray-400">Hapus seluruh siswa</small>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+                
+                <div class="mb-4 hidden" id="kelasSelect">
+                    <select name="kelas_id" class="form-select-modern">
+                        <option value="">Pilih Kelas</option>
+                        <?php
+                        $kelas_list->data_seek(0);
+                        while ($row = $kelas_list->fetch_assoc()):
+                        ?>
+                        <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
+                        <?php endwhile; ?>
+                    </select>
                 </div>
-                <button type="button" class="btn-close position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4">
-                <form method="POST" id="deleteForm" action="hapus_batch.php">
-                    <div class="delete-option mb-3">
-                        <input class="form-check-input" type="radio" name="delete_type" id="deleteSelected" value="selected" checked>
-                        <label class="form-check-label w-100" for="deleteSelected">
-                            <div class="option-card">
-                                <div class="d-flex align-items-center">
-                                    <div class="option-icon bg-primary bg-opacity-10 text-primary">
-                                        <i class="fas fa-check-square"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold">Hapus yang Dipilih</div>
-                                        <small class="text-muted" id="selectedCountText">Centang siswa di tabel...</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                    
-                    <div class="delete-option mb-3">
-                        <input class="form-check-input" type="radio" name="delete_type" id="deleteKelas" value="kelas">
-                        <label class="form-check-label w-100" for="deleteKelas">
-                            <div class="option-card">
-                                <div class="d-flex align-items-center">
-                                    <div class="option-icon bg-info bg-opacity-10 text-info">
-                                        <i class="fas fa-door-open"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-semibold">Hapus per Kelas</div>
-                                        <small class="text-muted">Pilih kelas tertentu</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                    
-                    <div class="delete-option mb-3">
-                        <input class="form-check-input" type="radio" name="delete_type" id="deleteAll" value="all">
-                        <label class="form-check-label w-100" for="deleteAll">
-                            <div class="option-card">
-                                <div class="d-flex align-items-center">
-                                    <div class="option-icon bg-danger bg-opacity-10 text-danger">
-                                        <i class="fas fa-users-slash"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-semibold">Hapus Semua</div>
-                                        <small class="text-muted">Hapus seluruh siswa</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                    
-                    <div class="mb-3" id="kelasSelect" style="display: none;">
-                        <select name="kelas_id" class="form-select" style="border-radius: 12px; border: 2px solid #e0e0e0;">
-                            <option value="">Pilih Kelas</option>
-                            <?php
-                            $kelas_list->data_seek(0);
-                            while ($row = $kelas_list->fetch_assoc()):
-                            ?>
-                            <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
-                            <?php endwhile; ?>
-                        </select>
-                    </div>
-                    
-                    <input type="hidden" name="siswa_ids" id="siswaIdsInput" value="">
-                    
-                    <div class="delete-warning">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <span>Data yang dihapus tidak dapat dikembalikan!</span>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer border-0 px-4 pb-4">
-                <button type="button" class="btn btn-cancel flex-fill" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Batal
-                </button>
-                <button type="button" class="btn btn-delete flex-fill" onclick="submitDelete()">
-                    <i class="fas fa-trash me-2"></i>Ya, Hapus
-                </button>
-            </div>
+                
+                <input type="hidden" name="siswa_ids" id="siswaIdsInput" value="">
+                
+                <div class="flex items-center gap-2 p-3.5 bg-yellow-50 text-yellow-800 rounded-xl text-sm">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Data yang dihapus tidak dapat dikembalikan!</span>
+                </div>
+            </form>
+        </div>
+        <div class="modal-modern-footer">
+            <button type="button" class="btn-modern btn-ghost flex-1" onclick="closeDeleteModal()">
+                <i class="fas fa-times mr-2"></i>Batal
+            </button>
+            <button type="button" class="btn-modern btn-danger-modern flex-1" onclick="submitDelete()">
+                <i class="fas fa-trash mr-2"></i>Ya, Hapus
+            </button>
         </div>
     </div>
 </div>
 
-<style>
-.delete-icon-container {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #DC3545 0%, #c82333 100%);
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 10px 30px rgba(220, 53, 69, 0.3);
-}
-.delete-icon-container i {
-    font-size: 2rem;
-    color: white;
-}
-.delete-option {
-    position: relative;
-}
-.delete-option input {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-    z-index: 10;
-}
-.option-card {
-    padding: 1rem;
-    padding-right: 3rem;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-}
-.option-card::after {
-    content: '';
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 24px;
-    height: 24px;
-    border: 2px solid #ccc;
-    border-radius: 50%;
-    transition: all 0.3s;
-}
-.option-card:hover {
-    border-color: #25C185;
-    background: rgba(37, 193, 133, 0.05);
-    transform: translateX(5px);
-}
-.delete-option input:checked + .option-card {
-    border-color: #25C185;
-    background: rgba(37, 193, 133, 0.1);
-}
-.delete-option input:checked + .option-card::after {
-    background: #25C185;
-    border-color: #25C185;
-    content: '\f00c';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    color: white;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.option-icon {
-    width: 45px;
-    height: 45px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 1rem;
-}
-.delete-warning {
-    background: #FFF3CD;
-    color: #856404;
-    padding: 0.875rem 1rem;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-}
-.btn-cancel {
-    background: #f8f9fa;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    color: #666;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-.btn-cancel:hover {
-    background: #e9ecef;
-    border-color: #ccc;
-}
-.btn-delete {
-    background: linear-gradient(135deg, #DC3545 0%, #c82333 100%);
-    border: none;
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    color: white;
-    font-weight: 600;
-    transition: all 0.3s;
-}
-.btn-delete:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
-}
-</style>
-
 <script>
-document.querySelectorAll('input[name="delete_type"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        const kelasSelect = document.getElementById('kelasSelect');
-        const siswaIdsInput = document.getElementById('siswaIdsInput');
-        const btn = document.querySelector('.btn-delete');
-        
-        if (this.value === 'kelas') {
-            kelasSelect.style.display = 'block';
-            siswaIdsInput.value = '';
-            btn.innerHTML = '<i class="fas fa-trash me-2"></i>Ya, Hapus per Kelas';
-        } else if (this.value === 'selected') {
-            kelasSelect.style.display = 'none';
-            const checked = document.querySelectorAll('.siswa-checkbox:checked');
-            siswaIdsInput.value = Array.from(checked).map(cb => cb.value).join(',');
-            btn.innerHTML = '<i class="fas fa-trash me-2"></i>Ya, Hapus yang Dipilih';
-        } else {
-            kelasSelect.style.display = 'none';
-            siswaIdsInput.value = 'all';
-            btn.innerHTML = '<i class="fas fa-trash me-2"></i>Ya, Hapus Semua';
-        }
-    });
-});
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    document.querySelectorAll('.siswa-checkbox').forEach(cb => cb.checked = selectAll.checked);
+}
+
+function openDeleteModal() {
+    const checked = document.querySelectorAll('.siswa-checkbox:checked');
+    document.getElementById('selectedCountText').innerHTML = checked.length === 0 
+        ? '<span class="text-red-500">Centang siswa di tabel...</span>'
+        : '<span class="text-emerald-600 font-bold">' + checked.length + '</span> siswa dipilih';
+    document.getElementById('siswaIdsInput').value = Array.from(checked).map(cb => cb.value).join(',');
+    document.getElementById('deleteModal').style.display = '';
+    document.getElementById('deleteSelected').checked = true;
+    document.getElementById('kelasSelect').classList.add('hidden');
+    document.querySelector('.btn-danger-modern').innerHTML = '<i class="fas fa-trash mr-2"></i>Ya, Hapus yang Dipilih';
+    document.querySelector('.btn-danger-modern').disabled = false;
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+function onDeleteTypeChange(radio) {
+    const kelasSelect = document.getElementById('kelasSelect');
+    const btn = document.querySelector('.btn-danger-modern');
+    if (radio.value === 'kelas') {
+        kelasSelect.classList.remove('hidden');
+        document.getElementById('siswaIdsInput').value = '';
+        btn.innerHTML = '<i class="fas fa-trash mr-2"></i>Ya, Hapus per Kelas';
+    } else if (radio.value === 'selected') {
+        kelasSelect.classList.add('hidden');
+        const checked = document.querySelectorAll('.siswa-checkbox:checked');
+        document.getElementById('siswaIdsInput').value = Array.from(checked).map(cb => cb.value).join(',');
+        btn.innerHTML = '<i class="fas fa-trash mr-2"></i>Ya, Hapus yang Dipilih';
+    } else {
+        kelasSelect.classList.add('hidden');
+        document.getElementById('siswaIdsInput').value = 'all';
+        btn.innerHTML = '<i class="fas fa-trash mr-2"></i>Ya, Hapus Semua';
+    }
+}
 
 function submitDelete() {
     const deleteType = document.querySelector('input[name="delete_type"]:checked').value;
-    let message = '';
-    
+    let message = '';    
     if (deleteType === 'selected') {
         const checked = document.querySelectorAll('.siswa-checkbox:checked');
-        if (checked.length === 0) {
-            alert('Pilih siswa yang ingin dihapus!');
-            return;
-        }
+        if (checked.length === 0) { alert('Pilih siswa yang ingin dihapus!'); return; }
         message = 'Anda akan menghapus ' + checked.length + ' siswa yang dipilih.\n\nApakah Anda yakin?';
     } else if (deleteType === 'kelas') {
-        const kelasId = document.querySelector('select[name="kelas_id"]').value;
-        const kelasName = document.querySelector('select[name="kelas_id"] option[value="' + kelasId + '"]').text;
-        if (!kelasId) {
-            document.getElementById('kelasSelect').classList.add('is-invalid');
-            return;
-        }
-        document.getElementById('kelasSelect').classList.remove('is-invalid');
+        const kelasSelect = document.querySelector('select[name="kelas_id"]');
+        const kelasName = kelasSelect.options[kelasSelect.selectedIndex]?.text;
+        if (!kelasSelect.value) { kelasSelect.focus(); return; }
         message = 'Anda akan menghapus semua siswa di kelas ' + kelasName + '.\n\nApakah Anda yakin?';
     } else {
         message = 'Anda akan menghapus SEMUA siswa.\n\nTindakan ini tidak dapat dibatalkan!\n\nApakah Anda yakin?';
     }
-    
     if (confirm(message)) {
-        const btn = document.querySelector('.btn-delete');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Menghapus...';
+        const btn = document.querySelector('.btn-danger-modern');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menghapus...';
         btn.disabled = true;
-        
-        setTimeout(() => {
-            document.getElementById('deleteForm').submit();
-        }, 500);
+        setTimeout(() => document.getElementById('deleteForm').submit(), 500);
     }
 }
 
-document.getElementById('deleteModal').addEventListener('show.bs.modal', function() {
-    const checked = document.querySelectorAll('.siswa-checkbox:checked');
-    const count = checked.length;
-    
-    const countText = document.getElementById('selectedCountText');
-    if (count === 0) {
-        countText.textContent = 'Centang siswa di tabel...';
-        countText.classList.add('text-danger');
-    } else {
-        countText.innerHTML = '<span class="text-success fw-bold">' + count + '</span> siswa dipilih';
-        countText.classList.remove('text-danger');
-    }
-    
-    document.getElementById('siswaIdsInput').value = Array.from(checked).map(cb => cb.value).join(',');
-    
-    document.getElementById('deleteSelected').checked = true;
-    document.getElementById('kelasSelect').style.display = 'none';
-    
-    const btn = document.querySelector('.btn-delete');
-    btn.innerHTML = '<i class="fas fa-trash me-2"></i>Ya, Hapus yang Dipilih';
-    btn.disabled = false;
+// Close modal on overlay click
+document.getElementById('deleteModal')?.addEventListener('click', function(e) {
+    if (e.target === this) closeDeleteModal();
 });
+
+// ─── Pindah Kelas ─────────────────────────────────────
+function pindahKelas(select) {
+    const siswaId = select.dataset.siswaId;
+    const nama = select.dataset.nama;
+    const kelasBaruId = select.value;
+    const kelasBaruNama = select.options[select.selectedIndex].text;
+
+    if (!kelasBaruId) return;
+
+    if (!confirm(`Pindahkan ${nama} ke kelas ${kelasBaruNama}?\n\nTingkat akan otomatis menyesuaikan.`)) {
+        select.value = '';
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('action', 'pindah_kelas');
+    formData.append('siswa_id', siswaId);
+    formData.append('kelas_id', kelasBaruId);
+
+    fetch(window.location.href, { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(res => {
+        if (res.success) {
+            // Update kelas badge in same row
+            const badge = select.closest('tr').querySelector('.kelas-badge');
+            if (badge) badge.textContent = res.kelas_baru;
+            showToast('success', `${nama} → ${res.kelas_baru}`);
+        } else {
+            showToast('error', res.error || 'Gagal pindah kelas');
+            select.value = '';
+        }
+    })
+    .catch(() => {
+        showToast('error', 'Koneksi error');
+        select.value = '';
+    });
+}
+
+function showToast(type, msg) {
+    const container = document.getElementById('msgContainer') || (() => {
+        const d = document.createElement('div');
+        d.id = 'msgContainer';
+        d.className = 'mb-4';
+        document.querySelector('.filter-card')?.after(d) || document.querySelector('.card-modern')?.before(d);
+        return d;
+    })();
+    const div = document.createElement('div');
+    div.className = `alert-modern ${type === 'success' ? 'alert-success-modern' : 'alert-danger-modern'} flex items-center gap-3 mb-2`;
+    div.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} text-lg"></i>
+        <span class="flex-1">${msg}</span>
+        <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
+    `;
+    container.appendChild(div);
+    setTimeout(() => { if (div.parentElement) div.remove(); }, 3000);
+}
 </script>
+
 
 <?php
 $content = ob_get_clean();

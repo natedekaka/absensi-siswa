@@ -1,22 +1,23 @@
 <?php
 session_start();
-if (!isset($_SESSION['user'])) {
-    header("Location: ../login.php");
-    exit;
-}
-
 require_once '../core/init.php';
 require_once '../core/Database.php';
+require_role('admin', 'guru', 'wali_kelas');
 
 $title = 'Input Absensi - Sistem Absensi Siswa';
 
 ob_start();
 ?>
 
-<div class="d-flex align-items-center mb-4 flex-wrap gap-2">
-    <h2 class="fw-bold text-wa-dark mb-0">
-        <i class="fas fa-clipboard-check me-2"></i>Input Absensi Harian
+<div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+    <h2 class="text-xl font-bold text-gray-800">
+        <i class="fas fa-clipboard-check mr-3 text-primary"></i>Input Absensi Harian
     </h2>
+    <div class="flex items-center gap-2">
+        <span id="autoSaveStatus" class="text-xs text-gray-400 hidden">
+            <i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...
+        </span>
+    </div>
 </div>
 
 <form id="form-absensi">
@@ -24,73 +25,65 @@ ob_start();
     <input type="hidden" name="kelas_id" id="kelas_id">
     <input type="hidden" name="semester_id" id="semester_id">
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card-custom p-3 h-100">
-                <label class="form-label fw-semibold mb-2 text-wa-dark">
-                    <i class="fas fa-calendar-alt me-2"></i>Tanggal
-                </label>
-                <input type="date" name="tanggal" id="tanggal" class="form-control form-select-custom" 
-                       value="<?= date('Y-m-d') ?>" required>
-            </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="card-modern p-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
+                <i class="fas fa-calendar-alt mr-2"></i>Tanggal
+            </label>
+            <input type="date" name="tanggal" id="tanggal" class="form-input-modern" 
+                   value="<?= date('Y-m-d') ?>" required>
         </div>
-        <div class="col-md-4">
-            <div class="card-custom p-3 h-100">
-                <label class="form-label fw-semibold mb-2 text-wa-dark">
-                    <i class="fas fa-graduation-cap me-2"></i>Semester
-                </label>
-                <select id="semester" name="semester_id" class="form-select form-select-custom" required>
-                    <option value="">Pilih Semester</option>
-                    <?php
-                    $semester = conn()->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
-                    while ($row = $semester->fetch_assoc()):
-                        $selected = $row['is_active'] ? 'selected' : '';
-                    ?>
-                    <option value="<?= $row['id'] ?>" <?= $selected ?>><?= htmlspecialchars($row['nama']) ?></option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
+        <div class="card-modern p-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
+                <i class="fas fa-graduation-cap mr-2"></i>Semester
+            </label>
+            <select id="semester" name="semester_id" class="form-select-modern" required>
+                <option value="">Pilih Semester</option>
+                <?php
+                $semester = conn()->query("SELECT * FROM semester ORDER BY is_active DESC, tahun_ajaran_id DESC, semester ASC");
+                while ($row = $semester->fetch_assoc()):
+                    $selected = $row['is_active'] ? 'selected' : '';
+                ?>
+                <option value="<?= $row['id'] ?>" <?= $selected ?>><?= htmlspecialchars($row['nama']) ?></option>
+                <?php endwhile; ?>
+            </select>
         </div>
-        <div class="col-md-4">
-            <div class="card-custom p-3 h-100">
-                <label class="form-label fw-semibold mb-2 text-wa-dark">
-                    <i class="fas fa-door-open me-2"></i>Kelas
-                </label>
-                <select id="kelas" class="form-select form-select-custom" required>
-                    <option value="">Pilih Kelas</option>
-                    <option value="all">Semua Kelas</option>
-                    <?php
-                    $kelas = conn()->query("SELECT * FROM kelas ORDER BY nama_kelas");
-                    while ($row = $kelas->fetch_assoc()):
-                    ?>
-                    <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
-                    <?php endwhile; ?>
-                </select>
-            </div>
+        <div class="card-modern p-4">
+            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2 block">
+                <i class="fas fa-door-open mr-2"></i>Kelas
+            </label>
+            <select id="kelas" class="form-select-modern" required>
+                <option value="">Pilih Kelas</option>
+                <option value="all">Semua Kelas</option>
+                <?php
+                $kelas = conn()->query("SELECT * FROM kelas ORDER BY nama_kelas");
+                while ($row = $kelas->fetch_assoc()):
+                ?>
+                <option value="<?= $row['id'] ?>"><?= htmlspecialchars($row['nama_kelas']) ?></option>
+                <?php endwhile; ?>
+            </select>
         </div>
     </div>
 
-    <div class="row mb-4" id="searchContainer" style="display: none;">
-        <div class="col-md-6">
-            <div class="search-box">
-                <i class="fas fa-search"></i>
-                <input type="text" id="search_nama" class="form-control form-control-custom" 
-                       placeholder="Cari nama siswa...">
-            </div>
+    <div class="mb-6 hidden" id="searchContainer" style="display: none;">
+        <div class="relative max-w-md">
+            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="search_nama" class="form-input-modern form-input-icon" 
+                   placeholder="Cari nama siswa...">
         </div>
     </div>
 
-    <div id="tombolSimpanAtas" class="mb-4" style="display: none;">
-        <button type="submit" class="btn btn-wa-primary">
-            <i class="fas fa-save me-2"></i>Simpan Absensi
+    <div id="tombolSimpanAtas" class="mb-6 hidden" style="display: none;">
+        <button type="submit" class="btn-modern btn-primary-modern">
+            <i class="fas fa-save mr-2"></i>Simpan Absensi
         </button>
     </div>
 
-    <div id="siswa-container" class="mb-4"></div>
+    <div id="siswa-container" class="mb-6"></div>
 
-    <div id="tombolSimpanBawah" class="text-center" style="display: none;">
-        <button type="submit" class="btn btn-wa-primary btn-lg px-5">
-            <i class="fas fa-save me-2"></i>Simpan Semua Absensi
+    <div id="tombolSimpanBawah" class="text-center hidden" style="display: none;">
+        <button type="submit" class="btn-modern btn-primary-modern btn-lg-modern px-8">
+            <i class="fas fa-save mr-2"></i>Simpan Semua Absensi
         </button>
     </div>
 </form>
@@ -99,6 +92,7 @@ ob_start();
 $content = ob_get_clean();
 
 $scripts = "<script>
+// ─── Inisialisasi ─────────────────────────────────────────────
 window.onload = function() {
     document.getElementById('form-absensi').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -134,6 +128,7 @@ document.getElementById('kelas').addEventListener('change', function() {
 document.getElementById('tanggal').addEventListener('change', loadSiswa);
 document.getElementById('search_nama').addEventListener('input', loadSiswa);
 
+// ─── Load Siswa (AJAX) ──────────────────────────────────────
 function loadSiswa() {
     const kelasId = document.getElementById('kelas').value;
     const tanggal = document.getElementById('tanggal').value;
@@ -160,6 +155,98 @@ function loadSiswa() {
     }
 }
 
+// ─── FITUR 1: Set Semua Hadir ────────────────────────────────
+function selectAllHadir(checked) {
+    const radios = document.querySelectorAll('#siswa-container input[type=\"radio\"][value=\"Hadir\"]');
+    radios.forEach(function(radio) {
+        radio.checked = checked;
+    });
+    if (checked && radios.length > 0) {
+        triggerAutoSave(radios[0]);
+    }
+}
+
+// ─── FITUR 2: Auto-Save on Radio Click ──────────────────────
+var autoSaveTimer = null;
+function triggerAutoSave(el) {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(function() {
+        doAutoSave();
+    }, 400);
+}
+
+function doAutoSave() {
+    const statusEl = document.getElementById('autoSaveStatus');
+    statusEl.classList.remove('hidden');
+    
+    const csrfToken = document.querySelector('input[name=\"csrf_token\"]')?.value;
+    const tanggal = document.getElementById('tanggal').value;
+    const semesterId = document.getElementById('semester').value;
+    
+    const statuses = {};
+    const radioButtons = document.querySelectorAll('input[type=\"radio\"]:checked');
+    for (let i = 0; i < radioButtons.length; i++) {
+        const radio = radioButtons[i];
+        if (radio.name.indexOf('status[') === 0) {
+            const match = radio.name.match(/status\[(\d+)\]/);
+            if (match) {
+                statuses[match[1]] = radio.value;
+            }
+        }
+    }
+    
+    if (Object.keys(statuses).length === 0) {
+        statusEl.classList.add('hidden');
+        return;
+    }
+    
+    fetch('proses.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            csrf_token: csrfToken,
+            tanggal: tanggal,
+            semester_id: semesterId,
+            status: statuses
+        })
+    })
+    .then(response => response.text())
+    .then(text => {
+        try {
+            const data = JSON.parse(text);
+            if (data.success) {
+                showToast(data.message, 'success');
+            }
+        } catch(e) {}
+    })
+    .catch(error => {})
+    .finally(() => {
+        statusEl.classList.add('hidden');
+    });
+}
+
+// ─── Toast Notification ──────────────────────────────────────
+function showToast(msg, type) {
+    let toast = document.getElementById('toastNotif');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toastNotif';
+        toast.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:all 0.3s;transform:translateY(100px);opacity:0;';
+        document.body.appendChild(toast);
+    }
+    toast.style.background = type === 'success' ? '#10B981' : '#EF4444';
+    toast.style.color = '#fff';
+    toast.innerHTML = (type === 'success' ? '<i class=\"fas fa-check-circle mr-2\"></i>' : '<i class=\"fas fa-exclamation-circle mr-2\"></i>') + msg;
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+    clearTimeout(toast._hide);
+    toast._hide = setTimeout(() => {
+        toast.style.transform = 'translateY(100px)';
+        toast.style.opacity = '0';
+    }, 2000);
+}
+
+// ─── Simpan Manual (tombol) ─────────────────────────────────
 function simpanAbsensi(e) {
     e.preventDefault();
     
@@ -189,9 +276,7 @@ function simpanAbsensi(e) {
     
     fetch('proses.php', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             csrf_token: csrfToken,
             tanggal: tanggal,
@@ -199,28 +284,22 @@ function simpanAbsensi(e) {
             status: statuses
         })
     })
-    .then(response => {
-        console.log('Response status:', response.status);
-        return response.text();
-    })
+    .then(response => response.text())
     .then(text => {
-        console.log('Response text:', text);
         try {
             const data = JSON.parse(text);
             if (data.success) {
-                alert(data.message);
+                showToast(data.message, 'success');
                 loadSiswa();
             } else {
-                alert(data.message);
+                showToast(data.message, 'error');
             }
         } catch(e) {
-            console.error('JSON parse error:', e);
-            alert('Respons server tidak valid: ' + text.substring(0, 200));
+            showToast('Respons server tidak valid', 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan! Error: ' + error.message);
+        showToast('Terjadi kesalahan saat menyimpan!', 'error');
     })
     .finally(() => {
         submitBtn.disabled = false;

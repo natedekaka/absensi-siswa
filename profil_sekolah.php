@@ -4,10 +4,7 @@ session_start();
 require_once 'core/init.php';
 require_once 'core/Database.php';
 
-if (!is_logged_in()) {
-    header('Location: ' . BASE_URL . 'login.php');
-    exit;
-}
+require_role('admin');
 
 initKonfigurasiSekolah(conn());
 $sekolah = getKonfigurasiSekolah(conn());
@@ -32,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_profil'])) {
                 mkdir(__DIR__ . '/assets/uploads/', 0755, true);
             }
             
-            if (copy($_FILES['logo']['tmp_name'], $target)) {
+            if (move_uploaded_file($_FILES['logo']['tmp_name'], $target)) {
                 if ($sekolah['logo'] && file_exists(__DIR__ . '/assets/uploads/' . $sekolah['logo'])) {
                     unlink(__DIR__ . '/assets/uploads/' . $sekolah['logo']);
                 }
@@ -56,108 +53,102 @@ $sekolah = getKonfigurasiSekolah(conn());
 ob_start();
 ?>
 
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <h5 class="mb-0"><i class="fas fa-building me-2"></i>Profil Sekolah</h5>
-                </div>
-                <div class="card-body">
-                    <?php if ($message): ?>
-                    <div class="alert alert-<?= $message_type ?> alert-dismissible fade show" role="alert">
-                        <?= htmlspecialchars($message) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                    <?php endif; ?>
+<div class="page-header-modern flex items-center justify-between mb-6">
+    <h2 class="text-xl font-bold text-gray-800">
+        <i class="fas fa-building mr-3 text-primary"></i>Profil Sekolah
+    </h2>
+</div>
 
-                    <form method="POST" enctype="multipart/form-data">
-                        <div class="row">
-                            <div class="col-md-4 text-center mb-4">
-                                <label class="form-label fw-semibold">Logo Sekolah</label>
-                                <div class="logo-preview mb-3" style="width: 120px; height: 120px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; margin: 0 auto; overflow: hidden; border: 3px solid #e2e8f0;">
-                                    <?php if ($sekolah['logo'] && file_exists(__DIR__ . '/assets/uploads/' . $sekolah['logo'])): ?>
-                                        <img src="<?= asset('uploads/' . $sekolah['logo']) ?>" alt="Logo" style="width: 100%; height: 100%; object-fit: contain;">
-                                    <?php else: ?>
-                                        <i class="fas fa-school text-secondary" style="font-size: 3rem;"></i>
-                                    <?php endif; ?>
-                                </div>
-                                <input type="file" name="logo" class="form-control" accept="image/*">
-                                <small class="text-muted">Max 2MB (JPG, PNG, GIF, WEBP)</small>
-                            </div>
-                            
-                            <div class="col-md-8">
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Nama Sekolah</label>
-                                    <input type="text" name="nama_sekolah" class="form-control" 
-                                           value="<?= htmlspecialchars($sekolah['nama_sekolah']) ?>" required>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-semibold">Warna Primer</label>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <input type="color" name="warna_primer" class="form-control form-control-color" 
-                                                   value="<?= $sekolah['warna_primer'] ?>" style="width: 60px; height: 45px;">
-                                            <input type="text" class="form-control" value="<?= $sekolah['warna_primer'] ?>" 
-                                                   id="warnaPrimerValue" readonly>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label fw-semibold">Warna Sekunder</label>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <input type="color" name="warna_sekunder" class="form-control form-control-color" 
-                                                   value="<?= $sekolah['warna_sekunder'] ?>" style="width: 60px; height: 45px;">
-                                            <input type="text" class="form-control" value="<?= $sekolah['warna_sekunder'] ?>" 
-                                                   id="warnaSekunderValue" readonly>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Preview Tampilan</label>
-                                    <div class="p-3 rounded" style="background: linear-gradient(135deg, <?= $sekolah['warna_primer'] ?> 0%, <?= $sekolah['warna_sekunder'] ?> 100%);">
-                                        <div class="d-flex align-items-center gap-3 text-white">
-                                            <div style="width: 50px; height: 50px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-school"></i>
-                                            </div>
-                                            <div>
-                                                <div class="fw-bold"><?= htmlspecialchars($sekolah['nama_sekolah']) ?></div>
-                                                <small>Sistem Absensi Siswa</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <button type="submit" name="simpan_profil" class="btn btn-primary">
-                                    <i class="fas fa-check me-1"></i> Simpan Perubahan
-                                </button>
+<?php if ($message): ?>
+    <div class="alert-modern alert-<?= $message_type === 'success' ? 'success' : 'danger' ?>-modern mb-6 flex items-center gap-3">
+        <i class="fas <?= $message_type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle' ?> text-lg"></i>
+        <span class="flex-1"><?= htmlspecialchars($message) ?></span>
+        <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">&times;</button>
+    </div>
+<?php endif; ?>
+
+<div class="card-modern">
+    <div class="card-modern-body">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+                <div class="md:col-span-4 text-center">
+                    <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3 block">Logo Sekolah</label>
+                    <div class="w-[120px] h-[120px] rounded-full bg-gray-100 flex items-center justify-center mx-auto overflow-hidden border-3 border-gray-200 mb-3">
+                        <?php if ($sekolah['logo'] && file_exists(__DIR__ . '/assets/uploads/' . $sekolah['logo'])): ?>
+                            <img src="<?= asset('uploads/' . $sekolah['logo']) ?>" alt="Logo" class="w-full h-full object-contain">
+                        <?php else: ?>
+                            <i class="fas fa-school text-gray-400 text-4xl"></i>
+                        <?php endif; ?>
+                    </div>
+                    <input type="file" name="logo" class="form-input-modern text-sm" accept="image/*">
+                    <p class="text-xs text-gray-400 mt-1">Max 2MB (JPG, PNG, GIF, WEBP)</p>
+                </div>
+                
+                <div class="md:col-span-8">
+                    <div class="mb-4">
+                        <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Nama Sekolah</label>
+                        <input type="text" name="nama_sekolah" class="form-input-modern" 
+                               value="<?= htmlspecialchars($sekolah['nama_sekolah']) ?>" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Warna Primer</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" name="warna_primer" class="w-[60px] h-[45px] rounded-lg border-2 border-gray-200 cursor-pointer"
+                                       value="<?= $sekolah['warna_primer'] ?>">
+                                <input type="text" class="form-input-modern text-sm" value="<?= $sekolah['warna_primer'] ?>" 
+                                       id="warnaPrimerValue" readonly>
                             </div>
                         </div>
-                    </form>
+                        
+                        <div>
+                            <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Warna Sekunder</label>
+                            <div class="flex items-center gap-3">
+                                <input type="color" name="warna_sekunder" class="w-[60px] h-[45px] rounded-lg border-2 border-gray-200 cursor-pointer"
+                                       value="<?= $sekolah['warna_sekunder'] ?>">
+                                <input type="text" class="form-input-modern text-sm" value="<?= $sekolah['warna_sekunder'] ?>" 
+                                       id="warnaSekunderValue" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-5">
+                        <label class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5 block">Preview Tampilan</label>
+                        <div class="p-4 rounded-xl text-white flex items-center gap-4" id="previewBar" style="background: linear-gradient(135deg, <?= $sekolah['warna_primer'] ?> 0%, <?= $sekolah['warna_sekunder'] ?> 100%);">
+                            <div class="w-[50px] h-[50px] rounded-full flex items-center justify-center" style="background:rgba(255,255,255,0.2);">
+                                <i class="fas fa-school"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold"><?= htmlspecialchars($sekolah['nama_sekolah']) ?></div>
+                                <small class="opacity-80">Sistem Absensi Siswa</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" name="simpan_profil" class="btn-modern btn-primary-modern">
+                        <i class="fas fa-check mr-2"></i> Simpan Perubahan
+                    </button>
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
 <script>
-document.querySelector('input[name="warna_primer"]').addEventListener('input', function() {
+document.querySelector('input[name="warna_primer"]')?.addEventListener('input', function() {
     document.getElementById('warnaPrimerValue').value = this.value;
     updatePreview();
 });
-
-document.querySelector('input[name="warna_sekunder"]').addEventListener('input', function() {
+document.querySelector('input[name="warna_sekunder"]')?.addEventListener('input', function() {
     document.getElementById('warnaSekunderValue').value = this.value;
     updatePreview();
 });
-
 function updatePreview() {
-    const primer = document.querySelector('input[name="warna_primer"]').value;
-    const sekunder = document.querySelector('input[name="warna_sekunder"]').value;
-    document.querySelector('.rounded[style*="background"]').style.background = 
-        `linear-gradient(135deg, ${primer} 0%, ${sekunder} 100%)`;
+    const p = document.querySelector('input[name="warna_primer"]')?.value;
+    const s = document.querySelector('input[name="warna_sekunder"]')?.value;
+    const el = document.getElementById('previewBar');
+    if (el && p && s) el.style.background = `linear-gradient(135deg, ${p} 0%, ${s} 100%)`;
 }
 </script>
 

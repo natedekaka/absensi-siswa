@@ -13,7 +13,7 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
     $username = db()->escape($_POST['username']);
     $password = $_POST['password'];
 
-    $stmt = conn()->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt = conn()->prepare("SELECT * FROM users WHERE username = ? AND is_active = 1");
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -24,6 +24,25 @@ if (isset($_POST['username']) && isset($_POST['password'])) {
         if (password_verify($password, $user['password'])) {
             $_SESSION['user'] = $user;
             $_SESSION['login_time'] = time();
+
+            // Redirect orang_tua to their child's riwayat directly
+            if ($user['role'] === 'orang_tua') {
+                header('Location: ' . BASE_URL . 'siswa/riwayat.php');
+                exit;
+            }
+            
+            if (isset($_POST['remember']) && $_POST['remember'] == 'on') {
+                $token = bin2hex(random_bytes(32));
+                $hashed_token = password_hash($token, PASSWORD_DEFAULT);
+                $expires = date('Y-m-d H:i:s', time() + 60*60*24*30);
+                
+                $update_stmt = conn()->prepare("UPDATE users SET remember_token = ?, remember_expires = ? WHERE id = ?");
+                $update_stmt->bind_param("ssi", $hashed_token, $expires, $user['id']);
+                $update_stmt->execute();
+                
+                setcookie('remember_user', $user['id'] . ':' . $token, time() + 60*60*24*30, '/', '', false, true);
+            }
+            
             header('Location: ' . BASE_URL . 'dashboard/');
             exit;
         }
